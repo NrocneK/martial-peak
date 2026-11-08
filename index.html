@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- user-scalable=no: chặn zoom khi chạm hai lần trên điện thoại -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Võ Luyện Survival</title>
+    <!-- Favicon rỗng: tránh trình duyệt tự xin /favicon.ico rồi báo lỗi 404 -->
+    <link rel="icon" href="data:," />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0b0a12;
+        /* Chặn cuộn / kéo-thả của trình duyệt để joystick cảm ứng hoạt động mượt */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+        /* dvh: chiều cao thật khi thanh địa chỉ trên điện thoại ẩn/hiện (trình duyệt cũ bỏ qua) */
+        height: 100dvh;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <!-- Lớp giao diện HTML (menu, HUD, thẻ kỹ năng...) nằm đè lên canvas game -->
+    <div id="ui"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
