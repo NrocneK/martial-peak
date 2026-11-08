@@ -1,4 +1,4 @@
-# Game Design Document (GDD) — Võ Luyện Survival (tên tạm)
+# Game Design Document (GDD) — Vạn Giới Tầm Quang
 
 > Phiên bản: 0.2 (đã chốt các giả định, sẵn sàng làm Giai đoạn 1). Mọi con số trong tài liệu là **giá trị khởi điểm**, sẽ nằm trong file cấu hình để chỉnh sau.
 > Các điểm từng là giả định đã được bạn xác nhận ở mục 14.
@@ -10,7 +10,7 @@
 Roguelike survival chạy trên trình duyệt, phong cách **Vampire Survivors**: nhân vật tự động tấn công, người chơi chỉ lo **di chuyển và né**. Giết quái rơi XP, lên cấp thì chọn 1 trong 3 thẻ kỹ năng. Mỗi lượt chơi (run) ngẫu nhiên; chết thì làm lại.
 
 Điểm khác biệt:
-- Bối cảnh **võ hiệp / tiên hiệp** theo hành trình của **Dương Khai** qua 6 tầng thế giới (cảm hứng từ Võ Luyện Đỉnh Phong).
+- Bối cảnh **võ hiệp / tiên hiệp** theo hành trình của **Cố Trường Ca**, người gác đèn cuối cùng của Thanh Hà, đi qua 6 tầng thế giới để thắp lại Quang Ấn (cốt truyện nguyên bản).
 - Tiến trình vĩnh viễn kiểu tu tiên: **tu vi, cảnh giới, linh thạch, luyện đan, luyện khí, trang bị 5 ô**.
 - Hệ thống kỹ năng 3 nhóm liên kết nhau, có **thức tỉnh** kỹ năng chủ động.
 
@@ -19,13 +19,13 @@ Tông game: dark fantasy u tối nhưng vẫn vui mắt. Góc nhìn: 2D top-down
 **Ba trụ cột thiết kế**
 1. Mỗi lượt chơi phải tạo ra một "build" khác nhau (thẻ ngẫu nhiên + tỷ lệ ưu tiên theo kỹ năng đã chọn).
 2. Càng chơi càng mạnh: tiến trình vĩnh viễn rõ ràng, thấy được mục tiêu đến end game.
-3. Cốt truyện đi cùng gameplay: mỗi màn là một sự kiện đại chiến trong hành trình của Dương Khai.
+3. Cốt truyện đi cùng gameplay: mỗi màn là một sự kiện đại chiến trong hành trình của Cố Trường Ca.
 
 ---
 
 ## 2. Bối cảnh và cốt truyện
 
-Nhân vật chính: **Dương Khai** (1 nhân vật duy nhất, không phân lớp). Cốt truyện đi theo cuộc đời anh ta, thể hiện bằng **hội thoại ngắn trước/sau màn** (dữ liệu hội thoại nằm trong file riêng, thêm truyện = thêm dữ liệu).
+Nhân vật chính: **Cố Trường Ca** (1 nhân vật duy nhất, không phân lớp). Cốt truyện đi theo cuộc đời anh ta, thể hiện bằng **hội thoại ngắn trước/sau màn** (dữ liệu hội thoại nằm trong file riêng, thêm truyện = thêm dữ liệu).
 
 Động lực: tăng tiến sức mạnh, chống lại cái ác, bảo vệ mọi người.
 
@@ -33,12 +33,12 @@ Nhân vật chính: **Dương Khai** (1 nhân vật duy nhất, không phân l�
 
 | # | Thế giới | Cảnh giới của thế giới | Kẻ thù chính (dự kiến) |
 |---|---|---|---|
-| 1 | Trung Đô | Thối Thể, Khai Nguyên, Khí Động, Ly Hợp, Chân Nguyên, Thần Du | Yêu thú, tà tu, sơn tặc |
-| 2 | Thông Huyền Đại Lục | Siêu Phàm, Nhập Thánh | Yêu tộc, ma tu |
-| 3 | Hằng La Tinh Vực | Thánh Vương, Phản Hư, Hư Vương | Tu sĩ ngoại vực, thú tinh không |
-| 4 | Tinh Giới | Đạo Nguyên, Đế Tôn | Sinh vật tinh giới, cường giả tà đạo |
-| 5 | Tam Thiên Thế Giới | Khai Thiên (9 phẩm) | Đại năng các thế giới |
-| 6 | Mặc Chiến Trường | Sáng Thế | Mặc tộc |
+| 1 | Thanh Hà Cổ Quốc | Luyện Thể, Dẫn Khí, Ngưng Mạch, Kết Đan, Hóa Anh, Ngự Hư | Yêu thú, tà tu, sơn tặc |
+| 2 | Bích Lạc Đại Lục | Thông Thần, Hợp Đạo | Yêu tộc, ma tu |
+| 3 | Lưu Quang Tinh Vực | Nguyên Thần, Quy Hư, Thiên Vương | Tu sĩ ngoại vực, thú tinh không |
+| 4 | Long Hoang Giới | Đại Thừa, Độ Kiếp | Long tộc, chiến sĩ sa đọa |
+| 5 | Cửu Tiêu Thiên Giới | Cửu Tiêu (9 phẩm) | Tiên quân bị Hôi Khí ăn mòn |
+| 6 | Vô Quang Chiến Địa | Thái Sơ | Vô Quang Tộc |
 
 Mỗi **màn** trong một thế giới = một mốc **sự kiện đánh nhau lớn** của thế giới đó. Cần **vượt tất cả màn** và **đạt cảnh giới yêu cầu** mới sang thế giới kế tiếp.
 
@@ -129,15 +129,15 @@ Khi **kỹ năng chủ động đạt cấp 5** và người chơi **đã sở h
 
 | Thế giới | Cảnh giới | Tầng nhỏ |
 |---|---|---|
-| 1. Trung Đô | Thối Thể → Khai Nguyên → Khí Động → Ly Hợp → Chân Nguyên → Thần Du | **Không chia tầng nhỏ** (6 bậc) |
-| 2. Thông Huyền | Siêu Phàm → Nhập Thánh | 3 tầng mỗi cảnh giới |
-| 3. Hằng La | Thánh Vương → Phản Hư → Hư Vương | 3 tầng mỗi cảnh giới |
-| 4. Tinh Giới | Đạo Nguyên → Đế Tôn | 3 tầng mỗi cảnh giới |
-| 5. Tam Thiên | Khai Thiên: 1-3 phẩm Chân Quân, 4-6 phẩm Thiên Quân, 7-9 phẩm Thần Quân | 9 phẩm |
-| 6. Mặc Chiến Trường | Sáng Thế (cảnh giới cuối) | không chia tầng |
+| 1. Thanh Hà | Luyện Thể → Dẫn Khí → Ngưng Mạch → Kết Đan → Hóa Anh → Ngự Hư | **Không chia tầng nhỏ** (6 bậc) |
+| 2. Bích Lạc | Thông Thần → Hợp Đạo | 3 tầng mỗi cảnh giới |
+| 3. Lưu Quang | Nguyên Thần → Quy Hư → Thiên Vương | 3 tầng mỗi cảnh giới |
+| 4. Long Hoang | Đại Thừa → Độ Kiếp | 3 tầng mỗi cảnh giới |
+| 5. Cửu Tiêu | Cửu Tiêu: 1-3 phẩm Địa Tiên, 4-6 phẩm Thiên Tiên, 7-9 phẩm Kim Tiên | 9 phẩm |
+| 6. Vô Quang Chiến Địa | Thái Sơ (cảnh giới cuối) | không chia tầng |
 
 ### 6.3 Điều kiện sang thế giới kế tiếp
-- Thế giới 1 → 2: đạt **Thần Du** (đỉnh cảnh giới của thế giới 1) + qua hết màn.
+- Thế giới 1 → 2: đạt **Ngự Hư** (đỉnh cảnh giới của thế giới 1) + qua hết màn.
 - Thế giới 2 → 3 và 3 → 4 và 4 → 5: đạt tầng cuối của cảnh giới cuối thế giới đó + qua hết màn.
 - Thế giới 5 → 6: **không có giới hạn cảnh giới**, chỉ cần **giết boss cuối thế giới 5**.
 
@@ -216,12 +216,12 @@ Danh sách boss do bạn cung cấp. Mỗi boss có **2-3 chiêu đặc trưng**
 
 | Thế giới | Boss (theo danh sách của bạn) |
 |---|---|
-| 1. Trung Đô | Đại Đương Gia Sơn Tặc, Truyền Thừa Thủ Vệ, Đại Sư Thủ Lĩnh Bát Đại Gia Tộc (1 boss), Tà Vương, Dương Bách |
-| 2. Thông Huyền | Mị Yêu, Băng Tông, Ma Tướng, Yêu Vương, Ma Đế, Khoa La (cốt tộc) |
-| 3. Hằng La | U ám Tinh Cường Giả, Tông Chủ Lôi Viêm Tông, Lạc Hải, Tinh Chủ Tử Tinh, Trùng Đế |
-| 4. Tinh Giới | Tu Sĩ Ma Hóa, Tịch Mậu, Long Tộc Trưởng lão, Yêu Thánh, Mạc Thắng |
-| 5. Tam Thiên | Thất Xảo thiên quân, Lang Gia Trưởng Lão, Âm Dương Trưởng Lão, Thần Quân Mặc Hóa, Mặc tộc vương chủ bị phong ấn |
-| 6. Mặc Chiến Trường | Mặc Tộc Lĩnh Chủ, Mặc Tộc Vực Chủ, Mặc Tộc Vương Chủ, Mặc Sắc Cự Thần Linh, Mặc |
+| 1. Thanh Hà | Hắc Phong Trại Chủ, Thạch Bi Thủ Vệ, Lục Gia Minh Chủ, Hôi Y Quốc Sư, Tuần Giang Sứ Hạ Chấn |
+| 2. Bích Lạc | Hồ Ảnh Yêu Hậu, Hàn Sương Tông Chủ, Huyết Giáp Ma Tướng, Thanh Lân Yêu Vương, Cửu U Ma Hoàng, Cốt Tổ Bạch Diệm |
+| 3. Lưu Quang | Ám Tinh Lữ Khách, Tông Chủ Thiên Lôi Môn, Hải Thần Triều Tịch, Tinh Chủ Huyền Diệu, Trùng Hoàng Vạn Mục |
+| 4. Long Hoang | Kiếm Tu Hôi Hóa, Độc Cô Tàn Nguyệt, Ngao Thiên Đại Trưởng Lão, Yêu Thánh Xích Diễm, Chiến Thần Phế Tích |
+| 5. Cửu Tiêu | Thất Tinh Tiên Quân, Trưởng Lão Thanh Loan Điện, Trưởng Lão Âm Dương Cung, Kim Tiên Hôi Hóa, Vô Quang Vương Bị Phong Ấn |
+| 6. Vô Quang Chiến Địa | Vô Quang Lĩnh Chủ, Vô Quang Vực Chủ, Vô Quang Vương Giả, Hôi Sắc Cự Thần, Hư Tịch |
 
 ### Kế hoạch 10 màn mỗi thế giới
 - Boss trong danh sách của bạn là **boss cuối của các màn chính**, xếp theo thứ tự mạnh dần. **Boss cuối danh sách** là boss chốt thế giới (màn 10).
@@ -322,3 +322,14 @@ Mỗi giai đoạn đều **chạy thử được**; sau mỗi giai đoạn mìn
 
 ### Trạng thái triển khai (v0.3)
 Toàn bộ 6 thế giới × 10 màn đã chơi được từ đầu đến cuối với **hình ảnh và âm thanh tạm**. Con số cân bằng là ước lượng, cần chơi thử để chỉnh. Nội dung hội thoại là văn bản mẫu để bạn viết lại (`src/config/story.ts`). Tên boss phụ và quái là tên tạm.
+
+
+## v0.4 — Trang bị nâng cao, bí bảo, cốt truyện mới
+- **Cốt truyện nguyên bản**: Quang Ấn của vạn giới nứt vỡ, Hôi Khí rò rỉ, Vô Quang Tộc trỗi dậy; Cố Trường Ca đi qua 6 giới để thắp lại ánh sáng. Toàn bộ tên thế giới/cảnh giới/boss/quái/bí bảo/thoại đã viết mới.
+- **Trang bị**: 6 loại vũ khí (kiếm, đao, thương, quyền, cung, quạt); tiền tố phụ (affix) 11 loại, số dòng theo phẩm chất; khóa; phân giải ra Tinh hoa (Thánh/Thần); tái luyện (3 quặng + 1 tinh hoa + linh, chọn giữ cũ/nhận mới); so sánh chỉ số với đồ đang mang; lọc/sắp xếp túi.
+- **Hòm thưởng**: bí bảo không bao giờ mất khi túi đầy (tối đa 20 món chờ nhận).
+- **Bí bảo**: 12 bí bảo, mỗi cái một hiệu ứng trong trận.
+- **Ngoại hình**: chỉ vũ khí cầm tay đổi theo loại + màu phẩm chất; trang phục cố định.
+- **Save**: xuất / nhập file save; dữ liệu lỗi được làm sạch khi tải.
+- **Tốc độ**: nút x1/x2/x4 (phím X).
+- Công thức chỉ số giữ nguyên; cân bằng vẫn là ước lượng, cần người chơi thử thật.

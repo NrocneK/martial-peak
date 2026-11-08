@@ -42,19 +42,19 @@ export interface WorldDef {
 
 const WORLD_INFO: { name: string; desc: string }[] = [
   { name: '', desc: '' },
-  { name: 'Trung Đô', desc: 'Nơi khởi đầu, tu sĩ tranh đấu, yêu tà hoành hành.' },
-  { name: 'Thông Huyền Đại Lục', desc: 'Đại lục rộng lớn của yêu tộc và ma đạo.' },
-  { name: 'Hằng La Tinh Vực', desc: 'Tinh vực xa xôi giữa tinh không bao la.' },
-  { name: 'Tinh Giới', desc: 'Giới vực của long tộc, yêu thánh và những cường giả ma hóa.' },
-  { name: 'Tam Thiên Thế Giới', desc: 'Ba ngàn thế giới, nơi Mặc tộc bắt đầu lộ diện.' },
-  { name: 'Mặc Chiến Trường', desc: 'Chiến trường cuối cùng giữa nhân tộc và Mặc tộc.' },
+  { name: 'Thanh Hà Cổ Quốc', desc: 'Cố quốc ven sông Thanh Hà, nơi Hôi Khí đầu tiên rò rỉ qua vết nứt của Quang Ấn.' },
+  { name: 'Bích Lạc Đại Lục', desc: 'Đại lục rộng lớn của yêu tộc và ma đạo, nơi các mảnh Quang Ấn bị tranh đoạt.' },
+  { name: 'Lưu Quang Tinh Vực', desc: 'Tinh vực xa xôi giữa tinh không, những ngôi sao đang lần lượt tắt.' },
+  { name: 'Long Hoang Giới', desc: 'Giới vực hoang cổ của long tộc và những chiến sĩ đã sa đọa.' },
+  { name: 'Cửu Tiêu Thiên Giới', desc: 'Chín tầng trời, nơi Hôi Khí đã ăn mòn cả các bậc tiên quân.' },
+  { name: 'Vô Quang Chiến Địa', desc: 'Chiến địa cuối cùng, sào huyệt của Vô Quang Tộc.' },
 ];
 
 /** Điều kiện vào thế giới n (chỉ số 1..6). Thế giới 5 → 6 chỉ cần giết boss cuối thế giới 5. */
 const GATES: { tier: number; needAll: boolean; needFinalOnly: boolean }[] = [
   { tier: 0, needAll: false, needFinalOnly: false },
   { tier: 0, needAll: false, needFinalOnly: false }, // 1
-  { tier: 5, needAll: true, needFinalOnly: false }, // 2: Thần Du + qua hết thế giới 1
+  { tier: 5, needAll: true, needFinalOnly: false }, // 2: Ngự Hư + qua hết thế giới 1
   { tier: 11, needAll: true, needFinalOnly: false }, // 3
   { tier: 20, needAll: true, needFinalOnly: false }, // 4
   { tier: 26, needAll: true, needFinalOnly: false }, // 5

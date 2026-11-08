@@ -39,6 +39,10 @@ export class EnemyManager {
   crit = 0.05;
   /** Số quái đang sống */
   alive = 0;
+  /** Hệ số sát thương lên quái đang bị làm chậm (bí bảo Băng Phách Châu) */
+  slowBonus = 1;
+  /** Hook khi quái bị hạ (bí bảo) */
+  onKillHook: ((e: Enemy) => void) | null = null;
 
   // Các hệ thống phụ thuộc lẫn nhau → gán sau khi tạo (setLinks)
   proj!: Projectiles;
@@ -188,7 +192,7 @@ export class EnemyManager {
   // ------------------------------------------------------------------ sát thương
   hurt(e: Enemy, raw: number, slow = 0, noText = false): void {
     if (!e.active) return;
-    let dmg = raw;
+    let dmg = raw * (e.slow > 0 ? this.slowBonus : 1);
     const crit = Math.random() < this.crit;
     if (crit) dmg *= 2;
     e.hp -= dmg;
@@ -209,6 +213,7 @@ export class EnemyManager {
     this.alive--;
     if (drops) {
       this.run.kills++;
+      this.onKillHook?.(e);
       this.pickups.spawn('xp', e.x, e.y, e.xp);
       const isElite = e.behavior === 'elite' && !e.isBoss;
       if (e.isBoss) {

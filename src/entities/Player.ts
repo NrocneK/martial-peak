@@ -4,7 +4,7 @@ import { RUN } from '../config/balance';
 import { TEX } from '../config/assets';
 
 /**
- * Nhân vật chính (Dương Khai).
+ * Nhân vật chính (Cố Trường Ca).
  * Di chuyển và va chạm được tính thủ công (không dùng Arcade Physics) để logic chạy ổn định
  * theo từng bước thời gian, dễ kiểm thử, và nhẹ khi có hàng trăm quái.
  */
@@ -19,11 +19,40 @@ export class Player extends Phaser.GameObjects.Image {
   readonly r = PLAYER_RADIUS;
   /** Số lần bị đánh trong màn (thống kê) */
   hurtCount = 0;
+  /** Lá chắn hấp thụ sát thương (bí bảo Hư Tịch Chi Tâm) và thời gian còn lại */
+  shield = 0;
+  shieldT = 0;
+  /** Gọi mỗi khi thật sự nhận sát thương (cho bí bảo) */
+  onHit: (() => void) | null = null;
+
+  /** Hình vũ khí đang cầm (chỉ là ngoại hình, không ảnh hưởng chỉ số) */
+  private weaponImg: Phaser.GameObjects.Image | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEX.PLAYER);
     scene.add.existing(this);
     this.setDepth(10);
+  }
+
+  /** Đặt ngoại hình vũ khí theo loại vũ khí và màu phẩm chất */
+  setWeaponLook(weaponId: string, color: number): void {
+    const key = TEX.WEAPON + weaponId;
+    if (!this.scene.textures.exists(key)) return;
+    if (!this.weaponImg) this.weaponImg = this.scene.add.image(this.x, this.y, key).setDepth(11);
+    this.weaponImg.setTexture(key).setTint(color).setScale(0.8);
+  }
+
+  /** Cập nhật vị trí vũ khí: lơ lửng cạnh người, chĩa về phía `aim` (radian) */
+  syncWeapon(aim: number): void {
+    if (!this.weaponImg) return;
+    this.weaponImg.setPosition(this.x + Math.cos(aim) * 22, this.y + Math.sin(aim) * 22).setRotation(aim);
+    this.weaponImg.setAlpha(this.dead ? 0 : 1);
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.weaponImg?.destroy();
+    this.weaponImg = null;
+    super.destroy(fromScene);
   }
 
   /** Gán bộ chỉ số mới. Giữ nguyên tỉ lệ máu hiện tại (không hồi đầy / không mất máu khi nhặt thẻ). */
@@ -46,6 +75,7 @@ export class Player extends Phaser.GameObjects.Image {
 
   tick(dt: number): void {
     if (this.dead) return;
+    if (this.shieldT > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
     if (this.invuln > 0) {
       this.invuln -= dt;
       this.setAlpha(Math.floor(this.invuln * 20) % 2 === 0 ? 0.45 : 1);
@@ -58,7 +88,12 @@ export class Player extends Phaser.GameObjects.Image {
   takeDamage(raw: number): number {
     if (this.dead || this.invuln > 0 || this.god) return 0;
     const a = this.stats.armor;
-    const dmg = Math.max(1, raw * (1 - a / (a + 100)));
+    let dmg = Math.max(1, raw * (1 - a / (a + 100)));
+    if (this.shield > 0) {
+      const absorb = Math.min(this.shield, dmg);
+      this.shield -= absorb;
+      dmg -= absorb;
+    }
     this.hp -= dmg;
     this.invuln = RUN.hitInvuln;
     this.hurtCount++;
@@ -68,6 +103,7 @@ export class Player extends Phaser.GameObjects.Image {
       this.hp = 0;
       this.dead = true;
     }
+    this.onHit?.();
     return dmg;
   }
 

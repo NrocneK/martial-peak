@@ -11,6 +11,9 @@ import {
   MAX_ITEM_LEVEL,
   PILLS,
   rarityWeights,
+  AFFIX_COUNT,
+  rollAffix,
+  type RolledAffix,
   type ItemInst,
   type PillId,
   itemStats,
@@ -23,6 +26,8 @@ import { ALL_STAGES, WORLDS, stageById, worldById, type StageDef } from '../conf
 const SAVE_KEY = 'vo-luyen-survival-save';
 const SAVE_VERSION = 1;
 const MAX_ITEMS = 120;
+/** Hòm thưởng: nơi chứa đồ khi túi đầy, nhận lại khi có chỗ */
+const MAX_INBOX = 20;
 
 export interface SaveData {
   v: number;
@@ -38,6 +43,8 @@ export interface SaveData {
   /** số lần đã dùng đan tăng vĩnh viễn */
   pills: { hp: number; dmg: number; def: number };
   nextUid: number;
+  /** Đồ chờ nhận (túi đầy lúc nhận thưởng) */
+  inbox: ItemInst[];
   sound: boolean;
   stats: { runs: number; wins: number; kills: number };
 }
@@ -49,13 +56,14 @@ function defaultSave(): SaveData {
     linh: 0,
     tuVi: 0,
     tier: 0,
-    mats: { herb: 0, core: 0, ore: 0 },
+    mats: { herb: 0, core: 0, ore: 0, essence: 0 },
     items: [sword],
     equipped: { weapon: 1, clothes: null, shoes: null, accessory: null, bibao: null },
     loadout: ['ac_fire'],
     cleared: {},
     pills: { hp: 0, dmg: 0, def: 0 },
     nextUid: 2,
+    inbox: [],
     sound: true,
     stats: { runs: 0, wins: 0, kills: 0 },
   };
@@ -75,9 +83,68 @@ function load(): SaveData {
     d.pills = { ...defaultSave().pills, ...(parsed.pills ?? {}) };
     d.stats = { ...defaultSave().stats, ...(parsed.stats ?? {}) };
     d.v = SAVE_VERSION;
-    return d;
+    return sanitize(d);
   } catch {
     return defaultSave();
+  }
+}
+
+const isInt = (n: unknown, lo: number, hi: number): n is number => typeof n === 'number' && Number.isInteger(n) && n >= lo && n <= hi;
+
+/** Kiểm tra / vá dữ liệu lưu: bỏ item hỏng, sửa ô trang bị trỏ vào item không tồn tại, đảm bảo luôn có vũ khí. */
+function sanitize(d: SaveData): SaveData {
+  const okItem = (i: ItemInst): boolean =>
+    !!i && isInt(i.uid, 1, 1e9) && SLOT_IDS.includes(i.slot) && isInt(i.rarity, 0, 4) && isInt(i.level, 0, MAX_ITEM_LEVEL) && isInt(i.grade, 1, 6);
+  const seen = new Set<number>();
+  const clean = (arr: ItemInst[]): ItemInst[] =>
+    (Array.isArray(arr) ? arr : []).filter((i) => {
+      if (!okItem(i) || seen.has(i.uid)) return false;
+      seen.add(i.uid);
+      return true;
+    });
+  d.items = clean(d.items);
+  d.inbox = clean(d.inbox).slice(0, MAX_INBOX);
+  for (const k of Object.keys(d.mats) as MatId[]) if (!Number.isFinite(d.mats[k]) || d.mats[k] < 0) d.mats[k] = 0;
+  if (!Number.isFinite(d.linh) || d.linh < 0) d.linh = 0;
+  d.nextUid = Math.max(d.nextUid || 1, ...[...seen].map((u) => u + 1), 2);
+  for (const slot of SLOT_IDS) {
+    const uid = d.equipped[slot];
+    const it = uid == null ? null : d.items.find((i) => i.uid === uid);
+    if (!it || it.slot !== slot) d.equipped[slot] = null;
+  }
+  if (d.equipped.weapon == null) {
+    let w = d.items.find((i) => i.slot === 'weapon');
+    if (!w) {
+      w = { uid: d.nextUid++, slot: 'weapon', rarity: 0, level: 0, grade: 1, weaponId: 'wp_sword' };
+      d.items.push(w);
+    }
+    d.equipped.weapon = w.uid;
+  }
+  return d;
+}
+
+/** Xuất toàn bộ save thành chuỗi JSON (để sao lưu) */
+export function exportSave(): string {
+  return JSON.stringify(data);
+}
+
+/** Nhập save từ chuỗi JSON. Kiểm tra cấu trúc trước, hợp lệ mới ghi đè. */
+export function importSave(text: string): Result {
+  try {
+    const parsed = JSON.parse(text) as Partial<SaveData>;
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.items) || typeof parsed.tier !== 'number') return fail('File không phải save hợp lệ.');
+    const def = defaultSave();
+    const d = { ...def, ...parsed } as SaveData;
+    d.mats = { ...def.mats, ...(parsed.mats ?? {}) };
+    d.equipped = { ...def.equipped, ...(parsed.equipped ?? {}) };
+    d.pills = { ...def.pills, ...(parsed.pills ?? {}) };
+    d.stats = { ...def.stats, ...(parsed.stats ?? {}) };
+    d.v = SAVE_VERSION;
+    data = sanitize(d);
+    save();
+    return ok('Đã nhập save.');
+  } catch {
+    return fail('Không đọc được file save.');
   }
 }
 
@@ -244,9 +311,15 @@ function rollRarity(grade: number): number {
   return 0;
 }
 
-export function makeItem(slot: SlotId, grade: number, rarity = rollRarity(grade)): ItemInst {
+export function makeItem(slot: SlotId, grade: number, rarity = rollRarity(grade), weaponId?: string): ItemInst {
   const it: ItemInst = { uid: data.nextUid++, slot, rarity, level: 0, grade };
-  if (slot === 'weapon') it.weaponId = WEAPONS[Math.floor(Math.random() * WEAPONS.length)].id;
+  if (slot === 'weapon') it.weaponId = weaponId ?? WEAPONS[Math.floor(Math.random() * WEAPONS.length)].id;
+  const aff: RolledAffix[] = [];
+  for (let i = 0; i < AFFIX_COUNT[rarity]; i++) {
+    const a = rollAffix(slot, aff.map((x) => x.id));
+    if (a) aff.push(a);
+  }
+  if (aff.length) it.affixes = aff;
   return it;
 }
 
@@ -260,7 +333,7 @@ export function forgeCost(): { ore: number; linh: number } {
   return { ore: 3, linh: Math.ceil(15 * econScale(data.tier)) };
 }
 
-export function forge(slot: SlotId): Result & { item?: ItemInst } {
+export function forge(slot: SlotId, weaponId?: string): Result & { item?: ItemInst } {
   if (slot === 'bibao') return fail('Bí bảo chỉ nhận được khi vượt màn cố định.');
   const c = forgeCost();
   if (data.mats.ore < c.ore) return fail('Không đủ khoáng thạch.');
@@ -268,7 +341,7 @@ export function forge(slot: SlotId): Result & { item?: ItemInst } {
   if (data.items.length >= MAX_ITEMS) return fail('Túi đồ đã đầy, hãy bán bớt trang bị.');
   data.mats.ore -= c.ore;
   data.linh -= c.linh;
-  const item = makeItem(slot, highestWorld());
+  const item = makeItem(slot, highestWorld(), undefined, slot === 'weapon' ? weaponId : undefined);
   addItem(item);
   save();
   return { ...ok('Luyện khí thành công!'), item };
@@ -301,6 +374,7 @@ export function sellItem(uid: number): Result {
   if (!it) return fail('Không tìm thấy trang bị.');
   if (it.slot === 'bibao') return fail('Không thể bán bí bảo.');
   if (data.equipped[it.slot] === uid) return fail('Hãy tháo trang bị trước khi bán.');
+  if (it.locked) return fail('Món đồ đang khóa.');
   const v = sellValue(it);
   data.items = data.items.filter((i) => i.uid !== uid);
   data.linh += v;
@@ -320,6 +394,100 @@ export function unequip(slot: SlotId): void {
   if (slot === 'weapon') return; // luôn phải có vũ khí
   data.equipped[slot] = null;
   save();
+}
+
+export function toggleLock(uid: number): void {
+  const it = data.items.find((i) => i.uid === uid);
+  if (!it) return;
+  it.locked = !it.locked;
+  save();
+}
+
+/** Chênh lệch chỉ số tổng nếu thay món `uid` vào ô tương ứng (dùng đúng computeMeta, không tự cộng tay) */
+export function compareItem(uid: number): Partial<Record<'maxHp' | 'damage' | 'atkSpeed' | 'armor' | 'moveSpeed' | 'crit' | 'area' | 'pickup' | 'xpGain' | 'linhGain', number>> {
+  const it = data.items.find((i) => i.uid === uid);
+  if (!it) return {};
+  const old = data.equipped[it.slot];
+  const a = computeMeta();
+  data.equipped[it.slot] = uid;
+  const b = computeMeta();
+  data.equipped[it.slot] = old;
+  const keys = ['maxHp', 'damage', 'atkSpeed', 'armor', 'moveSpeed', 'crit', 'area', 'pickup', 'xpGain', 'linhGain'] as const;
+  const out: Partial<Record<(typeof keys)[number], number>> = {};
+  for (const k of keys) if (Math.abs(b[k] - a[k]) > 1e-9) out[k] = b[k] - a[k];
+  return out;
+}
+
+// ---------------------------------------------------------------------
+// Phân giải & tái luyện
+// ---------------------------------------------------------------------
+export function dismantleValue(it: ItemInst): { ore: number; essence: number } {
+  return { ore: 1 + it.rarity + Math.floor(it.grade / 2), essence: it.rarity >= 3 ? it.rarity - 2 : 0 };
+}
+
+export function dismantleItem(uid: number): Result {
+  const it = data.items.find((i) => i.uid === uid);
+  if (!it) return fail('Không tìm thấy trang bị.');
+  if (it.slot === 'bibao') return fail('Không thể phân giải bí bảo.');
+  if (data.equipped[it.slot] === uid) return fail('Hãy tháo trang bị trước.');
+  if (it.locked) return fail('Món đồ đang khóa.');
+  const v = dismantleValue(it);
+  data.items = data.items.filter((i) => i.uid !== uid);
+  data.mats.ore += v.ore;
+  data.mats.essence += v.essence;
+  save();
+  return ok(`Phân giải: +${v.ore} khoáng thạch` + (v.essence ? `, +${v.essence} tinh hoa` : '') + '.');
+}
+
+export function reforgeCost(it: ItemInst): { ore: number; essence: number; linh: number } {
+  return { ore: 3, essence: 1, linh: Math.ceil(10 * econScale(data.tier) * (1 + it.rarity)) };
+}
+
+export interface ReforgeOffer {
+  uid: number;
+  index: number;
+  old: RolledAffix;
+  next: RolledAffix;
+}
+
+/** Trừ chi phí và roll thử một dòng mới. Người chơi chọn nhận mới hoặc giữ cũ (chi phí không hoàn lại). */
+export function rollReforge(uid: number, index: number): (Result & { offer?: ReforgeOffer }) {
+  const it = data.items.find((i) => i.uid === uid);
+  if (!it || !it.affixes || !it.affixes[index]) return fail('Không có thuộc tính để tái luyện.');
+  const c = reforgeCost(it);
+  if (data.mats.ore < c.ore) return fail('Không đủ khoáng thạch.');
+  if (data.mats.essence < c.essence) return fail('Không đủ tinh hoa (phân giải đồ Thánh / Thần để có).');
+  if (data.linh < c.linh) return fail('Không đủ linh thạch.');
+  const others = it.affixes.filter((_, i) => i !== index).map((a) => a.id);
+  const next = rollAffix(it.slot, others);
+  if (!next) return fail('Không có thuộc tính khác phù hợp.');
+  data.mats.ore -= c.ore;
+  data.mats.essence -= c.essence;
+  data.linh -= c.linh;
+  save();
+  return { ...ok('Đã tái luyện.'), offer: { uid, index, old: it.affixes[index], next } };
+}
+
+export function acceptReforge(o: ReforgeOffer): Result {
+  const it = data.items.find((i) => i.uid === o.uid);
+  if (!it || !it.affixes || !it.affixes[o.index]) return fail('Không tìm thấy món đồ.');
+  it.affixes[o.index] = o.next;
+  save();
+  return ok('Đã thay thuộc tính mới.');
+}
+
+// ---------------------------------------------------------------------
+// Hòm thưởng (túi đầy)
+// ---------------------------------------------------------------------
+export function claimInbox(uid: number): Result {
+  const it = data.inbox.find((i) => i.uid === uid);
+  if (!it) return fail('Không tìm thấy vật phẩm.');
+  if (data.items.length >= MAX_ITEMS) return fail('Túi đồ đã đầy, hãy bán hoặc phân giải bớt.');
+  data.inbox = data.inbox.filter((i) => i.uid !== uid);
+  data.items.push(it);
+  if (it.slot === 'bibao' && !data.equipped.bibao) data.equipped.bibao = it.uid;
+  save();
+  return ok('Đã nhận vào túi.');
 }
 
 // ---------------------------------------------------------------------
@@ -412,6 +580,8 @@ export interface RewardSummary {
   core: number;
   ore: number;
   items: ItemInst[];
+  /** Số món phải để trong hòm thưởng vì túi đầy */
+  inboxed: number;
   kills: number;
   level: number;
   time: number;
@@ -429,6 +599,7 @@ export function finishStage(res: StageResult): RewardSummary {
     core: 0,
     ore: 0,
     items: [],
+    inboxed: 0,
     kills: res.kills,
     level: res.level,
     time: res.time,
@@ -460,17 +631,27 @@ export function finishStage(res: StageResult): RewardSummary {
         grade: stage.world,
         bibaoId: stage.bibaoId,
       };
-      addItem(bb);
       summary.items.push(bb);
-      if (!data.equipped.bibao) data.equipped.bibao = bb.uid; // tự trang bị nếu ô đang trống
+      if (addItem(bb)) {
+        if (!data.equipped.bibao) data.equipped.bibao = bb.uid; // tự trang bị nếu ô đang trống
+      } else {
+        // Túi đầy: bí bảo (chỉ nhận một lần) KHÔNG được mất → vào hòm thưởng, vượt giới hạn nếu cần
+        data.inbox.push(bb);
+        summary.inboxed++;
+      }
     }
     // Trang bị rơi ngẫu nhiên (boss chính cao hơn, boss chốt thế giới chắc chắn có)
     const chance = stage.boss.final ? 1 : stage.boss.main ? 0.6 : 0.35;
     if (Math.random() < chance) {
       const slots: SlotId[] = ['weapon', 'clothes', 'shoes', 'accessory'];
       const it = makeItem(slots[Math.floor(Math.random() * slots.length)], stage.world);
-      if (addItem(it)) summary.items.push(it);
-      else summary.linh += sellValue(it);
+      summary.items.push(it);
+      if (!addItem(it)) {
+        if (data.inbox.length < MAX_INBOX) {
+          data.inbox.push(it);
+          summary.inboxed++;
+        } else summary.linh += sellValue(it); // hòm cũng đầy: tự bán để không mất giá trị
+      }
     }
   }
 
@@ -500,6 +681,38 @@ export function debugGrant(opts: { tuVi?: number; linh?: number; tier?: number; 
   }
   if (opts.clearAll) for (const s of ALL_STAGES) data.cleared[s.id] = data.cleared[s.id] ?? 1;
   save();
+}
+
+/**
+ * CHẾ ĐỘ TEST (mở khóa tất cả): cảnh giới tối đa, vượt hết 60 màn, nhiều tài nguyên,
+ * đủ 6 loại vũ khí + mỗi ô một món phẩm chất cao nhất, và đủ 12 bí bảo.
+ * Cộng thêm vào save hiện tại (không xóa đồ cũ) — nên xuất save trước nếu muốn giữ bản gốc.
+ */
+export function unlockAll(): Result {
+  data.tier = MAX_TIER;
+  data.tuVi = Math.max(data.tuVi, TIERS[MAX_TIER].cumTuVi);
+  for (const st of ALL_STAGES) data.cleared[st.id] = data.cleared[st.id] ?? 1;
+  data.linh = Math.max(data.linh, 1_000_000);
+  data.mats.herb = Math.max(data.mats.herb, 999);
+  data.mats.core = Math.max(data.mats.core, 999);
+  data.mats.ore = Math.max(data.mats.ore, 999);
+  data.mats.essence = Math.max(data.mats.essence, 999);
+  const top = 4; // phẩm chất cao nhất
+  const grade = 6;
+  let added = 0;
+  const give = (it: ItemInst): void => {
+    if (addItem(it)) added++;
+    else data.inbox.push(it);
+  };
+  for (const w of WEAPONS) give(makeItem('weapon', grade, top, w.id));
+  for (const slot of SLOT_IDS) if (slot !== 'weapon' && slot !== 'bibao') give(makeItem(slot, grade, top));
+  const owned = new Set([...data.items, ...data.inbox].filter((i) => i.slot === 'bibao').map((i) => i.bibaoId));
+  for (const st of ALL_STAGES) {
+    if (!st.fixed || !st.bibaoId || owned.has(st.bibaoId)) continue;
+    give({ uid: data.nextUid++, slot: 'bibao', rarity: st.index === 9 ? 4 : 3, level: 0, grade: st.world, bibaoId: st.bibaoId });
+  }
+  save();
+  return ok(`Đã mở khóa tất cả: cảnh giới tối đa, 60 màn, tài nguyên, ${added} món trang bị + bí bảo.`);
 }
 
 export function setSound(on: boolean): void {

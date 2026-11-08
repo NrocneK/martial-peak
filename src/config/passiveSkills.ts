@@ -12,7 +12,7 @@ export const PASSIVES: PassiveDef[] = [
   { id: 'p_atk', name: 'Tâm Pháp Tinh Thông', desc: 'Tăng tốc độ đánh (hồi chiêu nhanh hơn)', stat: 'atkSpeed', per: 0.08, unit: 'pct', color: 0xffe070 },
   { id: 'p_armor', name: 'Hộ Thể Thần Công', desc: 'Tăng giáp', stat: 'armor', per: 8, unit: 'flat', color: 0xa0a0c0 },
   { id: 'p_pickup', name: 'Linh Thức Dẫn Khí', desc: 'Tăng phạm vi hút XP', stat: 'pickup', per: 0.25, unit: 'pct', color: 0x80ffb0 },
-  { id: 'p_area', name: 'Khai Thiên Ấn', desc: 'Tăng phạm vi kỹ năng', stat: 'area', per: 0.08, unit: 'pct', color: 0xc090ff },
+  { id: 'p_area', name: 'Cửu Tiêu Ấn', desc: 'Tăng phạm vi kỹ năng', stat: 'area', per: 0.08, unit: 'pct', color: 0xc090ff },
   { id: 'p_regen', name: 'Hồi Nguyên Quyết', desc: 'Hồi máu mỗi giây', stat: 'regen', per: 0.004, unit: 'pct', color: 0x70ff90 },
   { id: 'p_xp', name: 'Ngộ Tính Thiên Phú', desc: 'Tăng XP nhận được', stat: 'xpGain', per: 0.08, unit: 'pct', color: 0x90c0ff },
   { id: 'p_crit', name: 'Phá Giáp Chân Ý', desc: 'Tăng tỉ lệ chí mạng (gấp đôi sát thương)', stat: 'crit', per: 0.05, unit: 'pct', color: 0xff9060 },

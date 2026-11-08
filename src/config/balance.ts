@@ -39,8 +39,10 @@ export function stageDuration(index: number): number {
 }
 
 /** Hệ số máu / sát thương của quái theo thế giới (1..6). Thiết kế bám theo sức mạnh nhân vật khi vào thế giới đó. */
-export const WORLD_HP = [0, 1, 3.4, 5.7, 9.2, 11.5, 15];
-export const WORLD_DMG = [0, 1, 2.2, 3.5, 5.5, 7, 9];
+export const WORLD_HP = [0, 1, 3.4, 5.7, 11, 24, 60];
+export const WORLD_DMG = [0, 1, 3, 6, 8, 24, 55];
+/** Hệ số tốc độ sinh quái theo thế giới (thế giới sau quái đông hơn, để không bị "chết trước khi kịp xuất hiện") */
+export const WORLD_SPAWN = [0, 1, 1, 1.1, 1.25, 1.5, 1.8];
 
 /** Quy mô kinh tế (linh thạch, nguyên liệu...) tăng theo cảnh giới. */
 export function econScale(tier: number): number {

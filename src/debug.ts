@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from './scenes/GameScene';
 import { SCENES } from './config/assets';
+import * as Prog from './systems/Progression';
 import { debugGrant } from './systems/Progression';
 
 /**
@@ -105,6 +106,7 @@ export function installDebug(game: Phaser.Game): void {
       };
     },
     grant: debugGrant,
+    prog: Prog,
   };
   (window as unknown as { __vls: typeof api }).__vls = api;
 }

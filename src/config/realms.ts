@@ -3,8 +3,8 @@
 // Mỗi "tier" là một bậc tu vi. Toàn bộ danh sách được dựng từ bảng định nghĩa bên dưới.
 //   Thế giới 1: 6 cảnh giới lớn, KHÔNG chia tầng nhỏ.
 //   Thế giới 2-4: mỗi cảnh giới chia 3 tầng.
-//   Thế giới 5: Khai Thiên 9 phẩm (Chân Quân / Thiên Quân / Thần Quân).
-//   Thế giới 6: Sáng Thế (cuối cùng, không chia tầng).
+//   Thế giới 5: Cửu Tiêu 9 phẩm (Địa Tiên / Thiên Tiên / Kim Tiên).
+//   Thế giới 6: Thái Sơ (cuối cùng, không chia tầng).
 // =====================================================================
 
 export interface RealmTier {
@@ -22,25 +22,25 @@ const PHAM = ['Nhất', 'Nhị', 'Tam', 'Tứ', 'Ngũ', 'Lục', 'Thất', 'Bát
 /** [tên cảnh giới, số tầng nhỏ] theo từng thế giới (1..4) */
 const WORLD_REALMS: Record<number, [string, number][]> = {
   1: [
-    ['Thối Thể', 1],
-    ['Khai Nguyên', 1],
-    ['Khí Động', 1],
-    ['Ly Hợp', 1],
-    ['Chân Nguyên', 1],
-    ['Thần Du', 1],
+    ['Luyện Thể', 1],
+    ['Dẫn Khí', 1],
+    ['Ngưng Mạch', 1],
+    ['Kết Đan', 1],
+    ['Hóa Anh', 1],
+    ['Ngự Hư', 1],
   ],
   2: [
-    ['Siêu Phàm', 3],
-    ['Nhập Thánh', 3],
+    ['Thông Thần', 3],
+    ['Hợp Đạo', 3],
   ],
   3: [
-    ['Thánh Vương', 3],
-    ['Phản Hư', 3],
-    ['Hư Vương', 3],
+    ['Nguyên Thần', 3],
+    ['Quy Hư', 3],
+    ['Thiên Vương', 3],
   ],
   4: [
-    ['Đạo Nguyên', 3],
-    ['Đế Tôn', 3],
+    ['Đại Thừa', 3],
+    ['Độ Kiếp', 3],
   ],
 };
 
@@ -65,13 +65,13 @@ function build(): RealmTier[] {
       }
     }
   }
-  // Thế giới 5: Khai Thiên 9 phẩm
+  // Thế giới 5: Cửu Tiêu 9 phẩm
   for (let p = 0; p < 9; p++) {
-    const title = p < 3 ? 'Chân Quân' : p < 6 ? 'Thiên Quân' : 'Thần Quân';
-    push(5, `Khai Thiên ${PHAM[p]} phẩm (${title})`, 'Khai Thiên');
+    const title = p < 3 ? 'Địa Tiên' : p < 6 ? 'Thiên Tiên' : 'Kim Tiên';
+    push(5, `Cửu Tiêu ${PHAM[p]} phẩm (${title})`, 'Cửu Tiêu');
   }
-  // Thế giới 6: Sáng Thế
-  push(6, 'Sáng Thế', 'Sáng Thế');
+  // Thế giới 6: Thái Sơ
+  push(6, 'Thái Sơ', 'Thái Sơ');
   return list;
 }
 

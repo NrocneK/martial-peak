@@ -151,7 +151,7 @@ export const ACTIVES: SkillDef[] = [
   },
   {
     id: 'ac_opensky',
-    name: 'Khai Thiên Nhất Kích',
+    name: 'Cửu Tiêu Nhất Kích',
     desc: 'Một đòn khai thiên tích lực bùng nổ cực rộng.',
     group: 'active',
     kind: 'nova',
@@ -163,7 +163,7 @@ export const ACTIVES: SkillDef[] = [
   },
   {
     id: 'ac_genesis',
-    name: 'Sáng Thế Chân Ngôn',
+    name: 'Thái Sơ Chân Ngôn',
     desc: 'Chân ngôn sáng thế tạo vùng thần lực thiêu đốt kẻ địch quanh người.',
     group: 'active',
     kind: 'aura',

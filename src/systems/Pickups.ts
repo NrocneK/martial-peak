@@ -77,6 +77,16 @@ export class Pickups {
     p.img.setTint(c).setScale(s);
   }
 
+  /** Nhặt ngay toàn bộ linh thạch còn trên đất (dùng khi thắng màn để không mất thưởng boss rơi ra) */
+  collectCoins(): void {
+    for (const p of this.pool) {
+      if (!p.active) continue;
+      if (p.type === 'coin') this.run.linh += p.value * this.player.stats.linhGain;
+      p.active = false;
+      p.img.setVisible(false).setActive(false);
+    }
+  }
+
   /** Hút toàn bộ vật phẩm về phía nhân vật (dùng khi hạ boss) */
   magnetAll(): void {
     for (const p of this.pool) if (p.active) p.magnet = true;

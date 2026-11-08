@@ -15,12 +15,13 @@ export const SLOT_NAMES: Record<SlotId, string> = {
 };
 
 /** Nguyên liệu */
-export type MatId = 'herb' | 'core' | 'ore';
-export const MAT_IDS: MatId[] = ['herb', 'core', 'ore'];
+export type MatId = 'herb' | 'core' | 'ore' | 'essence';
+export const MAT_IDS: MatId[] = ['herb', 'core', 'ore', 'essence'];
 export const MAT_NAMES: Record<MatId, string> = {
   herb: 'Thảo dược',
   core: 'Yêu đan',
   ore: 'Khoáng thạch',
+  essence: 'Tinh hoa',
 };
 
 /** 10 kiểu hành vi của quái (xem GDD mục 9) */

@@ -15,11 +15,13 @@ import { RunState } from '../systems/RunState';
 import { SkillSystem } from '../systems/SkillSystem';
 import { Spawner } from '../systems/Spawner';
 import { generateCards, type Card } from '../systems/CardPicker';
-import { computeMeta, currentLoadout, tierNow, type StageResult } from '../systems/Progression';
+import { RARITIES } from '../config/items';
+import { computeMeta, currentLoadout, equippedItem, tierNow, type StageResult } from '../systems/Progression';
 import { WORLD_FIRST_TIER } from '../config/realms';
 import { econScale } from '../config/balance';
 import { mixColor } from '../utils/format';
 import { audio } from '../systems/Audio';
+import { ArtifactSystem } from '../systems/ArtifactSystem';
 
 export type RunStatus = 'running' | 'levelup' | 'paused' | 'ended';
 
@@ -58,6 +60,7 @@ export class GameScene extends Phaser.Scene {
   run!: RunState;
   skills!: SkillSystem;
   spawner!: Spawner;
+  artifact!: ArtifactSystem;
   stage!: StageDef;
   status: RunStatus = 'ended';
   cards: Card[] = [];
@@ -106,6 +109,14 @@ export class GameScene extends Phaser.Scene {
     this.skills = new SkillSystem(this, this.player, this.enemies, this.proj, this.fx, this.run);
     this.spawner = new Spawner(this.stage, this.enemies, this.player, () => this.viewRadius());
 
+    // Ngoại hình vũ khí đang cầm (màu theo phẩm chất)
+    const wItem = equippedItem('weapon');
+    if (wItem?.weaponId) this.player.setWeaponLook(wItem.weaponId, parseInt(RARITIES[wItem.rarity].color.slice(1), 16));
+    // Hiệu ứng riêng của bí bảo đang trang bị
+    this.artifact = new ArtifactSystem(equippedItem('bibao')?.bibaoId ?? null, this.player, this.enemies, this.pickups, this.fx, this.run);
+    this.enemies.onKillHook = (e) => this.artifact.onKill(e);
+    this.player.onHit = () => this.artifact.onHit();
+
     this.refreshStats();
     this.player.hp = this.player.stats.maxHp;
 
@@ -131,6 +142,12 @@ export class GameScene extends Phaser.Scene {
   /** Tính lại chỉ số nhân vật sau khi nhặt thẻ */
   refreshStats(): void {
     const st = this.run.recompute();
+    // Cộng buff tạm thời của bí bảo (xóa sạch khi hết màn)
+    const b = this.artifact.buff;
+    st.damage *= 1 + b.damage;
+    st.attackSpeed *= 1 + b.atk;
+    st.armor += b.armor;
+    st.pickupRange *= b.pickup;
     this.player.applyStats(st);
     this.enemies.crit = st.crit;
   }
@@ -156,8 +173,16 @@ export class GameScene extends Phaser.Scene {
     const dir = this.botInput ? this.botInput(this) : this.inputManager.getMoveVector();
     pl.move(dir ?? this.zero, dt);
     pl.tick(dt);
+    // Vũ khí chĩa về quái gần nhất (không có thì theo hướng nhìn)
+    const tgt = this.enemies.nearest(pl.x, pl.y, 500);
+    pl.syncWeapon(tgt ? Math.atan2(tgt.y - pl.y, tgt.x - pl.x) : pl.rotation);
     this.run.time += dt;
 
+    this.artifact.update(dt);
+    if (this.artifact.dirty) {
+      this.artifact.dirty = false;
+      this.refreshStats();
+    }
     this.spawner.update(dt, this.run.time);
     this.enemies.update(dt);
     this.skills.update(dt);
@@ -170,7 +195,7 @@ export class GameScene extends Phaser.Scene {
 
     if (pl.dead) return this.end(false);
     if (this.enemies.bossDead) {
-      this.pickups.magnetAll();
+      this.pickups.collectCoins(); // gom linh thạch boss rơi trước khi tổng kết
       return this.end(true);
     }
     if (this.run.pendingLevels > 0) this.openLevelUp();

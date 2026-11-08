@@ -31,6 +31,15 @@ export interface ItemInst {
   grade: number;
   weaponId?: string;
   bibaoId?: string;
+  /** Thuộc tính phụ đã roll (lưu giá trị cụ thể, không roll lại khi tải game). Save cũ không có = rỗng. */
+  affixes?: RolledAffix[];
+  /** Đã khóa: không bán / phân giải được */
+  locked?: boolean;
+}
+
+export interface RolledAffix {
+  id: string;
+  v: number;
 }
 
 export const MAX_ITEM_LEVEL = 10;
@@ -60,18 +69,18 @@ export interface BibaoDef {
 }
 
 export const BIBAOS: BibaoDef[] = [
-  { id: 'bb_w1_5', name: 'Sơn Hà Tàn Đồ', world: 1, stageNo: 5, desc: 'Tàn đồ chứa linh khí đất trời Trung Đô.' },
-  { id: 'bb_w1_10', name: 'Truyền Thừa Ngọc Giản', world: 1, stageNo: 10, desc: 'Ngọc giản ghi lại truyền thừa cổ xưa.' },
-  { id: 'bb_w2_5', name: 'Băng Phách Châu', world: 2, stageNo: 5, desc: 'Viên châu băng giá ngàn năm.' },
-  { id: 'bb_w2_10', name: 'Ma Đế Huyết Ấn', world: 2, stageNo: 10, desc: 'Ấn ký nhuốm máu của Ma Đế.' },
-  { id: 'bb_w3_5', name: 'Lôi Viêm Tâm', world: 3, stageNo: 5, desc: 'Trái tim lôi viêm cuồn cuộn sức mạnh.' },
-  { id: 'bb_w3_10', name: 'Tử Tinh Hạch', world: 3, stageNo: 10, desc: 'Hạch tinh thể của Tinh Chủ Tử Tinh.' },
-  { id: 'bb_w4_5', name: 'Long Cốt Trụ', world: 4, stageNo: 5, desc: 'Cột xương rồng cổ đại.' },
-  { id: 'bb_w4_10', name: 'Yêu Thánh Linh Ấn', world: 4, stageNo: 10, desc: 'Linh ấn của Yêu Thánh.' },
-  { id: 'bb_w5_5', name: 'Thiên Quân Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của Thiên Quân.' },
-  { id: 'bb_w5_10', name: 'Mặc Hóa Tinh Thạch', world: 5, stageNo: 10, desc: 'Tinh thạch nhiễm mặc khí đáng sợ.' },
-  { id: 'bb_w6_5', name: 'Mặc Chi Tâm', world: 6, stageNo: 5, desc: 'Lõi sức mạnh của Mặc tộc.' },
-  { id: 'bb_w6_10', name: 'Sáng Thế Ngọc', world: 6, stageNo: 10, desc: 'Viên ngọc chứa sức mạnh sáng thế.' },
+  { id: 'bb_w1_5', name: 'Thanh Hà Tàn Đồ', world: 1, stageNo: 5, desc: 'Mảnh bản đồ cổ ghi dấu các mạch linh khí ven sông Thanh Hà.' },
+  { id: 'bb_w1_10', name: 'Tuần Giang Lệnh', world: 1, stageNo: 10, desc: 'Lệnh bài của Tuần Giang Sứ, còn vương ánh sáng của Quang Ấn.' },
+  { id: 'bb_w2_5', name: 'Hàn Sương Châu', world: 2, stageNo: 5, desc: 'Viên châu băng giá ngàn năm không tan.' },
+  { id: 'bb_w2_10', name: 'Cửu U Ma Ấn', world: 2, stageNo: 10, desc: 'Ấn ký nhuốm máu của Cửu U Ma Hoàng.' },
+  { id: 'bb_w3_5', name: 'Thiên Lôi Tâm', world: 3, stageNo: 5, desc: 'Trái tim sấm sét cuồn cuộn sức mạnh.' },
+  { id: 'bb_w3_10', name: 'Huyền Diệu Tinh Hạch', world: 3, stageNo: 10, desc: 'Hạch tinh thể của Tinh Chủ Huyền Diệu.' },
+  { id: 'bb_w4_5', name: 'Hoang Long Cốt Trụ', world: 4, stageNo: 5, desc: 'Cột xương rồng cổ đại từ thời hoang cổ.' },
+  { id: 'bb_w4_10', name: 'Xích Diễm Linh Ấn', world: 4, stageNo: 10, desc: 'Linh ấn lửa đỏ của Yêu Thánh Xích Diễm.' },
+  { id: 'bb_w5_5', name: 'Tiên Quân Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của Thất Tinh Tiên Quân.' },
+  { id: 'bb_w5_10', name: 'Hôi Hóa Tinh Thạch', world: 5, stageNo: 10, desc: 'Tinh thạch nhiễm Hôi Khí đáng sợ.' },
+  { id: 'bb_w6_5', name: 'Hư Tịch Chi Tâm', world: 6, stageNo: 5, desc: 'Lõi sức mạnh của Vô Quang Tộc.' },
+  { id: 'bb_w6_10', name: 'Thái Sơ Ngọc', world: 6, stageNo: 10, desc: 'Viên ngọc chứa ánh sáng đầu tiên của vạn giới.' },
 ];
 
 export function bibaoById(id: string): BibaoDef {
@@ -95,6 +104,16 @@ export function itemPower(it: ItemInst): number {
 
 /** Chỉ số do trang bị mang lại (tính theo công thức, không lưu) */
 export function itemStats(it: ItemInst): ItemStats {
+  const out: ItemStats = { ...baseStats(it) };
+  // Thuộc tính phụ cộng thêm bên ngoài công thức gốc (không làm đổi sức mạnh đồ cũ)
+  for (const a of it.affixes ?? []) {
+    const d = AFFIXES.find((x) => x.id === a.id);
+    if (d) out[d.stat] = (out[d.stat] ?? 0) + a.v;
+  }
+  return out;
+}
+
+function baseStats(it: ItemInst): ItemStats {
   const P = itemPower(it);
   switch (it.slot) {
     case 'weapon':
@@ -110,9 +129,56 @@ export function itemStats(it: ItemInst): ItemStats {
   }
 }
 
-/** Mô tả chỉ số dạng chữ để hiển thị */
+// ---------------------------------------------------------------------
+// THUỘC TÍNH PHỤ (affix): số dòng theo phẩm chất, mỗi dòng roll trong khoảng [min, max]
+// ---------------------------------------------------------------------
+export interface AffixDef {
+  id: string;
+  name: string;
+  stat: keyof ItemStats;
+  min: number;
+  max: number;
+  /** true: giá trị là điểm tuyệt đối (giáp, px); false: tỉ lệ (0.03 = 3%) */
+  flat?: boolean;
+  slots: SlotId[];
+}
+
+export const AFFIXES: AffixDef[] = [
+  { id: 'a_damage', name: 'Công Kích', stat: 'damage', min: 0.02, max: 0.06, slots: ['weapon', 'accessory'] },
+  { id: 'a_atk', name: 'Tốc Công', stat: 'atkSpeed', min: 0.02, max: 0.05, slots: ['weapon', 'accessory'] },
+  { id: 'a_crit', name: 'Sát Ý', stat: 'crit', min: 0.01, max: 0.03, slots: ['weapon', 'accessory'] },
+  { id: 'a_area', name: 'Quảng Vực', stat: 'area', min: 0.02, max: 0.06, slots: ['weapon', 'accessory'] },
+  { id: 'a_hp', name: 'Hộ Mệnh', stat: 'maxHp', min: 0.03, max: 0.08, slots: ['clothes'] },
+  { id: 'a_armor', name: 'Thiết Bích', stat: 'armor', min: 2, max: 8, flat: true, slots: ['clothes'] },
+  { id: 'a_regen', name: 'Hồi Xuân', stat: 'regen', min: 0.001, max: 0.003, slots: ['clothes', 'shoes'] },
+  { id: 'a_move', name: 'Phong Hành', stat: 'moveSpeed', min: 0.02, max: 0.05, slots: ['shoes'] },
+  { id: 'a_pickup', name: 'Dẫn Linh', stat: 'pickup', min: 8, max: 25, flat: true, slots: ['shoes', 'accessory'] },
+  { id: 'a_xp', name: 'Ngộ Đạo', stat: 'xpGain', min: 0.03, max: 0.08, slots: ['accessory'] },
+  { id: 'a_linh', name: 'Tụ Tài', stat: 'linhGain', min: 0.03, max: 0.08, slots: ['accessory'] },
+];
+
+/** Số dòng thuộc tính phụ theo phẩm chất: Phàm 0, Linh 1, Bảo 1, Thánh 2, Thần 2 (bí bảo không có) */
+export const AFFIX_COUNT = [0, 1, 1, 2, 2];
+
+export function affixText(a: RolledAffix): string {
+  const d = AFFIXES.find((x) => x.id === a.id);
+  if (!d) return '?';
+  const val = d.flat ? `+${Math.round(a.v)}` : `+${(a.v * 100).toFixed(d.stat === 'regen' ? 2 : 1)}%`;
+  return `${d.name} ${val}`;
+}
+
+/** Roll một dòng thuộc tính phụ hợp lệ với ô, không trùng các id trong `exclude` */
+export function rollAffix(slot: SlotId, exclude: string[]): RolledAffix | null {
+  const pool = AFFIXES.filter((a) => a.slots.includes(slot) && !exclude.includes(a.id));
+  if (pool.length === 0) return null;
+  const d = pool[Math.floor(Math.random() * pool.length)];
+  const raw = d.min + Math.random() * (d.max - d.min);
+  return { id: d.id, v: d.flat ? Math.round(raw) : Math.round(raw * 1000) / 1000 };
+}
+
+/** Mô tả chỉ số dạng chữ để hiển thị (chỉ phần gốc; thuộc tính phụ hiển thị riêng bằng affixText) */
 export function itemStatLines(it: ItemInst): string[] {
-  const s = itemStats(it);
+  const s = baseStats(it);
   const pct = (v: number) => `${(v * 100).toFixed(v * 100 < 10 ? 1 : 0)}%`;
   const out: string[] = [];
   if (s.damage) out.push(`Sát thương +${pct(s.damage)}`);

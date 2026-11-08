@@ -27,6 +27,7 @@ export function buildResult(r: RewardSummary, stage: StageDef, onAgain: () => vo
     h('div', { class: 'dim', text: `${stage.name} · ${stage.event}` + (r.firstClear ? ' · Lần đầu vượt màn' : '') }),
     list,
     ...items,
+    r.inboxed ? h('div', { class: 'card', style: 'border-color:#e8c96a;max-width:420px;text-align:center', text: `Túi đồ đầy: ${r.inboxed} món đang nằm trong Hòm thưởng (tab Trang Bị). Dọn chỗ rồi nhận nhé.` }) : null,
     h('div', { class: 'row' },
       h('button', { class: 'btn primary', text: r.victory ? 'Về Lịch Luyện' : 'Về Lịch Luyện', onclick: onBack }),
       h('button', { class: 'btn', text: 'Chơi lại màn này', onclick: onAgain }),

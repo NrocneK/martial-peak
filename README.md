@@ -1,6 +1,6 @@
-# Võ Luyện Survival (tên tạm)
+# Vạn Giới Tầm Quang
 
-Game roguelike survival chạy trên trình duyệt (phong cách Vampire Survivors), bối cảnh tiên hiệp, nhân vật **Dương Khai**.
+Game roguelike survival chạy trên trình duyệt (phong cách Vampire Survivors), bối cảnh tiên hiệp, nhân vật **Cố Trường Ca** (cốt truyện nguyên bản).
 Thiết kế đầy đủ nằm trong `GDD.md`.
 
 **Trạng thái: bản hoàn chỉnh khung game đến end game.** 6 thế giới × 10 màn, 66 loại quái, 60 boss, 13 kỹ năng chủ động, 11 kỹ năng bị động, 6 kỹ năng vũ khí, 37 cảnh giới, trang bị 5 ô, luyện đan, luyện khí, lưu tiến trình.
@@ -112,3 +112,11 @@ src/
 - **Cốt truyện:** lời thoại hiện là văn bản mẫu tự sinh theo màn.
 - **Tên boss phụ và tên quái** là tên tạm (boss chính theo danh sách của bạn).
 - **Hình ảnh / âm thanh:** đồ tạm, chưa có hoạt ảnh.
+
+
+## Tính năng mới (v0.4)
+- Cốt truyện và toàn bộ tên gọi viết mới (6 thế giới giữ nguyên cấu trúc).
+- Trang bị: tiền tố phụ, khóa, phân giải (Tinh hoa), tái luyện, so sánh, lọc/sắp xếp, chọn loại vũ khí khi luyện.
+- Hòm thưởng (bí bảo không mất khi túi đầy); 12 bí bảo có hiệu ứng trong trận.
+- Vũ khí cầm tay đổi ngoại hình theo loại và phẩm chất.
+- Xuất/nhập save ở menu chính; tăng tốc x2/x4 (phím X).

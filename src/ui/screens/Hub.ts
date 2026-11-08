@@ -4,8 +4,9 @@ import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../con
 import { MAX_TIER, TIERS, nextTierNeed, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
-import { weaponById } from '../../config/weapons';
-import { MAX_ITEM_LEVEL, PILLS, RARITIES, itemName, itemStatLines, type ItemInst } from '../../config/items';
+import { WEAPONS, weaponById } from '../../config/weapons';
+import { PASSIVES, passiveValueText } from '../../config/passiveSkills';
+import { MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/Progression';
 import { audio } from '../../systems/Audio';
 
@@ -157,41 +158,95 @@ export class Hub {
     const fc = P.forgeCost();
     const grid = h('div', { class: 'grid' });
     for (const slot of SLOT_IDS.filter((x) => x !== 'bibao')) {
-      grid.append(
-        h('div', { class: 'card' },
-          h('div', { class: 'gold', text: 'Chế tạo ' + SLOT_NAMES[slot] }),
-          h('div', { class: 'dim', text: 'Phẩm chất ngẫu nhiên, thế giới càng cao càng dễ ra phẩm tốt.' }),
-          h('div', { style: 'margin:6px 0', text: `Cần: ${fc.ore} khoáng thạch, ${fmt(fc.linh)} linh thạch` }),
-          h('button', {
-            class: 'btn small',
-            text: 'Luyện khí',
-            onclick: () => {
-              const r = P.forge(slot);
-              this.act(r.ok && r.item ? { ok: true, msg: `Chế tạo được: ${itemName(r.item)} (${RARITIES[r.item.rarity].name})` } : r);
-            },
-          }),
-        ),
+      const isWeapon = slot === 'weapon';
+      const card = h('div', { class: 'card' },
+        h('div', { class: 'gold', text: 'Chế tạo ' + SLOT_NAMES[slot] }),
+        h('div', { class: 'dim', text: 'Phẩm chất và thuộc tính phụ ngẫu nhiên, thế giới càng cao càng dễ ra phẩm tốt.' }),
+        h('div', { style: 'margin:6px 0', text: `Cần: ${fc.ore} khoáng thạch, ${fmt(fc.linh)} linh thạch` }),
       );
+      const forge = (wid?: string): void => {
+        const r = P.forge(slot, wid);
+        this.act(r.ok && r.item ? { ok: true, msg: `Chế tạo được: ${itemName(r.item)} (${RARITIES[r.item.rarity].name})` } : r);
+      };
+      if (isWeapon) {
+        // Chọn loại vũ khí muốn chế tạo (hoặc ngẫu nhiên)
+        card.append(h('div', { class: 'row' },
+          ...WEAPONS.map((w) => h('button', { class: 'btn small', text: WEAPON_ITEM_NAMES[w.id], title: w.name, onclick: () => forge(w.id) })),
+          h('button', { class: 'btn small', text: 'Ngẫu nhiên', onclick: () => forge() }),
+        ));
+      } else card.append(h('button', { class: 'btn small', text: 'Luyện khí', onclick: () => forge() }));
+      grid.append(card);
     }
     return h('div', null, grid, h('div', { class: 'dim', style: 'margin-top:10px', text: 'Bí bảo không chế tạo được: nhận khi vượt màn 5 và màn 10 của mỗi thế giới lần đầu.' }));
   }
 
   // ------------------------------------------------------------------ Trang Bị
+  private reforge: P.ReforgeOffer | null = null;
+  private filterSlot: SlotId | 'all' = 'all';
+  private sortBy: 'new' | 'power' | 'rarity' = 'new';
+
   private itemCard(it: ItemInst, equipped: boolean): HTMLElement {
     const upg = P.upgradeCost(it);
     const color = RARITIES[it.rarity].color;
-    return h('div', { class: 'card item', style: { borderLeftColor: color } },
-      h('div', { class: 'nm', style: { color }, text: itemName(it) }),
+    const card = h('div', { class: 'card item', style: { borderLeftColor: color } },
+      h('div', { class: 'nm', style: { color }, text: (it.locked ? '🔒 ' : '') + itemName(it) }),
       h('div', { class: 'dim', style: 'font-size:12px', text: `${SLOT_NAMES[it.slot]} · ${RARITIES[it.rarity].name} · +${it.level}` }),
       ...itemStatLines(it).map((l) => h('div', { style: 'font-size:13px', text: l })),
-      h('div', { class: 'row', style: 'margin-top:6px' },
-        equipped
-          ? h('button', { class: 'btn small', text: 'Tháo', disabled: it.slot === 'weapon' ? 'disabled' : null, onclick: () => { P.unequip(it.slot); this.render(); } })
-          : h('button', { class: 'btn small', text: 'Trang bị', onclick: () => this.act(P.equip(it.uid)) }),
-        it.level < MAX_ITEM_LEVEL
-          ? h('button', { class: 'btn small', text: `Cường hóa (${upg.ore}KT, ${fmt(upg.linh)}LT)`, onclick: () => this.act(P.upgradeItem(it.uid)) })
-          : null,
-        equipped ? null : h('button', { class: 'btn small danger', text: `Bán +${fmt(P.sellValue(it))}`, onclick: () => this.act(P.sellItem(it.uid)) }),
+      ...(it.affixes ?? []).map((a, i) =>
+        h('div', { class: 'row', style: 'font-size:13px;color:#8fd0ff;gap:6px' },
+          h('span', { text: '✦ ' + affixText(a) }),
+          it.slot !== 'bibao' ? h('button', { class: 'btn small', text: 'Tái luyện', onclick: () => this.doReforge(it.uid, i) }) : null,
+        ),
+      ),
+    );
+    // So sánh với món đang mặc (dùng đúng công thức tính chỉ số tổng)
+    if (!equipped && it.slot !== 'bibao') {
+      const d = P.compareItem(it.uid);
+      const names: Record<string, string> = { maxHp: 'Máu', damage: 'Sát thương', atkSpeed: 'Tốc đánh', armor: 'Giáp', moveSpeed: 'Tốc chạy', crit: 'Chí mạng', area: 'Phạm vi', pickup: 'Nhặt', xpGain: 'XP', linhGain: 'Linh' };
+      const parts = Object.entries(d).map(([k, v]) => {
+        const rel = k === 'armor' || k === 'pickup' || k === 'maxHp' ? Math.round(v as number) : ((v as number) * 100).toFixed(1) + '%';
+        const txt = typeof rel === 'number' ? (rel > 0 ? '+' + rel : String(rel)) : (v as number) > 0 ? '+' + rel : rel;
+        return h('span', { style: { color: (v as number) > 0 ? '#55c47a' : '#e0505a', marginRight: '8px' }, text: `${names[k]} ${txt}` });
+      });
+      if (parts.length) card.append(h('div', { style: 'font-size:12px;margin-top:4px' }, h('span', { class: 'dim', text: 'So với đang mặc: ' }), ...parts));
+    }
+    const dv = P.dismantleValue(it);
+    card.append(h('div', { class: 'row', style: 'margin-top:6px' },
+      equipped
+        ? h('button', { class: 'btn small', text: 'Tháo', disabled: it.slot === 'weapon' ? 'disabled' : null, onclick: () => { P.unequip(it.slot); this.render(); } })
+        : h('button', { class: 'btn small', text: 'Trang bị', onclick: () => this.act(P.equip(it.uid)) }),
+      it.level < MAX_ITEM_LEVEL ? h('button', { class: 'btn small', text: `Cường hóa (${upg.ore}KT, ${fmt(upg.linh)}LT)`, onclick: () => this.act(P.upgradeItem(it.uid)) }) : null,
+      it.slot !== 'bibao' ? h('button', { class: 'btn small', text: it.locked ? 'Mở khóa' : 'Khóa', onclick: () => { P.toggleLock(it.uid); this.render(); } }) : null,
+      equipped || it.slot === 'bibao' ? null : h('button', { class: 'btn small danger', text: `Bán +${fmt(P.sellValue(it))}`, onclick: () => this.confirmAct(it, () => P.sellItem(it.uid)) }),
+      equipped || it.slot === 'bibao' ? null : h('button', { class: 'btn small danger', text: `Phân giải +${dv.ore}KT${dv.essence ? ` +${dv.essence}TH` : ''}`, onclick: () => this.confirmAct(it, () => P.dismantleItem(it.uid)) }),
+    ));
+    return card;
+  }
+
+  /** Đồ phẩm chất Thánh trở lên: hỏi lại trước khi bán / phân giải */
+  private confirmAct(it: ItemInst, fn: () => P.Result): void {
+    if (it.rarity >= 3 && !window.confirm(`Bạn chắc chắn muốn xử lý "${itemName(it)}" (${RARITIES[it.rarity].name})?`)) return;
+    this.act(fn());
+  }
+
+  private doReforge(uid: number, index: number): void {
+    const r = P.rollReforge(uid, index);
+    if (r.ok && r.offer) {
+      this.reforge = r.offer;
+      audio.play('click');
+      this.render();
+    } else this.act(r);
+  }
+
+  private reforgePanel(): HTMLElement | null {
+    const o = this.reforge;
+    if (!o) return null;
+    return h('div', { class: 'card', style: 'border-color:#8fd0ff;margin-bottom:12px' },
+      h('div', { class: 'gold', text: 'Kết quả tái luyện (chi phí đã trừ)' }),
+      h('div', null, 'Cũ: ', h('b', { text: affixText(o.old) }), '  →  Mới: ', h('b', { style: 'color:#8fd0ff', text: affixText(o.next) })),
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { class: 'btn primary small', text: 'Nhận thuộc tính mới', onclick: () => { this.reforge = null; this.act(P.acceptReforge(o)); } }),
+        h('button', { class: 'btn small', text: 'Giữ thuộc tính cũ', onclick: () => { this.reforge = null; this.render(); } }),
       ),
     );
   }
@@ -199,22 +254,48 @@ export class Hub {
   private vGear(): HTMLElement {
     const s = P.getSave();
     const root = h('div');
+    const rp = this.reforgePanel();
+    if (rp) root.append(rp);
+    if (s.inbox.length) {
+      root.append(h('div', { class: 'card', style: 'border-color:#e8c96a;margin-bottom:12px' },
+        h('div', { class: 'gold', text: `Hòm thưởng (${s.inbox.length}) — túi đầy nên đồ nằm ở đây, hãy dọn chỗ rồi nhận` }),
+        ...s.inbox.map((it) => h('div', { class: 'row', style: 'margin-top:6px' },
+          h('span', { style: { color: RARITIES[it.rarity].color }, text: itemName(it) }),
+          h('button', { class: 'btn small primary', text: 'Nhận', onclick: () => this.act(P.claimInbox(it.uid)) }),
+        )),
+      ));
+    }
     const eq = h('div', { class: 'slot-grid' });
     for (const slot of SLOT_IDS) {
       const it = P.equippedItem(slot as SlotId);
       eq.append(it ? this.itemCard(it, true) : h('div', { class: 'card dim', text: `${SLOT_NAMES[slot]}: trống` }));
     }
-    const inv = s.items.filter((i) => s.equipped[i.slot] !== i.uid);
     const m = P.computeMeta();
     root.append(
       h('div', { class: 'gold', text: 'Đang trang bị' }),
       eq,
       h('div', { class: 'dim', style: 'margin-bottom:10px', text: `Tổng: máu ${fmt(m.maxHp)} · sát thương ×${m.damage.toFixed(2)} · giáp ${Math.round(m.armor)} · tốc chạy ${Math.round(m.moveSpeed)} · kỹ năng vũ khí: ${weaponById(m.weaponId).name}` }),
-      h('div', { class: 'gold', text: `Kho đồ (${inv.length})` }),
+    );
+    // Bộ lọc + sắp xếp túi đồ
+    let inv = s.items.filter((i) => s.equipped[i.slot] !== i.uid && (this.filterSlot === 'all' || i.slot === this.filterSlot));
+    if (this.sortBy === 'power') inv = inv.slice().sort((a, b) => itemPower(b) - itemPower(a));
+    else if (this.sortBy === 'rarity') inv = inv.slice().sort((a, b) => b.rarity - a.rarity || b.grade - a.grade);
+    else inv = inv.slice().sort((a, b) => b.uid - a.uid);
+    const sel = (opts: [string, string][], cur: string, on: (v: string) => void): HTMLElement => {
+      const el = h('select', { class: 'btn small', style: 'background:#2a2244' }, ...opts.map(([v, t]) => h('option', { value: v, text: t, selected: v === cur ? 'selected' : null })));
+      el.addEventListener('change', () => on(el.value));
+      return el;
+    };
+    root.append(
+      h('div', { class: 'row', style: 'margin-bottom:8px' },
+        h('span', { class: 'gold', text: `Kho đồ (${s.items.length}/120)` }),
+        sel([['all', 'Mọi ô'], ...SLOT_IDS.map((x) => [x, SLOT_NAMES[x]] as [string, string])], this.filterSlot, (v) => { this.filterSlot = v as SlotId | 'all'; this.render(); }),
+        sel([['new', 'Mới nhất'], ['power', 'Sức mạnh'], ['rarity', 'Phẩm chất']], this.sortBy, (v) => { this.sortBy = v as 'new' | 'power' | 'rarity'; this.render(); }),
+      ),
     );
     const g = h('div', { class: 'slot-grid' });
     for (const it of inv) g.append(this.itemCard(it, false));
-    root.append(inv.length ? g : h('div', { class: 'dim', text: 'Chưa có đồ nào trong kho.' }));
+    root.append(inv.length ? g : h('div', { class: 'dim', text: 'Không có món nào.' }));
     return root;
   }
 
@@ -246,7 +327,26 @@ export class Hub {
         ),
       );
     }
-    root.append(grid, h('div', { class: 'dim', style: 'margin-top:10px', text: 'Trong màn, kỹ năng chủ động và bị động xuất hiện dưới dạng thẻ khi lên cấp. Tối đa 6 kỹ năng mỗi màn (tính cả kỹ năng vũ khí).' }));
+    // --- Danh sách kỹ năng bị động (xuất hiện dưới dạng thẻ trong màn) ---
+    const pgrid = h('div', { class: 'grid' });
+    for (const p of PASSIVES) {
+      const linked = [...WEAPONS, ...ACTIVES].filter((k) => k.linkedPassive === p.id).map((k) => k.name);
+      pgrid.append(
+        h('div', { class: 'card' },
+          h('div', { class: 'skill-row' },
+            h('div', { class: 'swatch', style: { background: css(p.color), borderRadius: '50%' } }),
+            h('div', { class: 'grow' }, h('b', { text: p.name }), h('div', { class: 'dim', style: 'font-size:13px', text: p.desc })),
+          ),
+          h('div', { style: 'font-size:12px;margin-top:4px', text: `Mỗi cấp ${passiveValueText(p, 1)} · tối đa cấp 5: ${passiveValueText(p, 5)}` }),
+          h('div', { class: 'dim', style: 'font-size:12px', text: linked.length ? `Liên kết (thức tỉnh): ${linked.join(', ')}` : 'Không liên kết kỹ năng nào' }),
+        ),
+      );
+    }
+    root.append(
+      grid,
+      h('div', { class: 'gold', style: 'margin:14px 0 6px', text: `Kỹ năng bị động (${PASSIVES.length}) — tự xuất hiện dưới dạng thẻ khi lên cấp` }),
+      pgrid,
+      h('div', { class: 'dim', style: 'margin-top:10px', text: 'Trong màn, kỹ năng chủ động và bị động xuất hiện dưới dạng thẻ khi lên cấp. Tối đa 6 kỹ năng mỗi màn (tính cả kỹ năng vũ khí).' }));
     return root;
   }
 }

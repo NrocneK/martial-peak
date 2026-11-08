@@ -1,4 +1,4 @@
-import { DIFFICULTY, RUN, WORLD_DMG, WORLD_HP } from '../config/balance';
+import { DIFFICULTY, RUN, WORLD_DMG, WORLD_HP, WORLD_SPAWN } from '../config/balance';
 import { enemiesOfWorld, type EnemyDef } from '../config/enemies';
 import type { StageDef } from '../config/worlds';
 import type { Player } from '../entities/Player';
@@ -79,7 +79,7 @@ export class Spawner {
       return;
     }
     const p = t / dur;
-    const rate = DIFFICULTY.baseSpawnRate * (1 + (DIFFICULTY.spawnGrowth - 1) * p) * (1 + DIFFICULTY.perStage * this.stage.index);
+    const rate = DIFFICULTY.baseSpawnRate * (1 + (DIFFICULTY.spawnGrowth - 1) * p) * (1 + DIFFICULTY.perStage * this.stage.index) * WORLD_SPAWN[this.stage.world];
     this.acc += rate * dt;
     while (this.acc >= 1) {
       this.acc -= 1;

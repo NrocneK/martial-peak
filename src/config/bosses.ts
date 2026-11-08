@@ -26,34 +26,22 @@ export interface BossDef {
 
 /** Boss chính theo thứ tự xuất hiện (cuối danh sách = boss chốt thế giới) */
 export const MAIN_BOSSES: Record<number, string[]> = {
-  1: [
-    'Đại Đương Gia Sơn Tặc',
-    'Truyền Thừa Thủ Vệ',
-    'Đại Sư Thủ Lĩnh Bát Đại Gia Tộc',
-    'Tà Vương',
-    'Dương Bách',
-  ],
-  2: ['Mị Yêu', 'Băng Tông', 'Ma Tướng', 'Yêu Vương', 'Ma Đế', 'Khoa La (Cốt Tộc)'],
-  3: ['U Ám Tinh Cường Giả', 'Tông Chủ Lôi Viêm Tông', 'Lạc Hải', 'Tinh Chủ Tử Tinh', 'Trùng Đế'],
-  4: ['Tu Sĩ Ma Hóa', 'Tịch Mậu', 'Long Tộc Trưởng Lão', 'Yêu Thánh', 'Mạc Thắng'],
-  5: [
-    'Thất Xảo Thiên Quân',
-    'Lang Gia Trưởng Lão',
-    'Âm Dương Trưởng Lão',
-    'Thần Quân Mặc Hóa',
-    'Mặc Tộc Vương Chủ Bị Phong Ấn',
-  ],
-  6: ['Mặc Tộc Lĩnh Chủ', 'Mặc Tộc Vực Chủ', 'Mặc Tộc Vương Chủ', 'Mặc Sắc Cự Thần Linh', 'Mặc'],
+  1: ['Hắc Phong Trại Chủ', 'Thạch Bi Thủ Vệ', 'Lục Gia Minh Chủ', 'Hôi Y Quốc Sư', 'Tuần Giang Sứ Hạ Chấn'],
+  2: ['Hồ Ảnh Yêu Hậu', 'Hàn Sương Tông Chủ', 'Huyết Giáp Ma Tướng', 'Thanh Lân Yêu Vương', 'Cửu U Ma Hoàng', 'Cốt Tổ Bạch Diệm'],
+  3: ['Ám Tinh Lữ Khách', 'Tông Chủ Thiên Lôi Môn', 'Hải Thần Triều Tịch', 'Tinh Chủ Huyền Diệu', 'Trùng Hoàng Vạn Mục'],
+  4: ['Kiếm Tu Hôi Hóa', 'Độc Cô Tàn Nguyệt', 'Ngao Thiên Đại Trưởng Lão', 'Yêu Thánh Xích Diễm', 'Chiến Thần Phế Tích'],
+  5: ['Thất Tinh Tiên Quân', 'Trưởng Lão Thanh Loan Điện', 'Trưởng Lão Âm Dương Cung', 'Kim Tiên Hôi Hóa', 'Vô Quang Vương Bị Phong Ấn'],
+  6: ['Vô Quang Lĩnh Chủ', 'Vô Quang Vực Chủ', 'Vô Quang Vương Giả', 'Hôi Sắc Cự Thần', 'Hư Tịch'],
 };
 
 /** Boss phụ (tên tạm) để đủ 10 màn mỗi thế giới */
 export const FILLER_BOSSES: Record<number, string[]> = {
-  1: ['Sơn Tặc Nhị Đương Gia', 'Huyết Lang Vương', 'Tà Tu Hộ Pháp', 'Yêu Hổ Trấn Sơn', 'Thạch Giáp Thú Vương'],
-  2: ['Cốt Tộc Hộ Vệ Trưởng', 'Yêu Tộc Tiên Phong', 'Ma Tu Trưởng Lão', 'Hồ Yêu Trưởng Lão'],
-  3: ['Tinh Không Cự Thú', 'Ngoại Vực Cường Giả', 'Lôi Viêm Trưởng Lão', 'Tử Tinh Hộ Pháp', 'Trùng Tộc Thống Lĩnh'],
-  4: ['Long Huyết Chiến Tướng', 'Tịch Mậu Hộ Pháp', 'Yêu Thánh Tiên Phong', 'Hư Không Cự Thú', 'Ma Hóa Trưởng Lão'],
-  5: ['Thiên Quân Hộ Pháp', 'Lang Gia Tiên Phong', 'Âm Dương Hộ Pháp', 'Thần Quân Sa Đọa', 'Mặc Hóa Cự Thú'],
-  6: ['Mặc Đồ Thống Lĩnh', 'Mặc Nô Tướng', 'Mặc Tộc Hộ Vệ Trưởng', 'Mặc Sào Chi Chủ', 'Mặc Linh Thú'],
+  1: ['Nhị Đương Gia Hắc Phong', 'Huyết Lang Vương', 'Hôi Tu Hộ Pháp', 'Hổ Yêu Trấn Sơn', 'Thạch Giáp Thú Vương'],
+  2: ['Cốt Tộc Hộ Vệ', 'Yêu Tộc Tiên Phong', 'Ma Tu Trưởng Lão', 'Hồ Tộc Trưởng Lão'],
+  3: ['Cự Thú Tinh Không', 'Cường Giả Ngoại Vực', 'Trưởng Lão Thiên Lôi', 'Hộ Pháp Huyền Diệu', 'Trùng Tộc Thống Lĩnh'],
+  4: ['Long Huyết Chiến Tướng', 'Hộ Pháp Tàn Nguyệt', 'Tiên Phong Xích Diễm', 'Cự Thú Hư Không', 'Trưởng Lão Hôi Hóa'],
+  5: ['Hộ Pháp Tiên Quân', 'Tiên Phong Thanh Loan', 'Hộ Pháp Âm Dương', 'Tiên Quân Sa Đọa', 'Cự Thú Hôi Hóa'],
+  6: ['Thống Lĩnh Vô Quang', 'Nô Tướng Vô Quang', 'Hộ Vệ Lĩnh Chủ', 'Chúa Sào Vô Quang', 'Linh Thú Vô Quang'],
 };
 
 export function makeBoss(world: number, name: string, id: string, main: boolean, final: boolean): BossDef {
