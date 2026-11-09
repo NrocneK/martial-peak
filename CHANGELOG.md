@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.9.2 — Sửa lỗi Tu Luyện / Hành Trang vẫn hiện nhân vật cũ
+- Nguyên nhân: `vercel.json` cho trình duyệt giữ ảnh `/ui/*` 1 giờ mà không hỏi lại máy chủ; ảnh nhân vật đổi nội dung nhưng giữ tên file nên trình duyệt dùng bản cũ.
+- Sửa: ảnh `/ui/*` dùng `Cache-Control: public, max-age=0, must-revalidate` (luôn hỏi lại máy chủ, ảnh không đổi thì trả về rất nhanh); thêm `?v=0.9.2` vào đường dẫn ảnh nhân vật để trình duyệt bỏ ngay bản đã lưu.
+
 ## v0.9.1 — Nhân vật lấy trực tiếp từ ảnh concept
 - Cố Trường Ca không còn vẽ tay bằng khối đa giác: script `tools/art/trace_hero.py` chuyển **chính ảnh concept** (`tools/art/ref/hero_concept.png`) thành lưới pixel (tách nền, bỏ bóng, thu nhỏ theo trung bình vùng, gom 40 màu, giữ màu vàng khóa đai, dọn viền) → `hero_trace.px.js`.
 - `hero.px.js` dùng lưới đó làm khung gốc và thêm hoạt ảnh: dáng đứng 58x106 (thở, tóc + dải đai lay), sprite đi bộ trong trận 21x38 (nhún + nhấc chân), ngồi thiền 72x72 (thân trên từ concept + chân xếp bằng, tay kết ấn, bồ đoàn, hào quang).
