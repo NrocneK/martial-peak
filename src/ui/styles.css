@@ -49,13 +49,13 @@
 @media (max-aspect-ratio: 1/1) { .sect { background-image: url('/ui/sect_tall.png'); background-position: 50% 100%; } }
 /* khung viền vàng pixel art (9 mảnh, mỗi góc 8px ảnh → 16px màn hình) */
 .fr { border: 16px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 16px / 0 stretch; image-rendering: pixelated; }
-.hero-sprite { --s: 3; flex-shrink: 0; width: calc(42px * var(--s)); height: calc(82px * var(--s));
-  background: url('/ui/hero_full.png') 0 0 / calc(168px * var(--s)) calc(82px * var(--s)) no-repeat; image-rendering: pixelated;
+.hero-sprite { --s: 3; flex-shrink: 0; width: calc(58px * var(--s)); height: calc(106px * var(--s));
+  background: url('/ui/hero_full.png') 0 0 / calc(232px * var(--s)) calc(106px * var(--s)) no-repeat; image-rendering: pixelated;
   animation: hero-idle 1s steps(4) infinite; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
-@keyframes hero-idle { from { background-position: 0 0; } to { background-position: calc(-168px * var(--s)) 0; } }
+@keyframes hero-idle { from { background-position: 0 0; } to { background-position: calc(-232px * var(--s)) 0; } }
 .avatar { position: relative; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   background: radial-gradient(circle at 50% 35%, #8ccaf8, #2763d0); border: 2px solid #e8b24a; box-shadow: 0 0 0 2px #0a1030, 0 0 10px #ffd96a66; }
-.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png') -37px -6px / 504px 246px no-repeat; image-rendering: pixelated; }
+.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png') -36px -22px / 464px 212px no-repeat; image-rendering: pixelated; }
 
 /* ---------- Menu chính ---------- */
 .menu { overflow: hidden; --frame: #e8b24a; --frame-hi: #fff0b0; --panel1: #1c2a63; --panel2: #0e1738; }
@@ -189,8 +189,8 @@
 .nv.on .ic { filter: drop-shadow(0 0 6px #ffbf5e99); }
 /* Tu Luyện: nhân vật ngồi thiền (dải 8 khung 60x60, phóng 3 lần) */
 .realm-card { text-align: center; }
-.meditate { width: 180px; height: 180px; margin: 0 auto 6px; background: url('/ui/hero_meditate.png') 0 0 / 1440px 180px no-repeat; image-rendering: pixelated; animation: meditate 1.33s steps(8) infinite; }
-@keyframes meditate { to { background-position: -1440px 0; } }
+.meditate { width: 216px; height: 216px; margin: 0 auto 6px; background: url('/ui/hero_meditate.png') 0 0 / 1728px 216px no-repeat; image-rendering: pixelated; animation: meditate 1.33s steps(8) infinite; }
+@keyframes meditate { to { background-position: -1728px 0; } }
 .realm-card .dim { max-width: 62ch; margin-left: auto; margin-right: auto; }
 /* Hành Trang: nhân vật ở giữa, ô trang bị xung quanh */
 .doll-wrap { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -238,7 +238,6 @@
   .doll-wrap { grid-template-columns: 1fr; }
   .doll { grid-template-columns: 76px 1fr 76px; padding: 10px; }
   .eq-slot { height: 76px; }
-  .doll-hero .hero-sprite { --s: 3 !important; }
   .portal-tag { transform: translate(-50%, 6px); }
   .lb-top { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
   .lb-top .res { order: 3; width: 100%; margin-left: 0; }
@@ -450,11 +449,11 @@
   .jn { flex-basis: 84px; }
   .world-desc p { display: none; }
   .realm-wrap { flex-direction: column; gap: 6px; text-align: center; padding: 0; }
-  .realm-wrap .meditate { width: 120px; height: 120px; background-size: 960px 120px; animation-name: meditate-s; }
+  .realm-wrap .meditate { width: 144px; height: 144px; background-size: 1152px 144px; animation-name: meditate-s; }
   .realm-info .row { justify-content: center; }
   .big-realm { font-size: 22px; }
-  .doll { grid-template-columns: 70px 1fr 70px; gap: 6px; padding: 8px; }
-  .eq-slot { height: 70px; border-width: 10px; border-image-width: 10px; }
+  .doll { grid-template-columns: 70px 1fr 70px; gap: 4px; padding: 6px; }
+  .eq-slot { height: 64px; border-width: 10px; border-image-width: 10px; }
   .doll-hero .hero-sprite { --s: 2; }
   .doll-wrap { gap: 8px; }
   .doll-side .stat-list > div { padding: 3px 0; font-size: 12.5px; }
@@ -468,8 +467,9 @@
   .ach { min-height: 48px; gap: 6px; border-width: 10px; border-image-width: 10px; }
   .ach span { font-size: 11.5px; }
   .ach b { font-size: 13px; }
+  .segs { margin-bottom: 6px; }
   .seg { padding: 4px 10px 4px 6px; font-size: 13px; }
   .seg .ic { width: 22px; height: 22px; }
   .note { font-size: 12px; margin-bottom: 6px; }
 }
-@keyframes meditate-s { to { background-position: -960px 0; } }
+@keyframes meditate-s { to { background-position: -1152px 0; } }

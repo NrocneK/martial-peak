@@ -487,7 +487,8 @@ export class Hub {
     return h('div', { class: 'doll-wrap' },
       h('div', { class: 'doll' },
         this.slotBox('weapon'), this.slotBox('clothes'), this.slotBox('bibao'),
-        h('div', { class: 'doll-hero' }, heroSprite(3), h('div', { class: 'doll-name', text: 'Cố Trường Ca' }), h('div', { class: 'gold doll-realm', text: tierLabel(P.getSave().tier, P.getSave().tuVi) })),
+        // tên + cảnh giới đã có ở thanh trên → chỉ để nhân vật cho gọn
+        h('div', { class: 'doll-hero' }, heroSprite(3)),
         this.slotBox('shoes'), this.slotBox('accessory'),
         narrow ? h('button', { class: 'eq-slot eq-stats', onclick: () => { audio.play('click'); this.detail('Chỉ số & Nguyên liệu', () => this.statsBox()); } }, ic('hero'), h('span', { class: 'eq-name', text: 'Chỉ số' })) : null,
       ),

@@ -1,5 +1,10 @@
 # Lịch sử phiên bản
 
+## v0.9.1 — Nhân vật lấy trực tiếp từ ảnh concept
+- Cố Trường Ca không còn vẽ tay bằng khối đa giác: script `tools/art/trace_hero.py` chuyển **chính ảnh concept** (`tools/art/ref/hero_concept.png`) thành lưới pixel (tách nền, bỏ bóng, thu nhỏ theo trung bình vùng, gom 40 màu, giữ màu vàng khóa đai, dọn viền) → `hero_trace.px.js`.
+- `hero.px.js` dùng lưới đó làm khung gốc và thêm hoạt ảnh: dáng đứng 58x106 (thở, tóc + dải đai lay), sprite đi bộ trong trận 21x38 (nhún + nhấc chân), ngồi thiền 72x72 (thân trên từ concept + chân xếp bằng, tay kết ấn, bồ đoàn, hào quang).
+- Avatar, Hành Trang, Tu Luyện, màn nạp, sprite trong trận đều dùng nhân vật mới.
+
 ## v0.9.0 — Nhân vật theo concept, giao diện không cuộn, thông báo mới
 - **Cố Trường Ca vẽ lại theo ảnh concept**: tỉ lệ ~5 đầu (không còn chibi), đuôi ngựa cao buộc dây lam, áo ngoài lam + áo trong trắng cổ chéo, ống tay trắng + bao cổ tay sẫm, đai lam khóa tròn vàng, dải đai dài bay, quần lam sẫm ống rộng, ủng đen. Sprite đi bộ trong trận, hình ngồi thiền và avatar đổi theo cùng trang phục.
 - **Không còn thanh cuộn dọc**: danh sách dài chia trang (◀ 1/3 ▶); số ô mỗi trang **đo theo chỗ trống thật** của màn hình (đổi cỡ cửa sổ / xoay máy tự tính lại). Chi tiết vật phẩm, kỹ năng, màn chơi mở trong bảng nổi.

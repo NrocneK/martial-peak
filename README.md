@@ -129,9 +129,11 @@ Mọi hình pixel art nằm dưới dạng **code** trong `tools/art/` (công c�
 
 | File | Vẽ gì | Xuất ra (chép vào `public/ui/`) |
 |---|---|---|
-| `hero.px.js` | Cố Trường Ca: dáng đứng (thở), đi bộ trong trận, ngồi thiền (Tu Luyện) | `out/anims/hero_full.png`, `hero_walk.png`, `hero_meditate.png` |
+| `hero.px.js` | Cố Trường Ca: dáng đứng (thở), đi bộ trong trận, ngồi thiền (Tu Luyện). Khung gốc lấy từ ảnh concept qua `trace_hero.py` → `hero_trace.px.js` | `out/anims/hero_full.png`, `hero_walk.png`, `hero_meditate.png` |
 | `sect_bg.px.js` | Ảnh nền Vân Hạc Tông: bản dọc 9:16 (điện thoại) + bản ngang 16:9 (PC) | `out/scenes/sect_tall.png`, `sect_wide.png` |
 | `icons.px.js` | Icon, con dấu, khung viền vàng 9 mảnh (`frame_panel`, `frame_on`) | `out/sprites/*.png` |
+
+Đổi ảnh concept nhân vật: thay `tools/art/ref/hero_concept.png` rồi chạy `python3 -I tools/art/trace_hero.py` (cần Python + Pillow + numpy) trước khi build.
 
 ```bash
 node <thư-mục-pxl>/bin/pxl.js build tools/art/hero.px.js   # ảnh xem trước phóng to nằm ở tools/art/out/_preview/
