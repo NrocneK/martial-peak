@@ -67,7 +67,9 @@ export class GameFlow {
   }
 
   toast(msg: string): void {
-    const t = h('div', { class: 'toast', text: msg });
+    // Chỉ giữ một thông báo: cái mới thay cái cũ
+    document.querySelectorAll('.toast').forEach((el) => el.remove());
+    const t = h('div', { class: 'toast', role: 'status', text: msg });
     document.body.append(t);
     setTimeout(() => t.remove(), 2600);
   }

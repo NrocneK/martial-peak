@@ -1,5 +1,14 @@
 # Lịch sử phiên bản
 
+## v0.9.0 — Nhân vật theo concept, giao diện không cuộn, thông báo mới
+- **Cố Trường Ca vẽ lại theo ảnh concept**: tỉ lệ ~5 đầu (không còn chibi), đuôi ngựa cao buộc dây lam, áo ngoài lam + áo trong trắng cổ chéo, ống tay trắng + bao cổ tay sẫm, đai lam khóa tròn vàng, dải đai dài bay, quần lam sẫm ống rộng, ủng đen. Sprite đi bộ trong trận, hình ngồi thiền và avatar đổi theo cùng trang phục.
+- **Không còn thanh cuộn dọc**: danh sách dài chia trang (◀ 1/3 ▶); số ô mỗi trang **đo theo chỗ trống thật** của màn hình (đổi cỡ cửa sổ / xoay máy tự tính lại). Chi tiết vật phẩm, kỹ năng, màn chơi mở trong bảng nổi.
+  - Lịch Luyện: 10 ô màn (PC 5 cột, điện thoại 2 cột), bấm ô → bảng thông tin + Khiêu chiến.
+  - Tu Luyện: Cảnh Giới / Kỹ Năng / Bị Động.
+  - Hành Trang: Trang Bị (nhân vật + ô trang bị; điện thoại xem chỉ số qua ô "Chỉ số") / Kho Đồ (lưới ô theo phẩm chất, lọc + sắp xếp).
+  - Nhiệm Vụ: Hằng Ngày / Chính Tuyến / **Thành Tựu** (gộp từ nút Thành Tích ở Sảnh).
+- **Thông báo** đổi sang khung vàng sáng, hiện phía trên màn hình (trước đây nền đen, nằm đè thanh dưới nên khó đọc); thông báo mới thay thông báo cũ.
+
 ## v0.8.0 — Lobby theo ảnh tham khảo, Hành Trang, Nhiệm Vụ
 - **Ảnh nền vẽ lại** với chi tiết dày hơn và **2 bản**: dọc 9:16 cho điện thoại (`sect_tall`), ngang 16:9 cho PC (`sect_wide`). Núi đá vôi, biển mây, vách đá lởm chởm có vân, tùng bonsai, anh đào xum xuê, chính điện 3 tầng + lầu hai bên, thác nước, cầu vòm, đảo nổi, trăng linh quang, Truyền Tống Trận lớn (khung vòm vàng, cờ lam, đèn đá, sàn trận pháp, lan can).
 - **Khung viền vàng pixel art** (9 mảnh) cho thanh dưới, nút bên, bảng, hộp thoại.
