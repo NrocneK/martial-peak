@@ -174,7 +174,7 @@ export class GameScene extends Phaser.Scene {
     pl.tick(dt);
     // Vũ khí chĩa về quái gần nhất (không có thì theo hướng nhìn)
     const tgt = this.enemies.nearest(pl.x, pl.y, 500);
-    pl.syncWeapon(tgt ? Math.atan2(tgt.y - pl.y, tgt.x - pl.x) : pl.rotation);
+    pl.syncWeapon(tgt ? Math.atan2(tgt.y - pl.y, tgt.x - pl.x) : pl.heading);
     this.run.time += dt;
 
     this.artifact.update(dt);

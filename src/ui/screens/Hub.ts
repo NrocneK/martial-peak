@@ -1,37 +1,46 @@
-import { bar, css, h } from '../dom';
+import { bar, css, h, heroAvatar, heroSprite, openModal } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
 import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
-import { WORLDS, worldById, type StageDef } from '../../config/worlds';
+import { ALL_STAGES, WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
+import { openSettings } from './Settings';
 
-/** Biểu tượng pixel (xem tools/art/ui.px.js) */
+/** Biểu tượng pixel (xem tools/art/icons.px.js) */
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
 const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
 
-type Tab = 'stage' | 'cultivate' | 'alchemy' | 'forge' | 'gear' | 'skill';
-const TABS: [Tab, string, string][] = [
-  ['stage', 'Lịch Luyện', 'stage'],
+/** 'stage' (Lịch Luyện / chọn màn) mở từ Sảnh nên không có nút riêng ở thanh dưới */
+type Tab = 'home' | 'stage' | 'cultivate' | 'hero' | 'craft' | 'skill';
+const NAV: [Tab, string, string][] = [
+  ['home', 'Sảnh', 'home'],
   ['cultivate', 'Tu Luyện', 'cultivate'],
-  ['alchemy', 'Luyện Đan', 'alchemy'],
-  ['forge', 'Luyện Khí', 'forge'],
-  ['gear', 'Trang Bị', 'gear'],
+  ['hero', 'Nhân Vật', 'hero'],
+  ['craft', 'Chế Tạo', 'forge'],
   ['skill', 'Kỹ Năng', 'skill'],
 ];
+const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', cultivate: 'Tu Luyện', hero: 'Nhân Vật', craft: 'Chế Tạo', skill: 'Kỹ Năng' };
 
-/** Căn cứ của người chơi giữa các màn: chọn màn, tu luyện, luyện đan, luyện khí, trang bị, kỹ năng. */
+/**
+ * Lobby (Sảnh Vân Hạc Tông): nơi người chơi ở giữa các màn.
+ *   - Thanh trên: avatar, cảnh giới, tu vi, tài nguyên, nút Cài Đặt.
+ *   - Cột trái (ở Sảnh): Hòm Thư (đồ chờ nhận khi túi đầy), Thành Tích.
+ *   - Thanh dưới: Sảnh · Tu Luyện · Nhân Vật · Chế Tạo · Kỹ Năng.
+ *   - Sảnh: ảnh nền tông môn + nhân vật + nút Lịch Luyện (khiêu chiến màn kế tiếp / mở bản đồ).
+ */
 export class Hub {
   readonly root = h('div', { class: 'screen hub' });
-  private tab: Tab = 'stage';
+  private tab: Tab = 'home';
   private world = 1;
-  private readonly head = h('div', { class: 'hub-head' });
-  private readonly tabs = h('div', { class: 'tabs' });
-  private readonly body = h('div', { class: 'tab-body' });
+  private craftMode: 'alchemy' | 'forge' = 'alchemy';
+  private readonly top = h('header', { class: 'lb-top' });
+  private readonly body = h('main', { class: 'lb-body' });
+  private readonly nav = h('nav', { class: 'lb-nav' });
 
   constructor(
     private readonly onStage: (s: StageDef) => void,
@@ -40,12 +49,24 @@ export class Hub {
     /** Chiếu đoạn kết (khi vừa lên Đạo Tổ, hoặc bấm xem lại) */
     private readonly onEnding: () => void,
   ) {
-    this.root.append(this.head, h('div', { class: 'hub-main' }, this.tabs, this.body));
+    this.root.append(h('div', { class: 'sect' }), this.top, this.body, this.nav);
   }
 
-  /** Mở hub; `world` chọn sẵn thế giới (dùng khi quay về sau màn chơi) */
+  /** Mở lobby; `world` = mở thẳng bản đồ thế giới đó (dùng khi quay về sau màn chơi) */
   open(world?: number): void {
-    this.world = world ?? Math.min(P.highestWorld(), this.world || 1);
+    if (world) {
+      this.world = world;
+      this.tab = 'stage';
+    } else {
+      this.world = Math.min(P.highestWorld(), this.world || 1);
+      this.tab = 'home';
+    }
+    this.render();
+  }
+
+  private go(tab: Tab): void {
+    audio.play('click');
+    this.tab = tab;
     this.render();
   }
 
@@ -57,34 +78,162 @@ export class Hub {
 
   private render(): void {
     const s = P.getSave();
-    // --- Đầu trang ---
+    // --- Thanh trên: hồ sơ + tài nguyên + cài đặt ---
     const need = tierCap(s.tier);
     const t = bar('tuvi');
     const base = TIERS[s.tier].cumTuVi;
-    const perfect = P.perfected();
     const top = s.tier >= MAX_TIER; // Đạo Tổ: không còn thanh tu vi
     t.fill.style.width = `${Math.max(0, Math.min(100, ((s.tuVi - base) / Math.max(1, need - base)) * 100))}%`;
-    t.label.textContent = perfect ? 'Viên mãn' : `Tu vi ${fmt(Math.min(s.tuVi, need))} / ${fmt(need)}`;
-    this.head.replaceChildren(
-      h('button', { class: 'back', title: 'Về menu', 'aria-label': 'Về menu', text: '◀', onclick: this.onBack }),
-      h('div', { class: 'realm-box' },
-        h('div', { class: 'realm', text: tierLabel(s.tier, s.tuVi) }),
-        ...(top ? [] : [t.root]),
+    t.label.textContent = P.perfected() ? 'Viên mãn' : `Tu vi ${fmt(Math.min(s.tuVi, need))} / ${fmt(need)}`;
+    this.top.replaceChildren(
+      h('button', { class: 'profile', title: 'Nhân vật', onclick: () => this.go('hero') },
+        heroAvatar(),
+        h('span', { class: 'pf-text' },
+          h('b', { class: 'pf-name', text: 'Cố Trường Ca' }),
+          h('span', { class: 'pf-realm', text: tierLabel(s.tier, s.tuVi) }),
+          ...(top ? [] : [t.root]),
+        ),
       ),
       h('div', { class: 'res' },
         h('span', { class: 'chip gold', title: 'Linh thạch' }, ic('linh'), fmt(s.linh)),
-        ...MAT_IDS.map((m) => h('span', { class: 'chip', title: MAT_NAMES[m] }, ic(MAT_ICON[m]), String(s.mats[m]))),
+        ...MAT_IDS.map((m) => h('span', { class: 'chip', title: MAT_NAMES[m] }, ic(MAT_ICON[m]), fmt(s.mats[m]))),
+      ),
+      h('button', { class: 'icon-btn', title: 'Cài đặt', 'aria-label': 'Cài đặt', onclick: () => { audio.play('click'); openSettings(() => this.render(), this.onBack); } }, ic('settings')),
+    );
+
+    const home = this.tab === 'home';
+
+    // --- Thanh dưới ---
+    const navTab = this.tab === 'stage' ? 'home' : this.tab;
+    this.nav.replaceChildren(
+      ...NAV.map(([id, name, icon]) =>
+        h('button', { class: 'nv' + (id === navTab ? ' on' : ''), 'aria-current': id === navTab ? 'page' : null, onclick: () => this.go(id) }, ic(icon), h('span', { text: name })),
       ),
     );
-    this.tabs.replaceChildren(
-      ...TABS.map(([id, name, icon]) =>
-        h('button', { class: 'tab' + (id === this.tab ? ' on' : ''), onclick: () => { this.tab = id; this.render(); } }, ic(icon), h('span', { text: name })),
+
+    // --- Nội dung ---
+    this.root.classList.toggle('at-home', home);
+    if (home) {
+      this.body.replaceChildren(this.vHome());
+      return;
+    }
+    const views: Record<Exclude<Tab, 'home'>, () => HTMLElement> = {
+      stage: this.vStage, cultivate: this.vCultivate, hero: this.vHero, craft: this.vCraft, skill: this.vSkill,
+    };
+    const prev = this.body.querySelector('.panel-body');
+    const scroll = prev && this.body.dataset.tab === this.tab ? prev.scrollTop : 0;
+    const content = h('div', { class: 'panel-body' }, views[this.tab as Exclude<Tab, 'home'>].call(this));
+    this.body.replaceChildren(
+      h('section', { class: 'panel' },
+        h('div', { class: 'panel-head' },
+          this.tab === 'stage' ? h('button', { class: 'back', 'aria-label': 'Về Sảnh', text: '◀', onclick: () => this.go('home') }) : null,
+          h('h2', { text: TITLES[this.tab] }),
+        ),
+        content,
       ),
     );
-    const view = { stage: this.vStage, cultivate: this.vCultivate, alchemy: this.vAlchemy, forge: this.vForge, gear: this.vGear, skill: this.vSkill }[this.tab];
-    const scroll = this.body.scrollTop;
-    this.body.replaceChildren(view.call(this));
-    this.body.scrollTop = scroll;
+    this.body.dataset.tab = this.tab;
+    content.scrollTop = scroll;
+  }
+
+  private sideBtn(icon: string, label: string, badge: number, onclick: () => void): HTMLElement {
+    return h('button', { class: 'side-btn', onclick: () => { audio.play('click'); onclick(); } },
+      ic(icon), h('span', { text: label }), badge > 0 ? h('i', { class: 'badge', text: String(badge) }) : null);
+  }
+
+  // ------------------------------------------------------------------ Sảnh
+  /** Màn kế tiếp nên đánh: màn đầu tiên đã mở mà chưa vượt; nếu đã vượt hết thì màn cuối đã mở */
+  private nextStage(): StageDef {
+    const open = ALL_STAGES.filter((st) => P.isStageUnlocked(st));
+    return open.find((st) => !P.isCleared(st.id)) ?? open[open.length - 1];
+  }
+
+  private vHome(): HTMLElement {
+    const st = this.nextStage();
+    const w = worldById(st.world);
+    const done = P.isCleared(st.id);
+    return h('div', { class: 'lb-home' },
+      h('div', { class: 'lb-side' },
+        this.sideBtn('mail', 'Hòm Thư', P.getSave().inbox.length, () => this.openInbox()),
+        this.sideBtn('trophy', 'Thành Tích', 0, () => this.openStats()),
+      ),
+      heroSprite(4, 'home-hero'),
+      h('div', { class: 'portal-card' },
+        h('div', { class: 'pc-kicker' }, ic('stage'), 'Lịch Luyện'),
+        h('div', { class: 'pc-world', text: w.name }),
+        h('div', { class: 'pc-stage' }, `${st.name} · ${st.event}`, st.boss.main ? h('span', { class: 'tag boss', text: 'Boss chính' }) : null),
+        h('div', { class: 'pc-btns' },
+          h('button', { class: 'btn primary', text: done ? 'Khiêu chiến lại' : 'Khiêu chiến', onclick: () => { audio.play('click'); this.onStage(st); } }),
+          h('button', { class: 'btn', text: 'Bản đồ', onclick: () => { this.world = st.world; this.go('stage'); } }),
+        ),
+      ),
+    );
+  }
+
+  private openInbox(): void {
+    const body = h('div', { class: 'inbox' });
+    const render = (): void => {
+      const s = P.getSave();
+      body.replaceChildren(
+        h('p', { class: 'dim', text: 'Khi túi đồ đầy, phần thưởng được gửi vào Hòm Thư (tối đa 20 món, bí bảo không bao giờ mất). Hãy bán hoặc phân giải bớt đồ rồi nhận.' }),
+        ...(s.inbox.length
+          ? s.inbox.map((it) => h('div', { class: 'inbox-row' },
+              h('span', { style: { color: RARITIES[it.rarity].color }, text: itemName(it) }),
+              h('button', { class: 'btn small primary', text: 'Nhận', onclick: () => { const r = P.claimInbox(it.uid); this.toast(r.msg); audio.play(r.ok ? 'click' : 'hurt'); render(); this.render(); } }),
+            ))
+          : [h('div', { class: 'empty-note', text: 'Hòm thư trống.' })]),
+      );
+    };
+    render();
+    openModal('Hòm Thư', body);
+  }
+
+  private openStats(): void {
+    const s = P.getSave();
+    const p = P.progressCount();
+    const owned = new Set([...s.items, ...s.inbox].filter((i) => i.slot === 'bibao').map((i) => i.bibaoId));
+    const rows: [string, string][] = [
+      ['Cảnh giới', tierLabel(s.tier, s.tuVi)],
+      ['Màn đã vượt', `${p.cleared} / ${p.total}`],
+      ['Thế giới đã mở', `${P.highestWorld()} / ${WORLDS.length}`],
+      ['Bí bảo sưu tầm', `${owned.size} / ${BIBAOS.length}`],
+      ['Số lần lịch luyện', fmt(s.stats.runs)],
+      ['Số trận thắng', fmt(s.stats.wins)],
+      ['Tổng số quái hạ gục', fmt(s.stats.kills)],
+    ];
+    openModal('Thành Tích', h('div', { class: 'stat-list' }, ...rows.map(([k, v]) => h('div', null, h('span', { class: 'dim', text: k }), h('b', { text: v })))));
+  }
+
+  // ------------------------------------------------------------------ Nhân Vật
+  private vHero(): HTMLElement {
+    const s = P.getSave();
+    const m = P.computeMeta();
+    const stat = (k: string, v: string): HTMLElement => h('div', null, h('span', { class: 'dim', text: k }), h('b', { text: v }));
+    return h('div', null,
+      h('div', { class: 'hero-card' },
+        h('div', { class: 'hero-stage' }, heroSprite(4)),
+        h('div', { class: 'hero-info' },
+          h('div', { class: 'hero-name', text: 'Cố Trường Ca' }),
+          h('div', { class: 'gold', text: tierLabel(s.tier, s.tuVi) }),
+          h('div', { class: 'dim hero-bio', text: 'Thiếu niên xuất thân bình thường, đệ tử Vân Hạc Tông. Không gia thế, không thiên phú, chỉ có một con đường đi đến cùng.' }),
+          h('div', { class: 'stat-list compact' },
+            stat('Máu', fmt(m.maxHp)), stat('Sát thương', `×${m.damage.toFixed(2)}`), stat('Giáp', String(Math.round(m.armor))),
+            stat('Tốc chạy', String(Math.round(m.moveSpeed))), stat('Chí mạng', `${Math.round(m.crit * 100)}%`), stat('Kỹ năng vũ khí', weaponById(m.weaponId).name),
+          ),
+        ),
+      ),
+      this.vGear(),
+    );
+  }
+
+  // ------------------------------------------------------------------ Chế Tạo (Luyện Đan + Luyện Khí)
+  private vCraft(): HTMLElement {
+    const sw = (id: 'alchemy' | 'forge', name: string): HTMLElement =>
+      h('button', { class: 'seg' + (this.craftMode === id ? ' on' : ''), onclick: () => { this.craftMode = id; audio.play('click'); this.render(); } }, ic(id), name);
+    return h('div', null,
+      h('div', { class: 'segs' }, sw('alchemy', 'Luyện Đan'), sw('forge', 'Luyện Khí')),
+      this.craftMode === 'alchemy' ? this.vAlchemy() : this.vForge(),
+    );
   }
 
   // ------------------------------------------------------------------ Lịch Luyện
@@ -286,11 +435,7 @@ export class Hub {
     if (rp) root.append(rp);
     if (s.inbox.length) {
       root.append(h('div', { class: 'card', style: 'border-color:var(--gold);margin-bottom:12px' },
-        h('div', { class: 'gold', text: `Hòm thưởng (${s.inbox.length}) — túi đầy nên đồ nằm ở đây, hãy dọn chỗ rồi nhận` }),
-        ...s.inbox.map((it) => h('div', { class: 'row', style: 'margin-top:6px' },
-          h('span', { style: { color: RARITIES[it.rarity].color }, text: itemName(it) }),
-          h('button', { class: 'btn small primary', text: 'Nhận', onclick: () => this.act(P.claimInbox(it.uid)) }),
-        )),
+        h('div', { class: 'row' }, h('span', { class: 'gold grow', text: `Hòm Thư có ${s.inbox.length} món chờ nhận (túi đầy).` }), h('button', { class: 'btn small primary', text: 'Mở Hòm Thư', onclick: () => this.openInbox() })),
       ));
     }
     const eq = h('div', { class: 'slot-grid' });

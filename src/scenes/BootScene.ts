@@ -1,45 +1,33 @@
 import Phaser from 'phaser';
-import { PLAYER_RADIUS } from '../config/game';
-import { SCENES, TEX } from '../config/assets';
+import { PLAYER_WALK_ANIM, SCENES, TEX } from '../config/assets';
 
 /**
- * BootScene: chạy đầu tiên, chuẩn bị tài nguyên rồi chuyển sang GameScene.
+ * BootScene: chạy đầu tiên, chuẩn bị tài nguyên rồi báo cho GameFlow hiện menu.
  *
- * Hiện tại chưa có sprite thật nên ta TỰ VẼ hình tạm (placeholder) bằng code và
- * biến chúng thành texture. Khi có sprite thật, thay phần này bằng
- * `this.load.image(TEX.PLAYER, 'assets/player.png')` ở hàm preload().
+ * Nhân vật chính dùng sprite pixel art thật (public/ui/hero_walk.png, vẽ bằng tools/art/hero.px.js).
+ * Các hình còn lại (quái, đạn, nền...) vẫn là hình tạm TỰ VẼ bằng code; khi có sprite thật chỉ cần
+ * nạp ảnh với cùng key (xem config/assets.ts) trong preload().
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
     super(SCENES.BOOT);
   }
 
+  preload(): void {
+    // 4 khung đi bộ, mỗi khung 20x30 (đã gồm viền)
+    this.load.spritesheet(TEX.PLAYER, '/ui/hero_walk.png', { frameWidth: 20, frameHeight: 30 });
+  }
+
   create(): void {
-    this.makePlayerTexture();
+    // Pixel art: phóng to giữ nét (không làm mờ)
+    this.textures.get(TEX.PLAYER).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.anims.create({ key: PLAYER_WALK_ANIM, frames: this.anims.generateFrameNumbers(TEX.PLAYER, { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
     this.makeGroundTexture();
     this.makeShapeTextures();
     this.makeMiscTextures();
     this.makeWeaponTextures();
     // Báo cho GameFlow biết đã nạp xong → hiện menu chính (GameScene chỉ chạy khi vào màn)
     this.game.events.emit('boot-done');
-  }
-
-  /** Nhân vật: hình tròn vàng có một "mũi" chỉ hướng nhìn (bên phải = hướng 0 độ). */
-  private makePlayerTexture(): void {
-    const r = PLAYER_RADIUS;
-    const g = this.add.graphics();
-
-    g.fillStyle(0xe8c96a, 1);
-    g.fillCircle(r, r, r - 1);
-    g.lineStyle(2, 0x5a4310, 1);
-    g.strokeCircle(r, r, r - 1);
-
-    // Mũi chỉ hướng
-    g.fillStyle(0x5a4310, 1);
-    g.fillTriangle(r * 2 - 2, r, r + 4, r - 6, r + 4, r + 6);
-
-    g.generateTexture(TEX.PLAYER, r * 2, r * 2);
-    g.destroy();
   }
 
   /**

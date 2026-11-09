@@ -4,7 +4,7 @@ Game roguelike survival chạy trên trình duyệt (phong cách Vampire Survivo
 Thiết kế đầy đủ nằm trong `GDD.md`.
 
 **Trạng thái: bản hoàn chỉnh khung game đến end game.** 6 thế giới × 10 màn, 66 loại quái, 60 boss, 13 kỹ năng chủ động, 11 kỹ năng bị động, 6 kỹ năng vũ khí, 17 đại cảnh giới (Đạo Tổ không chia kỳ, 49 bậc, có Viên mãn), trang bị 5 ô, luyện đan, luyện khí, lưu tiến trình.
-Hình ảnh và âm thanh hiện là **đồ tạm** (hình vẽ bằng code, tiếng tổng hợp bằng WebAudio). Con số cân bằng là **ước lượng**, cần bạn chơi thử rồi chỉnh.
+Giao diện (màn nạp, menu, Lobby), nhân vật chính và ảnh nền tông môn là **pixel art thật** vẽ bằng code với công cụ pxl (miễn phí). Quái, đạn, nền trận và âm thanh vẫn là **đồ tạm** (hình vẽ bằng code, tiếng tổng hợp bằng WebAudio). Con số cân bằng là **ước lượng**, cần bạn chơi thử rồi chỉnh.
 
 ## Yêu cầu
 
@@ -51,6 +51,7 @@ Quy tắc trong màn: tối đa **6 kỹ năng** (tính cả kỹ năng vũ khí
 | Số màn, thưởng, điều kiện mở thế giới | `src/config/worlds.ts` |
 | **Lời thoại cốt truyện** | `src/config/story.ts` (bảng `OVERRIDES` theo id màn như `w1s1`) |
 | Giao diện (màu, bố cục) | `src/ui/styles.css` |
+| Pixel art (nhân vật, ảnh nền, icon) | `tools/art/*.px.js` → xem mục **Vẽ lại pixel art** |
 
 Thêm kỹ năng mới = thêm một khối dữ liệu, chọn `kind` có sẵn (projectile, slash, beam, nova, orbit, aura, strike, boomerang, heal).
 Thêm kiểu hành vi quái mới = thêm một `case` trong `EnemyManager.think()`.
@@ -98,7 +99,9 @@ src/
 │   │   ├── rewards.ts     #   Thưởng sau màn
 │   │   └── cheats.ts      #   Công cụ gỡ lỗi (grant, mở khóa tất cả)
 │   └── Audio.ts           # Âm thanh tạm (WebAudio)
-├── input/, ui/            # Bàn phím + joystick; giao diện HTML (screens/, styles.css)
+├── input/                 # Bàn phím + joystick
+├── ui/                    # Giao diện HTML: styles.css, dom.ts (h, modal, sprite nhân vật)
+│   └── screens/           #   MainMenu, Hub (Lobby), Settings, Dialogue, GameHud, Result
 └── utils/                 # format.ts (định dạng số), env.ts (isDebugMode)
 ```
 
@@ -111,14 +114,30 @@ src/
 - **Toàn bộ mô phỏng nằm trong `GameScene.step(dt)`** nên chạy nhanh / kiểm thử tự động được (bot test chơi trọn 60 màn).
 - **Tốc độ không phụ thuộc FPS:** tắt `fps.smoothStep`, `fps.min = 20`, và giới hạn bước thời gian tối đa 50 ms.
 - **Lưu bằng `localStorage`** (khóa `vo-luyen-survival-save`, có số phiên bản để sau này nâng cấp cấu trúc lưu).
-- **Hình ảnh tạm gọi qua khóa trong `config/assets.ts`.** Có sprite thật chỉ cần nạp ảnh cùng khóa trong `BootScene`.
+- **Hình ảnh gọi qua khóa trong `config/assets.ts`.** Nhân vật chính đã là spritesheet thật (`public/ui/hero_walk.png`, nạp trong `BootScene.preload`); hình tạm còn lại thay bằng cách nạp ảnh cùng khóa.
 
 ## Những gì cần bạn xem lại
 
 - **Cân bằng:** bot chỉ kiểm tra game *chạy được*, không thay thế người chơi. Hãy chơi thử và chỉnh `balance.ts` (máu / sát thương theo thế giới, tốc độ sinh quái, XP).
 - **Cốt truyện:** lời thoại hiện là văn bản mẫu tự sinh theo màn.
 - **Tên boss phụ và tên quái** là tên tạm (boss chính theo danh sách của bạn).
-- **Hình ảnh / âm thanh:** đồ tạm, chưa có hoạt ảnh.
+- **Hình ảnh / âm thanh:** quái, đạn, nền trận, âm thanh vẫn là đồ tạm.
+
+## Vẽ lại pixel art
+
+Mọi hình pixel art nằm dưới dạng **code** trong `tools/art/` (công cụ pxl, chạy bằng Node 22, miễn phí, không cần phần mềm vẽ):
+
+| File | Vẽ gì | Xuất ra (chép vào `public/ui/`) |
+|---|---|---|
+| `hero.px.js` | Cố Trường Ca: dáng đứng lớn (thở) + sprite đi bộ trong trận | `out/anims/hero_full.png`, `out/anims/hero_walk.png` |
+| `sect_bg.px.js` | Ảnh nền Vân Hạc Tông (Menu, Lobby, màn nạp) | `out/scenes/sect_bg.png` |
+| `icons.px.js` | Icon thanh điều hướng, tài nguyên, con dấu | `out/sprites/ic_*.png`, `seal.png` |
+
+```bash
+node <thư-mục-pxl>/bin/pxl.js build tools/art/hero.px.js   # ảnh xem trước phóng to nằm ở tools/art/out/_preview/
+```
+
+Ảnh nền 480x400 được thiết kế "an toàn khi cắt": phần quan trọng ở cột giữa nên điện thoại dọc và màn hình ngang đều thấy chính điện + cổng truyền tống.
 
 ## Lịch sử phiên bản
 

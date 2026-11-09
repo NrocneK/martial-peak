@@ -5,7 +5,7 @@
 // =====================================================================
 
 export const TEX = {
-  /** Nhân vật chính (Cố Trường Ca) */
+  /** Nhân vật chính (Cố Trường Ca): spritesheet 4 khung đi bộ, public/ui/hero_walk.png */
   PLAYER: 'player',
   /** Nền đất lặp vô hạn */
   GROUND: 'ground',
@@ -32,3 +32,6 @@ export const SCENES = {
   BOOT: 'BootScene',
   GAME: 'GameScene',
 } as const;
+
+/** Hoạt ảnh đi bộ của nhân vật chính (tạo trong BootScene) */
+export const PLAYER_WALK_ANIM = 'hero-walk';

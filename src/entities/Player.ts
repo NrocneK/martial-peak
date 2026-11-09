@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
 import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/game';
 import { RUN } from '../config/balance';
-import { TEX } from '../config/assets';
+import { PLAYER_WALK_ANIM, TEX } from '../config/assets';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
  * Di chuyển và va chạm được tính thủ công (không dùng Arcade Physics) để logic chạy ổn định
  * theo từng bước thời gian, dễ kiểm thử, và nhẹ khi có hàng trăm quái.
  */
-export class Player extends Phaser.GameObjects.Image {
+export class Player extends Phaser.GameObjects.Sprite {
   stats: PlayerStats = { ...BASE_PLAYER_STATS };
   hp = this.stats.maxHp;
   /** Thời gian bất tử còn lại sau khi bị đánh (giây) */
@@ -17,6 +17,8 @@ export class Player extends Phaser.GameObjects.Image {
   /** Chế độ bất tử khi gỡ lỗi */
   god = false;
   readonly r = PLAYER_RADIUS;
+  /** Hướng đang nhìn / di chuyển (radian), dùng để chĩa vũ khí khi không có mục tiêu */
+  heading = 0;
   /** Số lần bị đánh trong màn (thống kê) */
   hurtCount = 0;
   /** Lá chắn hấp thụ sát thương (bí bảo Hư Tịch Chi Tâm) và thời gian còn lại */
@@ -29,9 +31,10 @@ export class Player extends Phaser.GameObjects.Image {
   private weaponImg: Phaser.GameObjects.Image | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEX.PLAYER);
+    super(scene, x, y, TEX.PLAYER, 0);
     scene.add.existing(this);
-    this.setDepth(10);
+    // Sprite 20x30 phóng 2 lần; gốc hơi thấp để thân (vùng va chạm) nằm giữa, chân chạm "đất"
+    this.setDepth(10).setScale(2).setOrigin(0.5, 0.58);
   }
 
   /** Đặt ngoại hình vũ khí theo loại vũ khí và màu phẩm chất */
@@ -67,9 +70,14 @@ export class Player extends Phaser.GameObjects.Image {
     const sp = this.stats.moveSpeed;
     this.x += dir.x * sp * dt;
     this.y += dir.y * sp * dt;
-    // Xoay mũi chỉ hướng theo hướng di chuyển
+    // Đi thì chạy hoạt ảnh bước chân và quay mặt theo hướng ngang; đứng yên thì về khung đứng
     if (dir.lengthSq() > 0.0001) {
-      this.rotation = Phaser.Math.Angle.RotateTo(this.rotation, dir.angle(), 0.3);
+      this.heading = Phaser.Math.Angle.RotateTo(this.heading, dir.angle(), 0.3);
+      if (Math.abs(dir.x) > 0.05) this.setFlipX(dir.x < 0);
+      if (!this.anims.isPlaying) this.play(PLAYER_WALK_ANIM);
+    } else if (this.anims.isPlaying) {
+      this.stop();
+      this.setFrame(0);
     }
   }
 

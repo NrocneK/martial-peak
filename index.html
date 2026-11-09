@@ -44,54 +44,67 @@
         z-index: 100;
         display: grid;
         place-items: center;
-        background: radial-gradient(ellipse at 50% 46%, #1a2140 0%, #090c18 70%);
-        color: #a7adbf;
+        background: url('/ui/sect_bg.png') 50% 100% / cover no-repeat #2763d0;
+        image-rendering: pixelated;
+        color: #e9edff;
         font-family: 'Be Vietnam Pro', 'Segoe UI', Roboto, sans-serif;
         transition: opacity 0.6s ease;
+      }
+      #boot::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(8, 14, 44, 0.72), rgba(8, 14, 44, 0.55) 50%, rgba(8, 14, 44, 0.8));
       }
       #boot.done {
         opacity: 0;
         pointer-events: none;
       }
       #boot .wrap {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 18px;
-        width: min(340px, 84vw);
+        gap: 16px;
+        width: min(360px, 86vw);
         text-align: center;
-      }
-      #boot .lamp {
-        width: 104px;
-        height: 144px;
-        background: url('/ui/lantern.png') 0 0 / 832px 144px no-repeat;
-        image-rendering: pixelated;
-        animation: lamp 1s steps(8) infinite;
-        filter: drop-shadow(0 0 22px #ffbf5e99);
-      }
-      @keyframes lamp {
-        to {
-          background-position: -832px 0;
-        }
       }
       #boot .name {
         font-family: 'Noto Serif', Georgia, serif;
         font-weight: 800;
-        font-size: 22px;
-        letter-spacing: 0.14em;
-        color: #ffbf5e;
+        font-size: 30px;
+        line-height: 1.15;
+        letter-spacing: 0.08em;
+        color: #ffd96a;
+        text-shadow: 0 3px 0 #14224f, 0 0 18px rgba(255, 217, 106, 0.45);
+      }
+      /* Cố Trường Ca đi bộ tại chỗ: dải 4 khung 20x30, phóng 4 lần */
+      #boot .walker {
+        width: 80px;
+        height: 120px;
+        background: url('/ui/hero_walk.png') 0 0 / 320px 120px no-repeat;
+        image-rendering: pixelated;
+        animation: walk 0.5s steps(4) infinite;
+        filter: drop-shadow(0 6px 0 rgba(8, 14, 44, 0.5));
+      }
+      @keyframes walk {
+        to {
+          background-position: -320px 0;
+        }
       }
       #boot .track {
         width: 100%;
-        height: 3px;
-        background: #1a2140;
+        height: 8px;
+        background: #0a1030;
+        border: 2px solid #e8b24a;
+        box-shadow: 0 0 0 2px #0a1030;
         overflow: hidden;
       }
       #boot .track i {
         display: block;
         width: 40%;
         height: 100%;
-        background: #ffbf5e;
+        background: linear-gradient(180deg, #fff0b0, #f2b23e);
         animation: sweep 1.3s ease-in-out infinite;
       }
       @keyframes sweep {
@@ -106,10 +119,10 @@
         min-height: 2.6em;
         font-size: 13px;
         line-height: 1.5;
-        color: #7f869c;
+        color: #cfdcff;
       }
       @media (prefers-reduced-motion: reduce) {
-        #boot .lamp,
+        #boot .walker,
         #boot .track i {
           animation: none;
         }
@@ -120,10 +133,10 @@
     <div id="game"></div>
     <div id="boot" aria-live="polite">
       <div class="wrap">
-        <div class="lamp"></div>
-        <div class="name">VẠN GIỚI TẦM QUANG</div>
+        <div class="name">VẠN GIỚI<br />TẦM QUANG</div>
+        <div class="walker" role="img" aria-label="Cố Trường Ca"></div>
         <div class="track"><i></i></div>
-        <div class="tip" id="boot-tip">Đang thắp đèn…</div>
+        <div class="tip" id="boot-tip">Đang mở cổng truyền tống…</div>
       </div>
     </div>
     <!-- Lớp giao diện HTML (menu, HUD, thẻ kỹ năng...) nằm đè lên canvas game -->

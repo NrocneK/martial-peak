@@ -1,5 +1,19 @@
 # Lịch sử phiên bản
 
+## v0.7.0 — Giao diện mới: màn nạp, Menu, Lobby, nhân vật
+Toàn bộ hình vẽ bằng công cụ pxl (pixel art viết bằng code, miễn phí), nguồn trong `tools/art/`.
+- **Nhân vật Cố Trường Ca** (theo ảnh concept: tóc đen tím buộc đuôi ngựa cao, áo trắng viền lam, đai lam khóa vàng, ủng đen):
+  dáng đứng lớn có hoạt ảnh thở + tóc / đai bay (`hero_full`), và sprite đi bộ 4 khung trong trận (`hero_walk`, quay trái / phải theo hướng đi) thay cho hình tròn tạm.
+- **Ảnh nền Vân Hạc Tông** (`sect_bg`): chính điện ba tầng mái trên vách đá, cầu thang đá trắng, hai thác nước, lầu và đảo nổi, vầng trăng linh quang, anh đào, cổng truyền tống phát sáng. Dùng chung cho màn nạp, Menu và Lobby; bố cục an toàn khi cắt cho cả điện thoại dọc lẫn màn hình ngang.
+- **Màn nạp**: nền tông môn làm tối, tiêu đề, Cố Trường Ca đi bộ tại chỗ, thanh tiến độ, mẹo chơi.
+- **Menu chính** gọn lại: nút lớn **Bắt Đầu / Tiếp Tục** + **Cài Đặt**; âm thanh, xuất / nhập save, chế độ TEST, xóa tiến trình chuyển vào bảng Cài Đặt (dùng chung với Lobby, có thêm "Về menu chính").
+- **Lobby (Sảnh)** kiểu game di động:
+  - thanh trên: avatar, tên, cảnh giới, thanh tu vi, linh thạch + nguyên liệu, nút Cài Đặt;
+  - cột trái: **Hòm Thư** (đồ chờ nhận khi túi đầy, có số đếm) và **Thành Tích** (cảnh giới, số màn, bí bảo, số trận, quái hạ gục);
+  - giữa: nhân vật đứng trước cổng truyền tống + thẻ **Lịch Luyện** (khiêu chiến ngay màn kế tiếp hoặc mở bản đồ);
+  - thanh dưới: **Sảnh · Tu Luyện · Nhân Vật · Chế Tạo · Kỹ Năng**. Nhân Vật = chân dung + chỉ số + trang bị; Chế Tạo = Luyện Đan / Luyện Khí.
+- 5 icon mới (Sảnh, Nhân Vật, Hòm Thư, Thành Tích, Cài Đặt). Bỏ ảnh `menu_bg.png`, `lantern.png` và file nguồn cũ không còn dùng.
+
 ## v0.6.0 — Đạo Tổ là cái kết, tu luyện khó hơn
 - **Đạo Tổ khóa theo cốt truyện:** Tiên Đế Viên mãn chưa đủ, phải đánh bại **Thái Hư Đạo Tổ** (màn 10 Hỗn Độn Thần Vực) mới đột phá được. Mục Tu Luyện hiện thông báo "ngưỡng Đạo Tổ còn bị phong ấn".
 - **Đoạn kết mở** khi bước lên Đạo Tổ: Trường Ca nhận ra mình mới chỉ đặt bước chân đầu tiên lên Đại Đạo. Có nút "Xem lại đoạn kết" trong mục Tu Luyện. Thoại sau màn 10 Hỗn Độn Thần Vực nhắc người chơi về ngưỡng cửa này.
