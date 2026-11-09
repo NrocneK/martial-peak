@@ -19,10 +19,51 @@ export interface Card {
   color: number;
   /** Nhãn nhỏ: "Vũ khí", "Chủ động", "Bị động", "Thức tỉnh" */
   tag: string;
+  /** Các dòng chú thích liên kết kỹ năng ↔ bị động ↔ thức tỉnh (hiện dưới thẻ) */
+  links: string[];
 }
 
 function skillDef(id: string): SkillDef {
   return id.startsWith('wp_') ? weaponById(id) : activeById(id);
+}
+
+/** Mô tả trạng thái sở hữu một kỹ năng trong lượt chơi: "đang có Cấp 3" / "chưa có" */
+function ownText(run: RunState, id: string): string {
+  const o = run.find(id);
+  return o ? `đang có Cấp ${o.level}` : 'chưa có';
+}
+
+/** Chú thích cho thẻ kỹ năng vũ khí / chủ động: bị động liên kết + điều kiện thức tỉnh */
+function skillLinks(run: RunState, def: SkillDef): string[] {
+  const p = passiveById(def.linkedPassive);
+  const own = run.find(def.id);
+  const lines = [`🔗 Bị động liên kết: ${p.name} (${ownText(run, p.id)})`];
+  if (def.awaken) {
+    if (own?.awakened) lines.push(`⭐ Đã thức tỉnh: ${def.awaken.name}`);
+    else {
+      const lv = own?.level ?? 0;
+      const need: string[] = [];
+      if (lv < RUN.maxLevel) need.push(`kỹ năng Cấp ${RUN.maxLevel} (hiện ${lv || 'chưa có'})`);
+      if (!run.find(p.id)) need.push(`có ${p.name}`);
+      lines.push(`⭐ Thức tỉnh "${def.awaken.name}": ${need.length ? 'cần ' + need.join(' + ') : 'ĐÃ ĐỦ ĐIỀU KIỆN'}`);
+    }
+  }
+  return lines;
+}
+
+/** Chú thích cho thẻ bị động: nó đang liên kết với kỹ năng nào (trong vũ khí + 3 chủ động mang theo) */
+function passiveLinks(run: RunState, passiveId: string): string[] {
+  const weapon = run.skills.find((s) => s.kind === 'weapon');
+  const pool: SkillDef[] = [];
+  if (weapon) pool.push(weaponById(weapon.id));
+  for (const id of run.loadout) pool.push(activeById(id));
+  const mine = pool.filter((d) => d.linkedPassive === passiveId);
+  if (!mine.length) return ['🔗 Không liên kết kỹ năng nào đang mang (chỉ tăng chỉ số)'];
+  return mine.map((d) => {
+    const o = run.find(d.id);
+    const state = o ? (o.awakened ? 'đã thức tỉnh' : `Cấp ${o.level}/${RUN.maxLevel}`) : 'chưa có';
+    return `🔗 Liên kết: ${d.name} (${state}) → thức tỉnh "${d.awaken?.name ?? '—'}"`;
+  });
 }
 
 /**
@@ -38,8 +79,8 @@ export function generateCards(run: RunState): Card[] {
 
   // 1. Thẻ thức tỉnh (chắc chắn xuất hiện)
   for (const s of run.skills) {
-    if (s.kind !== 'active' || s.awakened || s.level < RUN.maxLevel) continue;
-    const def = activeById(s.id);
+    if (s.kind === 'passive' || s.awakened || s.level < RUN.maxLevel) continue;
+    const def = skillDef(s.id);
     if (!def.awaken || !run.find(def.linkedPassive)) continue;
     cards.push({
       kind: 'awaken',
@@ -50,6 +91,7 @@ export function generateCards(run: RunState): Card[] {
       isNew: false,
       color: 0xffd700,
       tag: 'Thức tỉnh',
+      links: [`🔗 Điều kiện đã đủ: ${def.name} Cấp ${RUN.maxLevel} + ${passiveById(def.linkedPassive).name}`],
     });
     break; // mỗi lần chỉ một thẻ thức tỉnh
   }
@@ -70,12 +112,12 @@ export function generateCards(run: RunState): Card[] {
       if (own.level >= RUN.maxLevel) return;
       cands.push({
         w: weightOf(def.id),
-        card: { kind, id: def.id, name: def.name, desc: def.desc, level: own.level + 1, isNew: false, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động' },
+        card: { kind, id: def.id, name: def.name, desc: def.desc, level: own.level + 1, isNew: false, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động', links: skillLinks(run, def) },
       });
     } else if (run.hasFreeSlot) {
       cands.push({
         w: weightOf(def.id),
-        card: { kind, id: def.id, name: def.name, desc: def.desc, level: 1, isNew: true, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động' },
+        card: { kind, id: def.id, name: def.name, desc: def.desc, level: 1, isNew: true, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động', links: skillLinks(run, def) },
       });
     }
   };
@@ -88,12 +130,12 @@ export function generateCards(run: RunState): Card[] {
       if (own.level >= RUN.maxLevel) continue;
       cands.push({
         w: weightOf(p.id),
-        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, own.level + 1)})`, level: own.level + 1, isNew: false, color: p.color, tag: 'Bị động' },
+        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, own.level + 1)})`, level: own.level + 1, isNew: false, color: p.color, tag: 'Bị động', links: passiveLinks(run, p.id) },
       });
     } else if (run.hasFreeSlot) {
       cands.push({
         w: weightOf(p.id),
-        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, 1)})`, level: 1, isNew: true, color: p.color, tag: 'Bị động' },
+        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, 1)})`, level: 1, isNew: true, color: p.color, tag: 'Bị động', links: passiveLinks(run, p.id) },
       });
     }
   }
@@ -114,8 +156,8 @@ export function generateCards(run: RunState): Card[] {
 
   // 4. Bù thẻ phụ
   const fillers: Card[] = [
-    { kind: 'heal', id: 'heal', name: 'Điều Tức', desc: 'Hồi 35% máu tối đa.', level: 0, isNew: false, color: 0xff7080, tag: 'Phụ' },
-    { kind: 'linh', id: 'linh', name: 'Thu Hoạch', desc: 'Nhận ngay một ít linh thạch.', level: 0, isNew: false, color: 0xffd860, tag: 'Phụ' },
+    { kind: 'heal', id: 'heal', name: 'Điều Tức', desc: 'Hồi 35% máu tối đa.', level: 0, isNew: false, color: 0xff7080, tag: 'Phụ', links: [] },
+    { kind: 'linh', id: 'linh', name: 'Thu Hoạch', desc: 'Nhận ngay một ít linh thạch.', level: 0, isNew: false, color: 0xffd860, tag: 'Phụ', links: [] },
   ];
   let fi = 0;
   while (cards.length < RUN.cardChoices) cards.push(fillers[fi++ % fillers.length]);

@@ -72,7 +72,7 @@ export class ArtifactSystem {
     if (this.armT > 0 && (this.armT -= dt) <= 0) this.setBuff('armor', 0);
     if (this.atkT > 0 && (this.atkT -= dt) <= 0) this.setBuff('atk', 0);
     if (this.dmgT > 0 && (this.dmgT -= dt) <= 0) this.setBuff('damage', this.crowd ? 0.1 : 0);
-    // Vùng sát thương (Hôi Hóa Tinh Thạch)
+    // Vùng sát thương (Thượng Cổ Tàn Bi)
     for (let i = this.zones.length - 1; i >= 0; i--) {
       const z = this.zones[i];
       z.t -= dt;
@@ -88,14 +88,14 @@ export class ArtifactSystem {
     }
 
     switch (this.id) {
-      case 'bb_w1_5': // Sơn Hà Tàn Đồ: mỗi 45 giây hút toàn bộ vật phẩm
+      case 'bb_w1_5': // Tụ Bảo La Bàn: mỗi 45 giây hút toàn bộ vật phẩm
         if ((this.cd.timer -= dt) <= 0) {
           this.cd.timer = 45;
           this.pickups.magnetAll();
           this.fx.ring(p.x, p.y, 120, 0xe0c070, 0.5);
         }
         break;
-      case 'bb_w3_5': // Lôi Viêm Tâm: mỗi 20 giây một tia sét 60% sát thương vào quái gần nhất
+      case 'bb_w3_5': // Tinh Lôi Tâm: mỗi 20 giây một tia sét 60% sát thương vào quái gần nhất
         if ((this.cd.timer -= dt) <= 0) {
           this.cd.timer = 20;
           const t = this.enemies.nearest(p.x, p.y, 700);
@@ -107,14 +107,14 @@ export class ArtifactSystem {
           } else this.cd.timer = 1; // chưa có quái: thử lại sớm
         }
         break;
-      case 'bb_w3_10': // Tử Tinh Hạch: dưới 50% máu, phạm vi nhặt +10%
+      case 'bb_w3_10': // Huyền Tinh Hạch: dưới 50% máu, phạm vi nhặt +10%
         this.scan -= dt;
         if (this.scan <= 0) {
           this.scan = 0.25;
           this.setBuff('pickup', p.hp < p.stats.maxHp * 0.5 ? 1.1 : 1);
         }
         break;
-      case 'bb_w5_5': // Thiên Quân Lệnh: >=30 quái gần → +10% sát thương, tắt khi <20
+      case 'bb_w5_5': // Tiên Vương Lệnh: >=30 quái gần → +10% sát thương, tắt khi <20
         this.scan -= dt;
         if (this.scan <= 0) {
           this.scan = 0.5;
@@ -127,14 +127,14 @@ export class ArtifactSystem {
           }
         }
         break;
-      case 'bb_w5_10': // Hôi Hóa Tinh Thạch: mỗi 35 giây tạo vùng sát thương 3 giây gần nhân vật
+      case 'bb_w5_10': // Thượng Cổ Tàn Bi: mỗi 35 giây tạo vùng sát thương 3 giây gần nhân vật
         if ((this.cd.timer -= dt) <= 0) {
           this.cd.timer = 35;
           const a = Math.random() * 6.28;
           this.zones.push({ x: p.x + Math.cos(a) * 90, y: p.y + Math.sin(a) * 90, t: 3, tick: 0, r: 110, dmg: this.baseDmg() * 1.2 });
         }
         break;
-      case 'bb_w6_10': // Thái Sơ Ngọc: mỗi 30 giây +12% sát thương 6 giây (không chồng)
+      case 'bb_w6_10': // Đạo Tổ Ấn: mỗi 30 giây +12% sát thương 6 giây (không chồng)
         if ((this.cd.timer -= dt) <= 0) {
           this.cd.timer = 30;
           this.dmgT = 6;
@@ -151,7 +151,7 @@ export class ArtifactSystem {
   }
 
   private onLevel(level: number): void {
-    // Truyền Thừa Ngọc Giản: lần đầu đạt cấp 5 trong màn, hồi 20% máu
+    // Dưỡng Nguyên Ngọc: lần đầu đạt cấp 5 trong màn, hồi 20% máu
     if (this.id === 'bb_w1_10' && !this.lvl5 && level >= 5) {
       this.lvl5 = true;
       this.heal(0.2);

@@ -69,18 +69,18 @@ export interface BibaoDef {
 }
 
 export const BIBAOS: BibaoDef[] = [
-  { id: 'bb_w1_5', name: 'Thanh Hà Tàn Đồ', world: 1, stageNo: 5, desc: 'Mảnh bản đồ cổ ghi dấu các mạch linh khí ven sông Thanh Hà.' },
-  { id: 'bb_w1_10', name: 'Tuần Giang Lệnh', world: 1, stageNo: 10, desc: 'Lệnh bài của Tuần Giang Sứ, còn vương ánh sáng của Quang Ấn.' },
-  { id: 'bb_w2_5', name: 'Hàn Sương Châu', world: 2, stageNo: 5, desc: 'Viên châu băng giá ngàn năm không tan.' },
-  { id: 'bb_w2_10', name: 'Cửu U Ma Ấn', world: 2, stageNo: 10, desc: 'Ấn ký nhuốm máu của Cửu U Ma Hoàng.' },
-  { id: 'bb_w3_5', name: 'Thiên Lôi Tâm', world: 3, stageNo: 5, desc: 'Trái tim sấm sét cuồn cuộn sức mạnh.' },
-  { id: 'bb_w3_10', name: 'Huyền Diệu Tinh Hạch', world: 3, stageNo: 10, desc: 'Hạch tinh thể của Tinh Chủ Huyền Diệu.' },
-  { id: 'bb_w4_5', name: 'Hoang Long Cốt Trụ', world: 4, stageNo: 5, desc: 'Cột xương rồng cổ đại từ thời hoang cổ.' },
-  { id: 'bb_w4_10', name: 'Xích Diễm Linh Ấn', world: 4, stageNo: 10, desc: 'Linh ấn lửa đỏ của Yêu Thánh Xích Diễm.' },
-  { id: 'bb_w5_5', name: 'Tiên Quân Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của Thất Tinh Tiên Quân.' },
-  { id: 'bb_w5_10', name: 'Hôi Hóa Tinh Thạch', world: 5, stageNo: 10, desc: 'Tinh thạch nhiễm Hôi Khí đáng sợ.' },
-  { id: 'bb_w6_5', name: 'Hư Tịch Chi Tâm', world: 6, stageNo: 5, desc: 'Lõi sức mạnh của Vô Quang Tộc.' },
-  { id: 'bb_w6_10', name: 'Thái Sơ Ngọc', world: 6, stageNo: 10, desc: 'Viên ngọc chứa ánh sáng đầu tiên của vạn giới.' },
+  { id: 'bb_w1_5', name: 'Tụ Bảo La Bàn', world: 1, stageNo: 5, desc: 'La bàn tìm bảo do một vị tông chủ vô danh để lại trong bí cảnh Thanh Vân.' },
+  { id: 'bb_w1_10', name: 'Dưỡng Nguyên Ngọc', world: 1, stageNo: 10, desc: 'Ngọc dưỡng nguyên của Huyết Ma Lão Tổ, nay đã được tẩy sạch ma khí.' },
+  { id: 'bb_w2_5', name: 'Hàn Hải Châu', world: 2, stageNo: 5, desc: 'Viên châu lấy từ đáy Thương Lan, lạnh buốt ngàn năm không tan.' },
+  { id: 'bb_w2_10', name: 'Giao Nhân Lệ', world: 2, stageNo: 10, desc: 'Giọt lệ của Hải Hoàng, chứa sinh khí dồi dào của biển cả.' },
+  { id: 'bb_w3_5', name: 'Tinh Lôi Tâm', world: 3, stageNo: 5, desc: 'Trái tim sấm sét kết tinh giữa tinh không.' },
+  { id: 'bb_w3_10', name: 'Huyền Tinh Hạch', world: 3, stageNo: 10, desc: 'Hạch tinh thể của Tinh Chủ Thiên Huyền, hé lộ một phần âm mưu của tiên giới.' },
+  { id: 'bb_w4_5', name: 'Thiên Binh Giáp Phiến', world: 4, stageNo: 5, desc: 'Mảnh giáp của thiên binh, mang theo thần lực hộ thể.' },
+  { id: 'bb_w4_10', name: 'Thanh Loan Vũ', world: 4, stageNo: 10, desc: 'Lông vũ của Thanh Loan Tiên Quân, nhẹ như gió, nhanh như chớp.' },
+  { id: 'bb_w5_5', name: 'Tiên Vương Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của một vị Tiên Vương thượng cổ.' },
+  { id: 'bb_w5_10', name: 'Thượng Cổ Tàn Bi', world: 5, stageNo: 10, desc: 'Mảnh bia đá khắc sự thật về nguồn gốc con đường tu luyện.' },
+  { id: 'bb_w6_5', name: 'Hỗn Độn Chi Tâm', world: 6, stageNo: 5, desc: 'Lõi sức mạnh của Hỗn Độn Thần Vực.' },
+  { id: 'bb_w6_10', name: 'Đạo Tổ Ấn', world: 6, stageNo: 10, desc: 'Ấn ký của Đạo Tổ: vật chứng cho con đường tự mình tạo ra.' },
 ];
 
 export function bibaoById(id: string): BibaoDef {

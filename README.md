@@ -3,7 +3,7 @@
 Game roguelike survival chạy trên trình duyệt (phong cách Vampire Survivors), bối cảnh tiên hiệp, nhân vật **Cố Trường Ca** (cốt truyện nguyên bản).
 Thiết kế đầy đủ nằm trong `GDD.md`.
 
-**Trạng thái: bản hoàn chỉnh khung game đến end game.** 6 thế giới × 10 màn, 66 loại quái, 60 boss, 13 kỹ năng chủ động, 11 kỹ năng bị động, 6 kỹ năng vũ khí, 37 cảnh giới, trang bị 5 ô, luyện đan, luyện khí, lưu tiến trình.
+**Trạng thái: bản hoàn chỉnh khung game đến end game.** 6 thế giới × 10 màn, 66 loại quái, 60 boss, 13 kỹ năng chủ động, 11 kỹ năng bị động, 6 kỹ năng vũ khí, 17 đại cảnh giới (Đạo Tổ không chia kỳ, 49 bậc, có Viên mãn), trang bị 5 ô, luyện đan, luyện khí, lưu tiến trình.
 Hình ảnh và âm thanh hiện là **đồ tạm** (hình vẽ bằng code, tiếng tổng hợp bằng WebAudio). Con số cân bằng là **ước lượng**, cần bạn chơi thử rồi chỉnh.
 
 ## Yêu cầu

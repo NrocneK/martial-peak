@@ -12,6 +12,7 @@ import { Hub } from '../ui/screens/Hub';
 import { showDialogue } from '../ui/screens/Dialogue';
 import { GameHud } from '../ui/screens/GameHud';
 import { buildResult } from '../ui/screens/Result';
+import { randomTip } from '../ui/tips';
 
 /**
  * GameFlow: "đạo diễn" điều phối luồng màn hình:
@@ -32,7 +33,18 @@ export class GameFlow {
       () => this.showMenu(),
       (m) => this.toast(m),
     );
-    game.events.on('boot-done', () => this.showMenu());
+    const bootEl = document.getElementById('boot');
+    const tip = document.getElementById('boot-tip');
+    if (tip) tip.textContent = randomTip();
+    const bootStart = performance.now();
+    game.events.on('boot-done', () => {
+      this.showMenu();
+      // Giữ màn nạp tối thiểu ~1,1s để kịp đọc mẹo và không bị chớp
+      setTimeout(() => {
+        bootEl?.classList.add('done');
+        setTimeout(() => bootEl?.remove(), 700);
+      }, Math.max(0, 1100 - (performance.now() - bootStart)));
+    });
     game.events.on('stage-start', (s: GameScene) => this.onStageStart(s));
     game.events.on('levelup', (cards: Card[], level: number) => this.hud?.showCards(cards, level));
     game.events.on('levelup-done', () => this.hud?.hideCards());

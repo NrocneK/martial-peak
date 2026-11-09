@@ -227,7 +227,7 @@ export class GameScene extends Phaser.Scene {
       case 'awaken': {
         const own = run.find(c.id);
         if (own) own.awakened = true;
-        run.lastActive = c.id;
+        if (c.id.startsWith('ac_')) run.lastActive = c.id;
         break;
       }
       case 'heal':

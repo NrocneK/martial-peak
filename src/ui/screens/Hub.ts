@@ -1,23 +1,27 @@
 import { bar, css, h } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
-import { MAX_TIER, TIERS, nextTierNeed, tierName } from '../../config/realms';
+import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
-import { PASSIVES, passiveValueText } from '../../config/passiveSkills';
+import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
 import { MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/Progression';
 import { audio } from '../../systems/Audio';
 
+/** Biểu tượng pixel (xem tools/art/ui.px.js) */
+const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
+const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
+
 type Tab = 'stage' | 'cultivate' | 'alchemy' | 'forge' | 'gear' | 'skill';
-const TABS: [Tab, string][] = [
-  ['stage', 'Lịch Luyện'],
-  ['cultivate', 'Tu Luyện'],
-  ['alchemy', 'Luyện Đan'],
-  ['forge', 'Luyện Khí'],
-  ['gear', 'Trang Bị'],
-  ['skill', 'Kỹ Năng'],
+const TABS: [Tab, string, string][] = [
+  ['stage', 'Lịch Luyện', 'stage'],
+  ['cultivate', 'Tu Luyện', 'cultivate'],
+  ['alchemy', 'Luyện Đan', 'alchemy'],
+  ['forge', 'Luyện Khí', 'forge'],
+  ['gear', 'Trang Bị', 'gear'],
+  ['skill', 'Kỹ Năng', 'skill'],
 ];
 
 /** Căn cứ của người chơi giữa các màn: chọn màn, tu luyện, luyện đan, luyện khí, trang bị, kỹ năng. */
@@ -34,7 +38,7 @@ export class Hub {
     private readonly onBack: () => void,
     private readonly toast: (m: string) => void,
   ) {
-    this.root.append(this.head, this.tabs, this.body);
+    this.root.append(this.head, h('div', { class: 'hub-main' }, this.tabs, this.body));
   }
 
   /** Mở hub; `world` chọn sẵn thế giới (dùng khi quay về sau màn chơi) */
@@ -52,23 +56,28 @@ export class Hub {
   private render(): void {
     const s = P.getSave();
     // --- Đầu trang ---
-    const need = nextTierNeed(s.tier);
+    const need = tierCap(s.tier);
     const t = bar('tuvi');
     const base = TIERS[s.tier].cumTuVi;
-    t.fill.style.width = need === null ? '100%' : `${Math.min(100, ((s.tuVi - base) / (need - base)) * 100)}%`;
-    t.label.textContent = need === null ? 'Đỉnh cao' : `Tu vi ${fmt(s.tuVi)} / ${fmt(need)}`;
-    t.root.style.width = '200px';
+    const perfect = P.perfected();
+    const top = s.tier >= MAX_TIER; // Đạo Tổ: không còn thanh tu vi
+    t.fill.style.width = `${Math.max(0, Math.min(100, ((s.tuVi - base) / Math.max(1, need - base)) * 100))}%`;
+    t.label.textContent = perfect ? 'Viên mãn' : `Tu vi ${fmt(Math.min(s.tuVi, need))} / ${fmt(need)}`;
     this.head.replaceChildren(
-      h('button', { class: 'btn small', text: '◀ Menu', onclick: this.onBack }),
-      h('div', { class: 'realm', text: tierName(s.tier) }),
-      t.root,
+      h('button', { class: 'back', title: 'Về menu', 'aria-label': 'Về menu', text: '◀', onclick: this.onBack }),
+      h('div', { class: 'realm-box' },
+        h('div', { class: 'realm', text: tierLabel(s.tier, s.tuVi) }),
+        ...(top ? [] : [t.root]),
+      ),
       h('div', { class: 'res' },
-        h('span', { class: 'gold', text: `Linh thạch ${fmt(s.linh)}` }),
-        ...MAT_IDS.map((m) => h('span', { text: `${MAT_NAMES[m]} ${s.mats[m]}` })),
+        h('span', { class: 'chip gold', title: 'Linh thạch' }, ic('linh'), fmt(s.linh)),
+        ...MAT_IDS.map((m) => h('span', { class: 'chip', title: MAT_NAMES[m] }, ic(MAT_ICON[m]), String(s.mats[m]))),
       ),
     );
     this.tabs.replaceChildren(
-      ...TABS.map(([id, name]) => h('div', { class: 'tab' + (id === this.tab ? ' on' : ''), text: name, onclick: () => { this.tab = id; this.render(); } })),
+      ...TABS.map(([id, name, icon]) =>
+        h('button', { class: 'tab' + (id === this.tab ? ' on' : ''), onclick: () => { this.tab = id; this.render(); } }, ic(icon), h('span', { text: name })),
+      ),
     );
     const view = { stage: this.vStage, cultivate: this.vCultivate, alchemy: this.vAlchemy, forge: this.vForge, gear: this.vGear, skill: this.vSkill }[this.tab];
     const scroll = this.body.scrollTop;
@@ -79,25 +88,30 @@ export class Hub {
   // ------------------------------------------------------------------ Lịch Luyện
   private vStage(): HTMLElement {
     const root = h('div');
-    const ws = h('div', { class: 'worlds' });
+    const ws = h('div', { class: 'journey' });
     for (const w of WORLDS) {
       const ok = P.isWorldUnlocked(w.id);
-      ws.append(h('div', { class: 'wbtn' + (w.id === this.world ? ' on' : '') + (ok ? '' : ' lock'), text: `${ok ? '' : '🔒 '}${w.id}. ${w.name}`, onclick: () => { this.world = w.id; this.render(); } }));
+      const cleared = w.stages.filter((st) => P.isCleared(st.id)).length;
+      ws.append(h('button', {
+        class: 'jn' + (w.id === this.world ? ' on' : '') + (ok ? '' : ' lock') + (cleared === w.stages.length ? ' full' : ''),
+        title: ok ? `${cleared}/${w.stages.length} màn` : P.worldGateText(w.id),
+        onclick: () => { this.world = w.id; this.render(); },
+      }, h('i', { class: 'node' }), h('span', { class: 'jn-name', text: w.name }), h('span', { class: 'jn-sub', text: ok ? `${cleared}/${w.stages.length}` : 'khóa' })));
     }
     root.append(ws);
     const w = worldById(this.world);
-    root.append(h('div', { class: 'dim', style: 'margin-bottom:8px', text: w.desc }));
+    root.append(h('div', { class: 'world-desc' }, h('h2', { text: w.name }), h('p', { text: w.desc })));
     if (!P.isWorldUnlocked(w.id)) {
-      root.append(h('div', { class: 'card', text: '🔒 ' + P.worldGateText(w.id) }));
+      root.append(h('div', { class: 'card gate', text: '🔒 ' + P.worldGateText(w.id) }));
       return root;
     }
-    const grid = h('div', { class: 'grid' });
+    const grid = h('div', { class: 'path' });
     for (const st of w.stages) {
       const unlocked = P.isStageUnlocked(st);
       const done = P.isCleared(st.id);
       grid.append(
         h('div', { class: 'card stage' + (done ? ' done' : '') + (unlocked ? '' : ' lock') },
-          h('div', { class: 'no', text: done ? '✓' : String(st.index + 1) }),
+          h('div', { class: 'no' }, h('span', { text: done ? '✓' : String(st.index + 1) })),
           h('div', { class: 'grow' },
             h('div', null, st.name, st.boss.main ? h('span', { class: 'tag boss', text: 'Boss chính' }) : null, st.fixed ? h('span', { class: 'tag fixed', text: 'Bí bảo' }) : null),
             h('div', { class: 'dim', style: 'font-size:13px', text: `${st.event} · ${fmtTime(st.duration)}` }),
@@ -116,22 +130,23 @@ export class Hub {
     const root = h('div');
     const need = nextTierNeed(s.tier);
     const pk = P.packInfo();
+    const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
     root.append(
       h('div', { class: 'card' },
-        h('div', { class: 'gold', style: 'font-size:20px', text: tierName(s.tier) }),
-        h('div', { class: 'dim', text: need === null ? 'Đã đạt cảnh giới cao nhất.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` }),
-        h('div', { class: 'dim', style: 'margin-top:6px', text: `Tu vi nhận từ việc vượt màn. Cảnh giới càng cao, máu và sát thương càng lớn, mở khóa kỹ năng chủ động mới (${s.tier}/${MAX_TIER}).` }),
-        h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn primary', text: 'Đột phá', disabled: P.canBreakthrough() ? null : 'disabled', onclick: () => this.act(P.breakthrough()) })),
+        h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
+        h('div', { class: 'dim', text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` + (nextIsNewRealm ? ' Đây là bước lên đại cảnh giới mới.' : '') }),
+        h('div', { class: 'dim', style: 'margin-top:6px', text: `Tu vi nhận từ việc vượt màn. 17 đại cảnh giới, mỗi cảnh giới 3 kỳ (Sơ, Trung, Hậu). Hậu kỳ đầy tu vi là Viên mãn; Tiên Đế Viên mãn đột phá lên Đạo Tổ (không chia kỳ). Cảnh giới càng cao, máu và sát thương càng lớn, mở khóa kỹ năng chủ động mới (bậc ${s.tier}/${MAX_TIER}).` }),
+        h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn primary', text: nextIsNewRealm ? 'Đột phá đại cảnh giới' : 'Đột phá', disabled: P.canBreakthrough() ? null : 'disabled', onclick: () => this.act(P.breakthrough()) })),
       ),
-      h('div', { class: 'card', style: 'margin-top:10px' },
-        h('div', { class: 'gold', text: 'Cắn linh thạch' }),
+      ...(s.tier >= MAX_TIER ? [] : [h('div', { class: 'card', style: 'margin-top:10px' },
+        h('div', { class: 'gold hd' }, ic('linh'), 'Cắn linh thạch'),
         h('div', { class: 'dim', text: `Mỗi gói: ${fmt(pk.cost)} linh thạch → ${fmt(pk.gain)} tu vi.` }),
         h('div', { class: 'row', style: 'margin-top:8px' },
           h('button', { class: 'btn', text: '×1', onclick: () => this.act(P.buyPack(1)) }),
           h('button', { class: 'btn', text: '×10', onclick: () => this.act(P.buyPack(10)) }),
           h('button', { class: 'btn', text: 'Tối đa', onclick: () => this.act(P.buyPack(1e9)) }),
         ),
-      ),
+      )]),
     );
     return root;
   }
@@ -143,7 +158,7 @@ export class Hub {
       const cnt = P.pillCount(p.id);
       grid.append(
         h('div', { class: 'card' },
-          h('div', { class: 'gold', text: p.name + (p.cap ? ` (${cnt}/${p.cap})` : '') }),
+          h('div', { class: 'gold hd' }, ic('alchemy'), p.name + (p.cap ? ` (${cnt}/${p.cap})` : '')),
           h('div', { class: 'dim', text: p.desc }),
           h('div', { style: 'margin:6px 0', text: `Cần: ${p.herb} thảo dược${p.core ? `, ${p.core} yêu đan` : ''}, ${fmt(P.pillLinhCost(p.id))} linh thạch` }),
           h('button', { class: 'btn small', text: 'Luyện đan', onclick: () => this.act(P.craftPill(p.id)) }),
@@ -160,7 +175,7 @@ export class Hub {
     for (const slot of SLOT_IDS.filter((x) => x !== 'bibao')) {
       const isWeapon = slot === 'weapon';
       const card = h('div', { class: 'card' },
-        h('div', { class: 'gold', text: 'Chế tạo ' + SLOT_NAMES[slot] }),
+        h('div', { class: 'gold hd' }, ic(slot === 'weapon' ? 'forge' : 'gear'), 'Chế tạo ' + SLOT_NAMES[slot]),
         h('div', { class: 'dim', text: 'Phẩm chất và thuộc tính phụ ngẫu nhiên, thế giới càng cao càng dễ ra phẩm tốt.' }),
         h('div', { style: 'margin:6px 0', text: `Cần: ${fc.ore} khoáng thạch, ${fmt(fc.linh)} linh thạch` }),
       );
@@ -257,7 +272,7 @@ export class Hub {
     const rp = this.reforgePanel();
     if (rp) root.append(rp);
     if (s.inbox.length) {
-      root.append(h('div', { class: 'card', style: 'border-color:#e8c96a;margin-bottom:12px' },
+      root.append(h('div', { class: 'card', style: 'border-color:var(--gold);margin-bottom:12px' },
         h('div', { class: 'gold', text: `Hòm thưởng (${s.inbox.length}) — túi đầy nên đồ nằm ở đây, hãy dọn chỗ rồi nhận` }),
         ...s.inbox.map((it) => h('div', { class: 'row', style: 'margin-top:6px' },
           h('span', { style: { color: RARITIES[it.rarity].color }, text: itemName(it) }),
@@ -268,11 +283,11 @@ export class Hub {
     const eq = h('div', { class: 'slot-grid' });
     for (const slot of SLOT_IDS) {
       const it = P.equippedItem(slot as SlotId);
-      eq.append(it ? this.itemCard(it, true) : h('div', { class: 'card dim', text: `${SLOT_NAMES[slot]}: trống` }));
+      eq.append(it ? this.itemCard(it, true) : h('div', { class: 'card empty dim' }, ic(slot === 'weapon' ? 'forge' : 'gear'), `${SLOT_NAMES[slot]}: trống`));
     }
     const m = P.computeMeta();
     root.append(
-      h('div', { class: 'gold', text: 'Đang trang bị' }),
+      h('div', { class: 'gold hd' }, ic('gear'), 'Đang trang bị'),
       eq,
       h('div', { class: 'dim', style: 'margin-bottom:10px', text: `Tổng: máu ${fmt(m.maxHp)} · sát thương ×${m.damage.toFixed(2)} · giáp ${Math.round(m.armor)} · tốc chạy ${Math.round(m.moveSpeed)} · kỹ năng vũ khí: ${weaponById(m.weaponId).name}` }),
     );
@@ -282,13 +297,13 @@ export class Hub {
     else if (this.sortBy === 'rarity') inv = inv.slice().sort((a, b) => b.rarity - a.rarity || b.grade - a.grade);
     else inv = inv.slice().sort((a, b) => b.uid - a.uid);
     const sel = (opts: [string, string][], cur: string, on: (v: string) => void): HTMLElement => {
-      const el = h('select', { class: 'btn small', style: 'background:#2a2244' }, ...opts.map(([v, t]) => h('option', { value: v, text: t, selected: v === cur ? 'selected' : null })));
+      const el = h('select', { class: 'btn small', style: 'background:#1a2140' }, ...opts.map(([v, t]) => h('option', { value: v, text: t, selected: v === cur ? 'selected' : null })));
       el.addEventListener('change', () => on(el.value));
       return el;
     };
     root.append(
       h('div', { class: 'row', style: 'margin-bottom:8px' },
-        h('span', { class: 'gold', text: `Kho đồ (${s.items.length}/120)` }),
+        h('span', { class: 'gold hd' }, ic('ore'), `Kho đồ (${s.items.length}/120)`),
         sel([['all', 'Mọi ô'], ...SLOT_IDS.map((x) => [x, SLOT_NAMES[x]] as [string, string])], this.filterSlot, (v) => { this.filterSlot = v as SlotId | 'all'; this.render(); }),
         sel([['new', 'Mới nhất'], ['power', 'Sức mạnh'], ['rarity', 'Phẩm chất']], this.sortBy, (v) => { this.sortBy = v as 'new' | 'power' | 'rarity'; this.render(); }),
       ),
@@ -307,8 +322,8 @@ export class Hub {
     const w = weaponById(P.computeMeta().weaponId);
     root.append(
       h('div', { class: 'card', style: 'margin-bottom:10px' },
-        h('div', { class: 'gold', text: 'Kỹ năng vũ khí (tự động)' }),
-        h('div', { class: 'skill-row' }, h('div', { class: 'swatch', style: { background: css(w.color) } }), h('div', null, h('b', { text: w.name }), h('div', { class: 'dim', text: w.desc }))),
+        h('div', { class: 'gold hd' }, ic('skill'), 'Kỹ năng vũ khí (tự động)'),
+        h('div', { class: 'skill-row' }, h('div', { class: 'swatch', style: { background: css(w.color) } }), h('div', null, h('b', { text: w.name }), h('div', { class: 'dim', text: w.desc }), h('div', { class: 'dim', style: 'font-size:12px;margin-top:4px', text: `Bị động liên kết: ${passiveById(w.linkedPassive).name} · Thức tỉnh: ${w.awaken?.name ?? '—'}` }))),
       ),
       h('div', { class: 'gold', style: 'margin-bottom:6px', text: `Kỹ năng chủ động mang theo: ${loadout.length}/3` }),
     );
@@ -317,7 +332,7 @@ export class Hub {
       const un = a.unlockTier <= s.tier;
       const on = loadout.includes(a.id);
       grid.append(
-        h('div', { class: 'card', style: un ? (on ? 'border-color:#e8c96a' : '') : 'opacity:.5' },
+        h('div', { class: 'card', style: un ? (on ? 'border-color:var(--gold)' : '') : 'opacity:.5' },
           h('div', { class: 'skill-row' },
             h('div', { class: 'swatch', style: { background: css(a.color) } }),
             h('div', { class: 'grow' }, h('b', { text: a.name }), h('div', { class: 'dim', style: 'font-size:13px', text: a.desc })),

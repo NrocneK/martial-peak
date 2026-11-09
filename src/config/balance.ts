@@ -1,3 +1,4 @@
+import { powerIdx } from './realms';
 // =====================================================================
 // CÂN BẰNG GAME: mọi con số ảnh hưởng độ khó / nhịp độ nằm ở đây.
 // Chỉnh file này để thử nghiệm mà không cần đụng vào logic.
@@ -46,16 +47,16 @@ export const WORLD_SPAWN = [0, 1, 1, 1.1, 1.25, 1.5, 1.8];
 
 /** Quy mô kinh tế (linh thạch, nguyên liệu...) tăng theo cảnh giới. */
 export function econScale(tier: number): number {
-  return Math.pow(1.28, tier);
+  return Math.pow(1.28, powerIdx(tier));
 }
 
-/** Hệ số sức mạnh nhân vật theo cảnh giới (tier 0..36). */
+/** Hệ số sức mạnh nhân vật theo cảnh giới (tier 0..50, quy đổi qua powerIdx về thang cân bằng 0..36). */
 export const TIER_POWER = {
-  damage: (t: number) => 1 + 0.35 * t,
-  hp: (t: number) => 1 + 0.3 * t,
-  speed: (t: number) => 1 + Math.min(0.15, 0.004 * t),
-  armor: (t: number) => 2 * t,
-  pickup: (t: number) => 1.5 * t,
+  damage: (t: number) => 1 + 0.35 * powerIdx(t),
+  hp: (t: number) => 1 + 0.3 * powerIdx(t),
+  speed: (t: number) => 1 + Math.min(0.15, 0.004 * powerIdx(t)),
+  armor: (t: number) => 2 * powerIdx(t),
+  pickup: (t: number) => 1.5 * powerIdx(t),
 };
 
 /** Cấu hình đường cong độ khó trong một màn (t = tiến độ 0..1 của thời gian màn). */

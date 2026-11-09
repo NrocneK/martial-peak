@@ -2,6 +2,8 @@ import { h } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
 import type { RewardSummary } from '../../systems/Progression';
 import { itemName, RARITIES } from '../../config/items';
+import { getSave } from '../../systems/Progression';
+import { MAX_TIER } from '../../config/realms';
 import type { StageDef } from '../../config/worlds';
 
 /** Bảng kết quả sau màn chơi + phần thưởng */
@@ -14,7 +16,7 @@ export function buildResult(r: RewardSummary, stage: StageDef, onAgain: () => vo
     row('Linh thạch', '+' + fmt(r.linh) + (r.victory ? '' : ' (giữ 30%)')),
   );
   if (r.victory) {
-    list.append(row('Tu vi', '+' + fmt(r.tuVi)));
+    if (getSave().tier < MAX_TIER) list.append(row('Tu vi', '+' + fmt(r.tuVi)));
     if (r.herb) list.append(row('Thảo dược', '+' + r.herb));
     if (r.core) list.append(row('Yêu đan', '+' + r.core));
     if (r.ore) list.append(row('Khoáng thạch', '+' + r.ore));

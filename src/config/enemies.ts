@@ -65,12 +65,12 @@ const ORDER: Behavior[] = [
 const TIER_OF: (1 | 2 | 3)[] = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3];
 
 const NAMES: Record<number, string[]> = {
-  1: ['Sơn Tặc', 'Sói Hôi', 'Thạch Giáp Thú', 'Cung Thủ Hôi Hóa', 'Oán Hồn', 'Huyết Trùng Nổ', 'Đạo Sĩ Tà Giáo', 'Nhện Mẫu', 'Trùng Nhỏ', 'Trưởng Lão Hôi Hóa', 'Đầu Mục Sơn Tặc'],
-  2: ['Binh Yêu', 'Lang Yêu', 'Cốt Giáp Thú', 'Chú Sư Ma Đạo', 'U Linh', 'Cầu Ma Hỏa', 'Pháp Sư Hồ Tộc', 'Mẫu Yêu Tử', 'Trùng Ma', 'Cận Vệ Ma Tướng', 'Trưởng Lão Hàn Sương'],
-  3: ['Tinh Thú', 'Lang Tinh Không', 'Giáp Sắt Ngoại Vực', 'Đệ Tử Thiên Lôi', 'Tinh Linh', 'Cầu Tinh Bạo', 'Pháp Sư Huyền Diệu', 'Trùng Mẫu', 'Tinh Trùng', 'Hộ Vệ Tinh Chủ', 'Tướng Hải Triều'],
-  4: ['Tu Sĩ Hôi Hóa', 'Báo Yêu Hoang Giới', 'Long Giáp Vệ', 'Môn Đồ Tàn Nguyệt', 'Du Hồn Hư Không', 'Long Huyết Bạo', 'Hộ Pháp Xích Diễm', 'Long Mẫu', 'Tiểu Trùng Hoang Giới', 'Trưởng Lão Long Tộc', 'Cận Vệ Yêu Thánh'],
-  5: ['Đệ Tử Tiên Quân', 'Tu Sĩ Thanh Loan', 'Hộ Vệ Kim Tiên', 'Môn Đồ Âm Dương', 'Du Hồn Hôi Hóa', 'Hôi Hóa Bạo', 'Pháp Sư Thất Tinh', 'Mẫu Hôi Hóa', 'Trùng Hôi', 'Kim Tiên Hôi Hóa', 'Hộ Pháp Tiên Quân'],
-  6: ['Nô Lệ Vô Quang', 'Lang Nô Vô Quang', 'Giáp Thú Vô Quang', 'Xạ Thủ Vô Quang', 'Bóng Vô Quang', 'Vô Quang Bạo', 'Chú Sư Vô Quang', 'Mẫu Sào Vô Quang', 'Trùng Vô Quang', 'Hộ Vệ Lĩnh Chủ', 'Hộ Vệ Vực Chủ'],
+  1: ['Sơn Tặc', 'Sói Yêu', 'Thạch Giáp Thú', 'Cung Thủ Tà Tu', 'Oán Hồn', 'Huyết Trùng Nổ', 'Đạo Sĩ Ma Giáo', 'Nhện Mẫu', 'Trùng Nhỏ', 'Ma Tu Trưởng Lão', 'Đầu Mục Sơn Tặc'],
+  2: ['Hải Binh', 'Giao Lang', 'Quy Giáp Thú', 'Pháp Sư Hải Tộc', 'U Linh Biển', 'Cầu Thủy Nổ', 'Y Sư Giao Nhân', 'Mẫu Hải Yêu', 'Tôm Binh', 'Hộ Vệ Hải Hoàng', 'Trưởng Lão Thiên Kiếm'],
+  3: ['Tinh Thú', 'Lang Tinh Không', 'Giáp Thiết Ngoại Vực', 'Pháp Sư Tinh Huyền', 'Tinh Linh', 'Cầu Tinh Bạo', 'Tế Sư Lôi Môn', 'Trùng Mẫu', 'Tinh Trùng', 'Hộ Vệ Tinh Chủ', 'Sứ Giả Tiên Giới'],
+  4: ['Thiên Binh', 'Phi Hạc Thần', 'Kim Giáp Thiên Tướng', 'Cung Thủ Thiên Binh', 'Du Hồn Tiên Giới', 'Lôi Châu Bạo', 'Tiên Y Cửu Thiên', 'Mẫu Linh Thú', 'Tiểu Linh Thú', 'Chấp Pháp Sứ', 'Hộ Pháp Cửu Thiên'],
+  5: ['Tàn Hồn Cổ Tiên', 'Thượng Cổ Hung Thú', 'Thạch Tượng Thượng Cổ', 'Cổ Tiên Xạ Thủ', 'Oán Linh Cổ Tiên', 'Cổ Hỏa Bạo', 'Tế Tự Thượng Cổ', 'Mẫu Cổ Thú', 'Trùng Cổ', 'Tiên Vương Hộ Vệ', 'Cổ Thần Tàn Niệm'],
+  6: ['Đạo Nô', 'Hỗn Độn Thú', 'Hỗn Độn Giáp', 'Xạ Thủ Hỗn Độn', 'Bóng Hỗn Độn', 'Hỗn Độn Bạo', 'Chú Sư Đạo Nô', 'Mẫu Hỗn Độn', 'Trùng Hỗn Độn', 'Chấp Hành Giả', 'Hộ Vệ Đạo Tổ'],
 };
 
 function build(): EnemyDef[] {

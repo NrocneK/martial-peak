@@ -18,13 +18,13 @@ import {
   type PillId,
   itemStats,
 } from '../config/items';
-import { MAX_TIER, TIERS, nextStep, nextTierNeed } from '../config/realms';
+import { MAX_TIER, TIERS, isPerfect, nextStep, nextTierNeed, tierCap } from '../config/realms';
 import { SLOT_IDS, type ItemStats, type MatId, type SlotId } from '../config/types';
 import { WEAPONS } from '../config/weapons';
 import { ALL_STAGES, WORLDS, stageById, worldById, type StageDef } from '../config/worlds';
 
 const SAVE_KEY = 'vo-luyen-survival-save';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 3;
 const MAX_ITEMS = 120;
 /** Hòm thưởng: nơi chứa đồ khi túi đầy, nhận lại khi có chỗ */
 const MAX_INBOX = 20;
@@ -71,6 +71,17 @@ function defaultSave(): SaveData {
 
 let data: SaveData = load();
 
+/** Nâng cấp save cũ: v1 dùng 37 bậc; v2 dùng 51 bậc (Đạo Tổ chia 3 kỳ); v3 dùng 49 bậc (Đạo Tổ một bậc). */
+function migrate(d: SaveData, from: number): void {
+  if (from >= 3) return;
+  if (from < 2) {
+    d.tier = Math.round((Math.max(0, d.tier || 0) * 48) / 36);
+    d.tuVi = TIERS[Math.min(MAX_TIER, d.tier)].cumTuVi;
+  }
+  d.tier = Math.max(0, Math.min(MAX_TIER, d.tier || 0));
+  if (d.tier >= MAX_TIER) d.tuVi = TIERS[MAX_TIER].cumTuVi;
+}
+
 function load(): SaveData {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -82,6 +93,7 @@ function load(): SaveData {
     d.equipped = { ...defaultSave().equipped, ...(parsed.equipped ?? {}) };
     d.pills = { ...defaultSave().pills, ...(parsed.pills ?? {}) };
     d.stats = { ...defaultSave().stats, ...(parsed.stats ?? {}) };
+    migrate(d, parsed.v ?? 1);
     d.v = SAVE_VERSION;
     return sanitize(d);
   } catch {
@@ -89,7 +101,9 @@ function load(): SaveData {
   }
 }
 
-const isInt = (n: unknown, lo: number, hi: number): n is number => typeof n === 'number' && Number.isInteger(n) && n >= lo && n <= hi;
+function isInt(n: unknown, lo: number, hi: number): n is number {
+  return typeof n === 'number' && Number.isInteger(n) && n >= lo && n <= hi;
+}
 
 /** Kiểm tra / vá dữ liệu lưu: bỏ item hỏng, sửa ô trang bị trỏ vào item không tồn tại, đảm bảo luôn có vũ khí. */
 function sanitize(d: SaveData): SaveData {
@@ -139,6 +153,7 @@ export function importSave(text: string): Result {
     d.equipped = { ...def.equipped, ...(parsed.equipped ?? {}) };
     d.pills = { ...def.pills, ...(parsed.pills ?? {}) };
     d.stats = { ...def.stats, ...(parsed.stats ?? {}) };
+    migrate(d, parsed.v ?? 1);
     d.v = SAVE_VERSION;
     data = sanitize(d);
     save();
@@ -225,6 +240,11 @@ export function computeMeta(): MetaStats {
 // ---------------------------------------------------------------------
 export function tierNow(): number {
   return data.tier;
+}
+
+/** Đang ở Viên mãn (Hậu kỳ + đầy tu vi) */
+export function perfected(): boolean {
+  return isPerfect(data.tier, data.tuVi);
 }
 
 export function canBreakthrough(): boolean {
@@ -690,7 +710,7 @@ export function debugGrant(opts: { tuVi?: number; linh?: number; tier?: number; 
  */
 export function unlockAll(): Result {
   data.tier = MAX_TIER;
-  data.tuVi = Math.max(data.tuVi, TIERS[MAX_TIER].cumTuVi);
+  data.tuVi = Math.max(data.tuVi, tierCap(MAX_TIER)); // Đạo Tổ
   for (const st of ALL_STAGES) data.cleared[st.id] = data.cleared[st.id] ?? 1;
   data.linh = Math.max(data.linh, 1_000_000);
   data.mats.herb = Math.max(data.mats.herb, 999);

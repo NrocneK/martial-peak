@@ -10,7 +10,7 @@
 Roguelike survival chạy trên trình duyệt, phong cách **Vampire Survivors**: nhân vật tự động tấn công, người chơi chỉ lo **di chuyển và né**. Giết quái rơi XP, lên cấp thì chọn 1 trong 3 thẻ kỹ năng. Mỗi lượt chơi (run) ngẫu nhiên; chết thì làm lại.
 
 Điểm khác biệt:
-- Bối cảnh **võ hiệp / tiên hiệp** theo hành trình của **Cố Trường Ca**, người gác đèn cuối cùng của Thanh Hà, đi qua 6 tầng thế giới để thắp lại Quang Ấn (cốt truyện nguyên bản).
+- Bối cảnh **võ hiệp / tiên hiệp** theo hành trình của **Cố Trường Ca**, thiếu niên xuất thân bình thường của Vân Hạc Tông, đi qua 6 tầng thế giới để tìm ra bí mật nguồn gốc con đường tu luyện (cốt truyện v0.5).
 - Tiến trình vĩnh viễn kiểu tu tiên: **tu vi, cảnh giới, linh thạch, luyện đan, luyện khí, trang bị 5 ô**.
 - Hệ thống kỹ năng 3 nhóm liên kết nhau, có **thức tỉnh** kỹ năng chủ động.
 
@@ -33,12 +33,12 @@ Nhân vật chính: **Cố Trường Ca** (1 nhân vật duy nhất, không phâ
 
 | # | Thế giới | Cảnh giới của thế giới | Kẻ thù chính (dự kiến) |
 |---|---|---|---|
-| 1 | Thanh Hà Cổ Quốc | Luyện Thể, Dẫn Khí, Ngưng Mạch, Kết Đan, Hóa Anh, Ngự Hư | Yêu thú, tà tu, sơn tặc |
-| 2 | Bích Lạc Đại Lục | Thông Thần, Hợp Đạo | Yêu tộc, ma tu |
-| 3 | Lưu Quang Tinh Vực | Nguyên Thần, Quy Hư, Thiên Vương | Tu sĩ ngoại vực, thú tinh không |
-| 4 | Long Hoang Giới | Đại Thừa, Độ Kiếp | Long tộc, chiến sĩ sa đọa |
-| 5 | Cửu Tiêu Thiên Giới | Cửu Tiêu (9 phẩm) | Tiên quân bị Hôi Khí ăn mòn |
-| 6 | Vô Quang Chiến Địa | Thái Sơ | Vô Quang Tộc |
+| 1 | Thanh Vân Đại Lục | Luyện Thể, Luyện Khí, Trúc Cơ, Kim Đan | Yêu thú, tà tu, sơn tặc, ma đạo |
+| 2 | Thương Lan Giới | Nguyên Anh, Hóa Thần, Luyện Hư | Hải tộc, ma tu, tông môn thù địch |
+| 3 | Thiên Huyền Tinh Vực | Hợp Thể, Đại Thừa, Độ Kiếp | Thú tinh không, tu sĩ ngoại vực, sứ giả tiên giới |
+| 4 | Cửu Thiên Tiên Giới | Chân Tiên, Thiên Tiên, Huyền Tiên | Thiên binh, chấp pháp sứ, tiên nhân bị thao túng |
+| 5 | Thượng Cổ Tiên Vực | Kim Tiên, Tiên Vương, Tiên Đế | Cổ thần, Tiên Vương, tàn hồn thượng cổ |
+| 6 | Hỗn Độn Thần Vực | Đạo Tổ | Đạo nô, chấp hành giả Đại Đạo Lô |
 
 Mỗi **màn** trong một thế giới = một mốc **sự kiện đánh nhau lớn** của thế giới đó. Cần **vượt tất cả màn** và **đạt cảnh giới yêu cầu** mới sang thế giới kế tiếp.
 
@@ -129,17 +129,21 @@ Khi **kỹ năng chủ động đạt cấp 5** và người chơi **đã sở h
 
 | Thế giới | Cảnh giới | Tầng nhỏ |
 |---|---|---|
-| 1. Thanh Hà | Luyện Thể → Dẫn Khí → Ngưng Mạch → Kết Đan → Hóa Anh → Ngự Hư | **Không chia tầng nhỏ** (6 bậc) |
-| 2. Bích Lạc | Thông Thần → Hợp Đạo | 3 tầng mỗi cảnh giới |
-| 3. Lưu Quang | Nguyên Thần → Quy Hư → Thiên Vương | 3 tầng mỗi cảnh giới |
-| 4. Long Hoang | Đại Thừa → Độ Kiếp | 3 tầng mỗi cảnh giới |
-| 5. Cửu Tiêu | Cửu Tiêu: 1-3 phẩm Địa Tiên, 4-6 phẩm Thiên Tiên, 7-9 phẩm Kim Tiên | 9 phẩm |
-| 6. Vô Quang Chiến Địa | Thái Sơ (cảnh giới cuối) | không chia tầng |
+Tổng **17 đại cảnh giới**; 16 đại cảnh giới đầu chia **3 kỳ: Sơ kỳ, Trung kỳ, Hậu kỳ**, riêng **Đạo Tổ không chia kỳ** (49 bậc). Tiên Đế Viên mãn đột phá thẳng lên Đạo Tổ. Khi ở Hậu kỳ mà tu vi đạt tối đa thì đạt **Viên mãn** (hiển thị "· Viên mãn").
+
+| Thế giới | Đại cảnh giới |
+|---|---|
+| 1. Thanh Vân | Luyện Thể → Luyện Khí → Trúc Cơ → Kim Đan |
+| 2. Thương Lan | Nguyên Anh → Hóa Thần → Luyện Hư |
+| 3. Thiên Huyền | Hợp Thể → Đại Thừa → Độ Kiếp |
+| 4. Cửu Thiên | Chân Tiên → Thiên Tiên → Huyền Tiên |
+| 5. Thượng Cổ | Kim Tiên → Tiên Vương → Tiên Đế |
+| 6. Hỗn Độn | Đạo Tổ (**một bậc duy nhất, không chia kỳ, không còn thanh tu vi**) |
 
 ### 6.3 Điều kiện sang thế giới kế tiếp
-- Thế giới 1 → 2: đạt **Ngự Hư** (đỉnh cảnh giới của thế giới 1) + qua hết màn.
-- Thế giới 2 → 3 và 3 → 4 và 4 → 5: đạt tầng cuối của cảnh giới cuối thế giới đó + qua hết màn.
+- Thế giới 1 → 5: đạt **Hậu kỳ** của đại cảnh giới cuối thế giới đó + qua hết màn.
 - Thế giới 5 → 6: **không có giới hạn cảnh giới**, chỉ cần **giết boss cuối thế giới 5**.
+- Save cũ được **tự động chuyển** sang thang 49 bậc khi tải.
 
 ### 6.4 Tác dụng của cảnh giới
 Tăng chỉ số gốc và **mở khóa kỹ năng chủ động** mới. Chi phí tu vi mỗi bậc nằm trong bảng cấu hình để cân bằng nhịp.
@@ -216,12 +220,12 @@ Danh sách boss do bạn cung cấp. Mỗi boss có **2-3 chiêu đặc trưng**
 
 | Thế giới | Boss (theo danh sách của bạn) |
 |---|---|
-| 1. Thanh Hà | Hắc Phong Trại Chủ, Thạch Bi Thủ Vệ, Lục Gia Minh Chủ, Hôi Y Quốc Sư, Tuần Giang Sứ Hạ Chấn |
-| 2. Bích Lạc | Hồ Ảnh Yêu Hậu, Hàn Sương Tông Chủ, Huyết Giáp Ma Tướng, Thanh Lân Yêu Vương, Cửu U Ma Hoàng, Cốt Tổ Bạch Diệm |
-| 3. Lưu Quang | Ám Tinh Lữ Khách, Tông Chủ Thiên Lôi Môn, Hải Thần Triều Tịch, Tinh Chủ Huyền Diệu, Trùng Hoàng Vạn Mục |
-| 4. Long Hoang | Kiếm Tu Hôi Hóa, Độc Cô Tàn Nguyệt, Ngao Thiên Đại Trưởng Lão, Yêu Thánh Xích Diễm, Chiến Thần Phế Tích |
-| 5. Cửu Tiêu | Thất Tinh Tiên Quân, Trưởng Lão Thanh Loan Điện, Trưởng Lão Âm Dương Cung, Kim Tiên Hôi Hóa, Vô Quang Vương Bị Phong Ấn |
-| 6. Vô Quang Chiến Địa | Vô Quang Lĩnh Chủ, Vô Quang Vực Chủ, Vô Quang Vương Giả, Hôi Sắc Cự Thần, Hư Tịch |
+| 1. Thanh Vân | Hắc Sơn Đại Đương Gia, Thạch Linh Thủ Vệ, Thiếu Chủ Huyết Ảnh Môn, Yêu Vương Hắc Vân, Huyết Ma Lão Tổ |
+| 2. Thương Lan | Hải Yêu Vương Thương Lan, Tông Chủ Thiên Kiếm Tông, Ma Tôn Cửu U, Thánh Nữ Băng Hải Cung, Long Quy Trưởng Lão, Thương Lan Hải Hoàng |
+| 3. Thiên Huyền | Tinh Không Cự Thú, Tông Chủ Tinh Huyền Môn, Sứ Giả Cửu Thiên Điện, Lôi Kiếp Hóa Thân, Tinh Chủ Thiên Huyền |
+| 4. Cửu Thiên | Thiên Binh Thống Lĩnh, Linh Chi Tiên Tử, Thiên Hình Tôn Giả, Thanh Loan Tiên Quân, Cửu Thiên Điện Chủ |
+| 5. Thượng Cổ | Thượng Cổ Thủ Vệ, Tiên Vương Huyết Kiếm, Tiên Vương Hội Trưởng, Cổ Thần Phế Tích, Tiên Đế Vĩnh Dạ |
+| 6. Hỗn Độn | Hỗn Độn Linh Thể, Đạo Nô Thủ Hộ, Chấp Hành Giả Đại Đạo Lô, Hóa Thân Thái Hư, Thái Hư Đạo Tổ |
 
 ### Kế hoạch 10 màn mỗi thế giới
 - Boss trong danh sách của bạn là **boss cuối của các màn chính**, xếp theo thứ tự mạnh dần. **Boss cuối danh sách** là boss chốt thế giới (màn 10).
@@ -333,3 +337,9 @@ Toàn bộ 6 thế giới × 10 màn đã chơi được từ đầu đến cu�
 - **Save**: xuất / nhập file save; dữ liệu lỗi được làm sạch khi tải.
 - **Tốc độ**: nút x1/x2/x4 (phím X).
 - Công thức chỉ số giữ nguyên; cân bằng vẫn là ước lượng, cần người chơi thử thật.
+
+## v0.5 — Hệ thống thế giới / cảnh giới mới, cốt truyện thiết kế lại
+- **17 đại cảnh giới** (16 cảnh giới đầu × 3 kỳ Sơ / Trung / Hậu; Đạo Tổ một bậc, không hiện tu vi), Hậu kỳ + tu vi tối đa = **Viên mãn**. Thang bậc 0..50; chỉ số và kinh tế quy đổi qua `powerIdx` nên không mạnh hơn so với cân bằng cũ.
+- **6 thế giới mới**: Thanh Vân Đại Lục, Thương Lan Giới, Thiên Huyền Tinh Vực, Cửu Thiên Tiên Giới, Thượng Cổ Tiên Vực, Hỗn Độn Thần Vực. Tên boss, quái, bí bảo, kỹ năng thức tỉnh viết lại theo thế giới.
+- **Cốt truyện**: Khởi đầu (Cố Trường Ca ở Vân Hạc Tông) → Phát triển (bí cảnh, truyền thừa, đại hội tông môn, chính ma, yêu tộc) → Trung kỳ (phi thăng, phát hiện tiên giới thu hoạch đạo quả qua "Đại Đạo Lô") → Cuối game (đối đầu Thái Hư Đạo Tổ, trở thành Đạo Tổ mới).
+- Hội thoại màn 5 và 10 của mỗi thế giới nằm ở `OVERRIDES` trong `src/config/story.ts`.

@@ -7,7 +7,7 @@
 import { stageDuration } from './balance';
 import { FILLER_BOSSES, MAIN_BOSSES, makeBoss, type BossDef } from './bosses';
 import { WORLD_COLORS } from './enemies';
-import { WORLD_FIRST_TIER, stepCost } from './realms';
+import { TIERS, WORLD_FIRST_TIER, WORLD_LAST_TIER } from './realms';
 import { econScale } from './balance';
 
 export const STAGES_PER_WORLD = 10;
@@ -42,24 +42,31 @@ export interface WorldDef {
 
 const WORLD_INFO: { name: string; desc: string }[] = [
   { name: '', desc: '' },
-  { name: 'Thanh Hà Cổ Quốc', desc: 'Cố quốc ven sông Thanh Hà, nơi Hôi Khí đầu tiên rò rỉ qua vết nứt của Quang Ấn.' },
-  { name: 'Bích Lạc Đại Lục', desc: 'Đại lục rộng lớn của yêu tộc và ma đạo, nơi các mảnh Quang Ấn bị tranh đoạt.' },
-  { name: 'Lưu Quang Tinh Vực', desc: 'Tinh vực xa xôi giữa tinh không, những ngôi sao đang lần lượt tắt.' },
-  { name: 'Long Hoang Giới', desc: 'Giới vực hoang cổ của long tộc và những chiến sĩ đã sa đọa.' },
-  { name: 'Cửu Tiêu Thiên Giới', desc: 'Chín tầng trời, nơi Hôi Khí đã ăn mòn cả các bậc tiên quân.' },
-  { name: 'Vô Quang Chiến Địa', desc: 'Chiến địa cuối cùng, sào huyệt của Vô Quang Tộc.' },
+  { name: 'Thanh Vân Đại Lục', desc: 'Nơi thiếu niên bình thường bước vào con đường tu luyện: tiểu tông môn, bí cảnh, truyền thừa, đại hội tông môn, chính ma đối đầu và yêu tộc quấy phá.' },
+  { name: 'Thương Lan Giới', desc: 'Giới vực biển cả bao la, nơi các đại tông môn, ma đạo và hải tộc tranh giành tài nguyên. Nơi đầu tiên Trường Ca thấy dấu vết của một âm mưu lớn.' },
+  { name: 'Thiên Huyền Tinh Vực', desc: 'Tinh vực giữa vô tận tinh không. Sứ giả tiên giới xuất hiện, hé lộ cuộc chiến ở hạ giới chỉ là một phần của ván cờ lớn.' },
+  { name: 'Cửu Thiên Tiên Giới', desc: 'Tiên giới huy hoàng bên ngoài, mục ruỗng bên trong. Các thế lực tiên giới đang thu hoạch đạo quả của người phi thăng.' },
+  { name: 'Thượng Cổ Tiên Vực', desc: 'Di tích của thời đại thượng cổ, nơi lưu giữ sự thật về nguồn gốc con đường tu luyện.' },
+  { name: 'Hỗn Độn Thần Vực', desc: 'Nơi khởi nguyên của Đại Đạo, chiến trường cuối cùng giữa Trường Ca và kẻ đã dựng nên con đường tu luyện.' },
 ];
 
 /** Điều kiện vào thế giới n (chỉ số 1..6). Thế giới 5 → 6 chỉ cần giết boss cuối thế giới 5. */
 const GATES: { tier: number; needAll: boolean; needFinalOnly: boolean }[] = [
   { tier: 0, needAll: false, needFinalOnly: false },
   { tier: 0, needAll: false, needFinalOnly: false }, // 1
-  { tier: 5, needAll: true, needFinalOnly: false }, // 2: Ngự Hư + qua hết thế giới 1
-  { tier: 11, needAll: true, needFinalOnly: false }, // 3
-  { tier: 20, needAll: true, needFinalOnly: false }, // 4
-  { tier: 26, needAll: true, needFinalOnly: false }, // 5
+  { tier: 11, needAll: true, needFinalOnly: false }, // 2: Kim Đan Hậu kỳ + qua hết thế giới 1
+  { tier: 20, needAll: true, needFinalOnly: false }, // 3: Luyện Hư Hậu kỳ
+  { tier: 29, needAll: true, needFinalOnly: false }, // 4: Độ Kiếp Hậu kỳ
+  { tier: 38, needAll: true, needFinalOnly: false }, // 5: Huyền Tiên Hậu kỳ
   { tier: 0, needAll: false, needFinalOnly: true }, // 6: không giới hạn cảnh giới
 ];
+
+/** Tổng tu vi cần để leo hết các bậc của một thế giới: dùng để chia phần thưởng tu vi cho các màn */
+function worldTuViSum(w: number): number {
+  const a = Math.max(1, WORLD_FIRST_TIER[w]);
+  const b = WORLD_LAST_TIER[w];
+  return Math.max(1, TIERS[b].cumTuVi - TIERS[a - 1].cumTuVi);
+}
 
 function buildWorld(w: number): WorldDef {
   const mains = MAIN_BOSSES[w];
@@ -78,7 +85,7 @@ function buildWorld(w: number): WorldDef {
     const boss = makeBoss(w, bossName, `boss_${id}`, !!mainName, final);
     const fixed = i === 4 || final;
     const first = WORLD_FIRST_TIER[w];
-    const tuVi = Math.round(0.7 * stepCost(Math.min(36, first + 1)) * (1 + 0.06 * i));
+    const tuVi = Math.round(0.07 * worldTuViSum(w) * (1 + 0.06 * i));
     stages.push({
       id,
       world: w,

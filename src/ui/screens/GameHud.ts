@@ -111,6 +111,7 @@ export class GameHud {
           h('div', { class: 'ico', style: { background: css(c.color) } }),
           h('div', { class: 'nm', text: c.name }),
           h('div', { class: 'ds', text: c.desc }),
+          ...(c.links.length ? [h('div', { class: 'lk' }, ...c.links.map((t) => h('div', { text: t })))] : []),
           h('div', { class: 'key', text: `Phím ${i + 1}` }),
         ),
       );
