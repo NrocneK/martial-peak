@@ -15,3 +15,6 @@ tools/art/out*/
 
 # Skill cài cục bộ cho Claude (không đưa vào repo)
 .claude/skills/
+
+# Vercel CLI (liên kết project cục bộ)
+.vercel
