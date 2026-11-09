@@ -6,7 +6,7 @@
 //   Thế giới 2: Nguyên Anh → Hóa Thần → Luyện Hư (3)
 //   Thế giới 3: Hợp Thể → Đại Thừa → Độ Kiếp (3)
 //   Thế giới 4: Chân Tiên → Thiên Tiên → Huyền Tiên (3)
-//   Thế giới 5: Kim Tiên → Tiên Vương → Tiên Đế (3)
+//   Thế giới 5: Kim Tiên → Đại La Kim Tiên → Tiên Đế (3)
 //   Thế giới 6: Đạo Tổ (1, KHÔNG chia kỳ, không còn thanh tu vi)
 // Tiên Đế Viên mãn đột phá thẳng lên Đạo Tổ.
 // =====================================================================
@@ -29,7 +29,7 @@ export const WORLD_REALMS: Record<number, string[]> = {
   2: ['Nguyên Anh', 'Hóa Thần', 'Luyện Hư'],
   3: ['Hợp Thể', 'Đại Thừa', 'Độ Kiếp'],
   4: ['Chân Tiên', 'Thiên Tiên', 'Huyền Tiên'],
-  5: ['Kim Tiên', 'Tiên Vương', 'Tiên Đế'],
+  5: ['Kim Tiên', 'Đại La Kim Tiên', 'Tiên Đế'],
   6: ['Đạo Tổ'],
 };
 const PHASES = ['Sơ kỳ', 'Trung kỳ', 'Hậu kỳ'];

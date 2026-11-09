@@ -37,7 +37,7 @@ Nhân vật chính: **Cố Trường Ca** (1 nhân vật duy nhất, không phâ
 | 2 | Thương Lan Giới | Nguyên Anh, Hóa Thần, Luyện Hư | Hải tộc, ma tu, tông môn thù địch |
 | 3 | Thiên Huyền Tinh Vực | Hợp Thể, Đại Thừa, Độ Kiếp | Thú tinh không, tu sĩ ngoại vực, sứ giả tiên giới |
 | 4 | Cửu Thiên Tiên Giới | Chân Tiên, Thiên Tiên, Huyền Tiên | Thiên binh, chấp pháp sứ, tiên nhân bị thao túng |
-| 5 | Thượng Cổ Tiên Vực | Kim Tiên, Tiên Vương, Tiên Đế | Cổ thần, Tiên Vương, tàn hồn thượng cổ |
+| 5 | Thượng Cổ Tiên Vực | Kim Tiên, Đại La Kim Tiên, Tiên Đế | Cổ thần, Tiên Vương, tàn hồn thượng cổ |
 | 6 | Hỗn Độn Thần Vực | Đạo Tổ | Đạo nô, chấp hành giả Đại Đạo Lô |
 
 Mỗi **màn** trong một thế giới = một mốc **sự kiện đánh nhau lớn** của thế giới đó. Cần **vượt tất cả màn** và **đạt cảnh giới yêu cầu** mới sang thế giới kế tiếp.
@@ -137,7 +137,7 @@ Tổng **17 đại cảnh giới**; 16 đại cảnh giới đầu chia **3 kỳ
 | 2. Thương Lan | Nguyên Anh → Hóa Thần → Luyện Hư |
 | 3. Thiên Huyền | Hợp Thể → Đại Thừa → Độ Kiếp |
 | 4. Cửu Thiên | Chân Tiên → Thiên Tiên → Huyền Tiên |
-| 5. Thượng Cổ | Kim Tiên → Tiên Vương → Tiên Đế |
+| 5. Thượng Cổ | Kim Tiên → Đại La Kim Tiên → Tiên Đế |
 | 6. Hỗn Độn | Đạo Tổ (**một bậc duy nhất, không chia kỳ, không còn thanh tu vi**) |
 
 ### 6.3 Điều kiện sang thế giới kế tiếp

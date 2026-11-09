@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.5.2 — Chốt hệ thống cảnh giới
+- Đổi tên đại cảnh giới thứ hai của thế giới 5 từ **Tiên Vương** thành **Đại La Kim Tiên**. Thứ tự 17 đại cảnh giới: Luyện Thể → Luyện Khí → Trúc Cơ → Kim Đan → Nguyên Anh → Hóa Thần → Luyện Hư → Hợp Thể → Đại Thừa → Độ Kiếp → Chân Tiên → Thiên Tiên → Huyền Tiên → Kim Tiên → Đại La Kim Tiên → Tiên Đế → Đạo Tổ.
+- Save cũ không bị ảnh hưởng (tên cảnh giới tính từ số bậc, không lưu trong save).
+
 ## v0.5.1 — Dọn dẹp dự án
 Không đổi gameplay, save cũ vẫn dùng được (giữ nguyên khóa `vo-luyen-survival-save` và phiên bản save 3).
 - Tách `src/systems/Progression.ts` (741 dòng) thành thư mục `src/systems/progression/` gồm 7 module nhỏ theo chức năng; gom logic đọc save dùng chung cho cả `load()` lẫn `importSave()`.
