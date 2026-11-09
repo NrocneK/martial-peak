@@ -6,6 +6,7 @@ import { MAX_TIER, TIERS, isPerfect, nextStep, nextTierNeed } from '../../config
 import { ALL_STAGES } from '../../config/worlds';
 import { data, fail, ok, save, type Result } from './save';
 import { gameCompleted } from './worldProgress';
+import { track } from './quests';
 
 // ---------------------------------------------------------------------
 // Cảnh giới / tu vi
@@ -34,6 +35,7 @@ export function breakthrough(): Result & { ending?: boolean } {
   if (daoToLocked()) return fail(`Phải đánh bại ${FINAL_BOSS_NAME} mới có thể bước lên Đạo Tổ.`);
   if (!canBreakthrough()) return fail('Chưa đủ tu vi để đột phá.');
   data.tier++;
+  track('cultivate');
   if (data.tier === MAX_TIER) {
     save();
     return { ...ok(`Đột phá thành công: ${TIERS[data.tier].name}!`), ending: true };
@@ -57,6 +59,7 @@ export function buyPack(count: number): Result {
   if (n <= 0) return fail('Không đủ linh thạch.');
   data.linh -= cost * n;
   data.tuVi += gain * n;
+  track('cultivate');
   save();
   return ok(`Hấp thụ ${n} gói linh thạch, nhận ${gain * n} tu vi.`);
 }
@@ -82,6 +85,7 @@ export function craftPill(id: PillId): Result {
   data.mats.herb -= def.herb;
   data.mats.core -= def.core;
   data.linh -= linh;
+  track('alchemy');
   if (id === 'tuvi') {
     const gain = Math.ceil(0.25 * nextStep(data.tier));
     data.tuVi += gain;

@@ -90,7 +90,7 @@ src/
 │   ├── CardPicker.ts      # Quy tắc thẻ lên cấp + thức tỉnh
 │   ├── RunState.ts        # Cấp, XP, kỹ năng đang có, tính lại chỉ số
 │   ├── Projectiles.ts / Pickups.ts / Fx.ts / FloatingText.ts / SpatialGrid.ts
-│   ├── progression/       # Tiến trình vĩnh viễn (không phụ thuộc Phaser)
+│   ├── progression/       # Tiến trình vĩnh viễn (không phụ thuộc Phaser); quests.ts = nhiệm vụ
 │   │   ├── save.ts        #   Cấu trúc save, localStorage, nâng cấp save cũ, xuất / nhập
 │   │   ├── stats.ts       #   Chỉ số tổng hợp (cảnh giới + trang bị + đan)
 │   │   ├── cultivation.ts #   Cảnh giới, đột phá, luyện đan, kỹ năng mang theo
@@ -129,15 +129,15 @@ Mọi hình pixel art nằm dưới dạng **code** trong `tools/art/` (công c�
 
 | File | Vẽ gì | Xuất ra (chép vào `public/ui/`) |
 |---|---|---|
-| `hero.px.js` | Cố Trường Ca: dáng đứng lớn (thở) + sprite đi bộ trong trận | `out/anims/hero_full.png`, `out/anims/hero_walk.png` |
-| `sect_bg.px.js` | Ảnh nền Vân Hạc Tông (Menu, Lobby, màn nạp) | `out/scenes/sect_bg.png` |
-| `icons.px.js` | Icon thanh điều hướng, tài nguyên, con dấu | `out/sprites/ic_*.png`, `seal.png` |
+| `hero.px.js` | Cố Trường Ca: dáng đứng (thở), đi bộ trong trận, ngồi thiền (Tu Luyện) | `out/anims/hero_full.png`, `hero_walk.png`, `hero_meditate.png` |
+| `sect_bg.px.js` | Ảnh nền Vân Hạc Tông: bản dọc 9:16 (điện thoại) + bản ngang 16:9 (PC) | `out/scenes/sect_tall.png`, `sect_wide.png` |
+| `icons.px.js` | Icon, con dấu, khung viền vàng 9 mảnh (`frame_panel`, `frame_on`) | `out/sprites/*.png` |
 
 ```bash
 node <thư-mục-pxl>/bin/pxl.js build tools/art/hero.px.js   # ảnh xem trước phóng to nằm ở tools/art/out/_preview/
 ```
 
-Ảnh nền 480x400 được thiết kế "an toàn khi cắt": phần quan trọng ở cột giữa nên điện thoại dọc và màn hình ngang đều thấy chính điện + cổng truyền tống.
+Truyền Tống Trận (cổng xoáy) trên ảnh nền là nút vào chọn màn: tọa độ tâm cổng nằm ở `TALL.portal` / `WIDE.portal` trong `sect_bg.px.js` **và** `SECT` trong `src/ui/screens/Hub.ts`. Đổi bố cục ảnh thì sửa cả hai.
 
 ## Lịch sử phiên bản
 

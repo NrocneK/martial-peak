@@ -136,3 +136,44 @@ anim('hero_walk', { w: 18, h: 28, frames: 4, fps: 8, outline: 'k' }, (c) => {
   c.rect(5, 7 + B, 2, 3, 'p'); c.rect(11, 7 + B, 2, 3, 'p'); c.px(5, 7 + B, 'w'); c.px(11, 7 + B, 'w'); c.px(6, 9 + B, 'P'); c.px(12, 9 + B, 'P')
   c.px(9, 10 + B, 'L')
 })
+
+// ---------------------------------------------------------------- Ngồi thiền (tab Tu Luyện)
+// 58x58: kiết già trên bồ đoàn, tay kết ấn, mắt nhắm; hào quang + linh khí xoay quanh (8 khung).
+function meditate(c) {
+  const ph = c.phase * Math.PI * 2
+  const B = Math.sin(ph) > 0.3 ? -1 : 0
+  // bồ đoàn
+  c.ellipse(29, 51, 22, 5, 'y'); c.ellipse(29, 50, 21, 4, 'Y'); c.hline(10, 49, 38, 'Z')
+  // chân xếp bằng + vạt áo trắng phủ
+  c.ellipse(29, 45, 20, 6, 'n'); c.ellipse(29, 44, 19, 5, 'N'); c.rect(13, 45, 6, 3, 'b'); c.rect(39, 45, 6, 3, 'b')
+  c.poly([15, 37 + B, 43, 37 + B, 47, 45, 11, 45], 'F'); c.poly([11, 45, 15, 37 + B, 19, 37 + B, 16, 45], 'E'); c.hline(11, 45, 37, 'X')
+  // đuôi tóc rủ sau lưng
+  c.poly([34, 7 + B, 39, 7 + B, 41, 15 + B, 39, 27 + B, 36, 19 + B], 'h'); c.line(38, 9 + B, 39, 19 + B, 'i')
+  // thân + cổ áo + đai
+  c.rect(21, 21 + B, 16, 16, 'F'); c.rect(21, 21 + B, 4, 16, 'E'); c.rect(33, 21 + B, 4, 16, 'E')
+  c.line(23, 21 + B, 29, 28 + B, 'X'); c.line(24, 21 + B, 30, 28 + B, 'X'); c.line(35, 21 + B, 30, 26 + B, 'X')
+  c.rect(21, 32 + B, 16, 3, 'X'); c.hline(21, 32 + B, 16, 'Z'); c.rect(27, 31 + B, 4, 5, 'G')
+  // tay áo rộng ôm vào lòng, tay kết ấn
+  c.poly([21, 22 + B, 16, 27 + B, 14, 37 + B, 22, 39 + B, 25, 35 + B], 'F'); c.poly([37, 22 + B, 42, 27 + B, 44, 37 + B, 36, 39 + B, 33, 35 + B], 'E')
+  c.hline(15, 38 + B, 9, 'X'); c.hline(35, 38 + B, 9, 'X')
+  c.rect(24, 37 + B, 10, 3, 'j'); c.px(28, 36 + B, 'j'); c.px(29, 36 + B, 'j'); c.hline(25, 39 + B, 8, 'l')
+  // cổ + đầu (mắt nhắm)
+  c.rect(27, 18 + B, 4, 4, 'l')
+  c.ellipse(29, 12 + B, 8, 7, 'j'); c.rect(22, 11 + B, 15, 6, 'j'); c.hline(24, 18 + B, 10, 'j')
+  c.poly([20, 14 + B, 20, 7 + B, 24, 3 + B, 30, 2 + B, 35, 3 + B, 38, 7 + B, 38, 14 + B, 36, 10 + B, 33, 8 + B, 31, 11 + B, 29, 8 + B, 26, 11 + B, 24, 8 + B, 22, 11 + B], 'h')
+  c.poly([22, 6 + B, 27, 3 + B, 31, 3 + B, 27, 6 + B, 24, 9 + B], 'i'); c.vline(20, 11 + B, 8, 'h'); c.vline(38, 11 + B, 8, 'h')
+  c.rect(33, 2 + B, 3, 3, 'X')
+  c.hline(24, 14 + B, 3, 'p'); c.hline(31, 14 + B, 3, 'p'); c.px(24, 13 + B, 'p'); c.px(33, 13 + B, 'p')
+  c.px(29, 16 + B, 'l'); c.hline(28, 17 + B, 2, 'L')
+  c.px(29, 10 + B, 'G')
+}
+anim('_med_body', { w: 58, h: 58, frames: 8, fps: 6, outline: 'k' }, meditate)
+anim('hero_meditate', { w: 60, h: 60, frames: 8, fps: 6 },
+  // hào quang + linh khí phía sau (không viền), rồi đặt thân người có viền lên trên
+  (c) => {
+    const ph = c.phase * Math.PI * 2
+    for (let i = 0; i < 3; i++) c.ring(30, 29, 19 + i * 5 + Math.round(Math.sin(ph + i * 1.3) * 1.5), i === 1 ? 'Z' : 'X')
+    for (let i = 0; i < 8; i++) { const a = ph + (i * Math.PI) / 4; c.px(Math.round(30 + Math.cos(a) * 27), Math.round(30 + Math.sin(a) * 19), i % 2 ? 'G' : 'Z') }
+  },
+  stamp('_med_body', 0, 0),
+)

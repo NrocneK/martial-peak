@@ -8,6 +8,7 @@
 //   inventory.ts      trang bị, luyện khí, cường hóa, phân giải, tái luyện, hòm thưởng
 //   worldProgress.ts  mở khóa thế giới / màn
 //   rewards.ts        thưởng sau màn
+//   quests.ts         nhiệm vụ hằng ngày + chính tuyến
 //   cheats.ts         công cụ gỡ lỗi
 // =====================================================================
 
@@ -18,3 +19,4 @@ export * from './inventory';
 export * from './worldProgress';
 export * from './rewards';
 export * from './cheats';
+export * from './quests';

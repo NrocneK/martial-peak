@@ -7,6 +7,7 @@ import { WEAPONS } from '../../config/weapons';
 import { data, fail, MAX_ITEMS, ok, save, type Result } from './save';
 import { computeMeta } from './stats';
 import { highestWorld } from './worldProgress';
+import { track } from './quests';
 
 function findItem(uid: number): ItemInst | undefined {
   return data.items.find((i) => i.uid === uid);
@@ -59,6 +60,7 @@ export function forge(slot: SlotId, weaponId?: string): Result & { item?: ItemIn
   data.linh -= c.linh;
   const item = makeItem(slot, highestWorld(), undefined, slot === 'weapon' ? weaponId : undefined);
   addItem(item);
+  track('forge');
   save();
   return { ...ok('Luyện khí thành công!'), item };
 }
@@ -77,6 +79,7 @@ export function upgradeItem(uid: number): Result {
   data.mats.ore -= c.ore;
   data.linh -= c.linh;
   it.level++;
+  track('forge');
   save();
   return ok(`Cường hóa thành công lên +${it.level}.`);
 }

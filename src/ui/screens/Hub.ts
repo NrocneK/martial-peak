@@ -2,7 +2,7 @@ import { bar, css, h, heroAvatar, heroSprite, openModal } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
 import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
-import { ALL_STAGES, WORLDS, worldById, type StageDef } from '../../config/worlds';
+import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
@@ -15,29 +15,45 @@ import { openSettings } from './Settings';
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
 const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
 
-/** 'stage' (Lịch Luyện / chọn màn) mở từ Sảnh nên không có nút riêng ở thanh dưới */
-type Tab = 'home' | 'stage' | 'cultivate' | 'hero' | 'craft' | 'skill';
+/**
+ * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình). Tâm + bán kính của
+ * Truyền Tống Trận tính theo pixel ảnh — PHẢI khớp tools/art/sect_bg.px.js (TALL.portal / WIDE.portal).
+ * `posY` khớp background-position-y trong styles.css (.sect).
+ */
+const SECT = {
+  tall: { w: 288, h: 512, x: 144, y: 414, r: 33, posY: 1 },
+  wide: { w: 512, h: 288, x: 256, y: 214, r: 23, posY: 0.7 },
+};
+const TALL_MQ = '(max-aspect-ratio: 1/1)';
+
+/** 'stage' (Lịch Luyện / chọn màn) mở bằng Truyền Tống Trận ở Sảnh nên không có nút riêng ở thanh dưới */
+type Tab = 'home' | 'stage' | 'cultivate' | 'bag' | 'craft' | 'quest';
 const NAV: [Tab, string, string][] = [
   ['home', 'Sảnh', 'home'],
   ['cultivate', 'Tu Luyện', 'cultivate'],
-  ['hero', 'Nhân Vật', 'hero'],
+  ['bag', 'Hành Trang', 'bag'],
   ['craft', 'Chế Tạo', 'forge'],
-  ['skill', 'Kỹ Năng', 'skill'],
+  ['quest', 'Nhiệm Vụ', 'quest'],
 ];
-const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', cultivate: 'Tu Luyện', hero: 'Nhân Vật', craft: 'Chế Tạo', skill: 'Kỹ Năng' };
+const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', cultivate: 'Tu Luyện', bag: 'Hành Trang', craft: 'Chế Tạo', quest: 'Nhiệm Vụ' };
 
 /**
  * Lobby (Sảnh Vân Hạc Tông): nơi người chơi ở giữa các màn.
  *   - Thanh trên: avatar, cảnh giới, tu vi, tài nguyên, nút Cài Đặt.
- *   - Cột trái (ở Sảnh): Hòm Thư (đồ chờ nhận khi túi đầy), Thành Tích.
- *   - Thanh dưới: Sảnh · Tu Luyện · Nhân Vật · Chế Tạo · Kỹ Năng.
- *   - Sảnh: ảnh nền tông môn + nhân vật + nút Lịch Luyện (khiêu chiến màn kế tiếp / mở bản đồ).
+ *   - Sảnh: ảnh nền tông môn; bấm Truyền Tống Trận (cổng xoáy giữa màn hình) để vào chọn màn.
+ *     Cột trái: Hòm Thư, Thành Tích.
+ *   - Thanh dưới: Sảnh · Tu Luyện (Cảnh Giới / Kỹ Năng) · Hành Trang · Chế Tạo (Luyện Khí / Luyện Đan) · Nhiệm Vụ.
  */
 export class Hub {
   readonly root = h('div', { class: 'screen hub' });
   private tab: Tab = 'home';
   private world = 1;
-  private craftMode: 'alchemy' | 'forge' = 'alchemy';
+  private craftMode: 'forge' | 'alchemy' = 'forge';
+  private cultMode: 'realm' | 'skill' = 'realm';
+  private selSlot: SlotId = 'weapon';
+  private readonly sect = h('div', { class: 'sect' });
+  private readonly portalBtn = h('button', { class: 'portal-hit', 'aria-label': 'Truyền Tống Trận: vào Lịch Luyện chọn màn' },
+    h('i', { class: 'portal-ring' }), h('span', { class: 'portal-tag' }, h('b', { text: 'Truyền Tống Trận' }), h('small', { text: 'Lịch Luyện' })));
   private readonly top = h('header', { class: 'lb-top' });
   private readonly body = h('main', { class: 'lb-body' });
   private readonly nav = h('nav', { class: 'lb-nav' });
@@ -49,7 +65,25 @@ export class Hub {
     /** Chiếu đoạn kết (khi vừa lên Đạo Tổ, hoặc bấm xem lại) */
     private readonly onEnding: () => void,
   ) {
-    this.root.append(h('div', { class: 'sect' }), this.top, this.body, this.nav);
+    this.portalBtn.addEventListener('click', () => {
+      this.world = Math.min(P.highestWorld(), this.world || 1);
+      this.go('stage');
+    });
+    this.sect.append(this.portalBtn);
+    this.root.append(this.sect, this.top, this.body, this.nav);
+    // Giữ nút Truyền Tống Trận đúng vị trí cổng trên ảnh khi đổi kích thước / xoay máy
+    new ResizeObserver(() => this.placePortal()).observe(this.sect);
+  }
+
+  /** Đặt vùng bấm lên đúng cổng xoáy: ảnh nền dùng background-size: cover nên tự tính tỉ lệ + độ lệch */
+  private placePortal(): void {
+    const W = this.sect.clientWidth, H = this.sect.clientHeight;
+    if (!W || !H) return;
+    const b = window.matchMedia(TALL_MQ).matches ? SECT.tall : SECT.wide;
+    const k = Math.max(W / b.w, H / b.h);
+    const ox = (W - b.w * k) * 0.5, oy = (H - b.h * k) * b.posY;
+    const r = b.r * k;
+    Object.assign(this.portalBtn.style, { left: `${ox + b.x * k - r}px`, top: `${oy + b.y * k - r}px`, width: `${r * 2}px`, height: `${r * 2}px` });
   }
 
   /** Mở lobby; `world` = mở thẳng bản đồ thế giới đó (dùng khi quay về sau màn chơi) */
@@ -86,7 +120,7 @@ export class Hub {
     t.fill.style.width = `${Math.max(0, Math.min(100, ((s.tuVi - base) / Math.max(1, need - base)) * 100))}%`;
     t.label.textContent = P.perfected() ? 'Viên mãn' : `Tu vi ${fmt(Math.min(s.tuVi, need))} / ${fmt(need)}`;
     this.top.replaceChildren(
-      h('button', { class: 'profile', title: 'Nhân vật', onclick: () => this.go('hero') },
+      h('button', { class: 'profile', title: 'Hành Trang', onclick: () => this.go('bag') },
         heroAvatar(),
         h('span', { class: 'pf-text' },
           h('b', { class: 'pf-name', text: 'Cố Trường Ca' }),
@@ -101,24 +135,26 @@ export class Hub {
       h('button', { class: 'icon-btn', title: 'Cài đặt', 'aria-label': 'Cài đặt', onclick: () => { audio.play('click'); openSettings(() => this.render(), this.onBack); } }, ic('settings')),
     );
 
-    const home = this.tab === 'home';
-
     // --- Thanh dưới ---
     const navTab = this.tab === 'stage' ? 'home' : this.tab;
+    const questBadge = P.claimableQuests();
     this.nav.replaceChildren(
       ...NAV.map(([id, name, icon]) =>
-        h('button', { class: 'nv' + (id === navTab ? ' on' : ''), 'aria-current': id === navTab ? 'page' : null, onclick: () => this.go(id) }, ic(icon), h('span', { text: name })),
+        h('button', { class: 'nv' + (id === navTab ? ' on' : ''), 'aria-current': id === navTab ? 'page' : null, onclick: () => this.go(id) },
+          ic(icon), h('span', { text: name }), id === 'quest' && questBadge ? h('i', { class: 'badge', text: String(questBadge) }) : null),
       ),
     );
 
     // --- Nội dung ---
+    const home = this.tab === 'home';
     this.root.classList.toggle('at-home', home);
     if (home) {
       this.body.replaceChildren(this.vHome());
+      requestAnimationFrame(() => this.placePortal());
       return;
     }
     const views: Record<Exclude<Tab, 'home'>, () => HTMLElement> = {
-      stage: this.vStage, cultivate: this.vCultivate, hero: this.vHero, craft: this.vCraft, skill: this.vSkill,
+      stage: this.vStage, cultivate: this.vCultivateTab, bag: this.vBag, craft: this.vCraft, quest: this.vQuest,
     };
     const prev = this.body.querySelector('.panel-body');
     const scroll = prev && this.body.dataset.tab === this.tab ? prev.scrollTop : 0;
@@ -141,31 +177,18 @@ export class Hub {
       ic(icon), h('span', { text: label }), badge > 0 ? h('i', { class: 'badge', text: String(badge) }) : null);
   }
 
-  // ------------------------------------------------------------------ Sảnh
-  /** Màn kế tiếp nên đánh: màn đầu tiên đã mở mà chưa vượt; nếu đã vượt hết thì màn cuối đã mở */
-  private nextStage(): StageDef {
-    const open = ALL_STAGES.filter((st) => P.isStageUnlocked(st));
-    return open.find((st) => !P.isCleared(st.id)) ?? open[open.length - 1];
+  /** Thanh chuyển tab con (Cảnh Giới / Kỹ Năng, Luyện Khí / Luyện Đan) */
+  private segs<T extends string>(cur: T, items: [T, string, string][], set: (v: T) => void): HTMLElement {
+    return h('div', { class: 'segs' }, ...items.map(([id, name, icon]) =>
+      h('button', { class: 'seg' + (cur === id ? ' on' : ''), onclick: () => { set(id); audio.play('click'); this.render(); } }, ic(icon), name)));
   }
 
+  // ------------------------------------------------------------------ Sảnh
   private vHome(): HTMLElement {
-    const st = this.nextStage();
-    const w = worldById(st.world);
-    const done = P.isCleared(st.id);
     return h('div', { class: 'lb-home' },
       h('div', { class: 'lb-side' },
         this.sideBtn('mail', 'Hòm Thư', P.getSave().inbox.length, () => this.openInbox()),
         this.sideBtn('trophy', 'Thành Tích', 0, () => this.openStats()),
-      ),
-      heroSprite(4, 'home-hero'),
-      h('div', { class: 'portal-card' },
-        h('div', { class: 'pc-kicker' }, ic('stage'), 'Lịch Luyện'),
-        h('div', { class: 'pc-world', text: w.name }),
-        h('div', { class: 'pc-stage' }, `${st.name} · ${st.event}`, st.boss.main ? h('span', { class: 'tag boss', text: 'Boss chính' }) : null),
-        h('div', { class: 'pc-btns' },
-          h('button', { class: 'btn primary', text: done ? 'Khiêu chiến lại' : 'Khiêu chiến', onclick: () => { audio.play('click'); this.onStage(st); } }),
-          h('button', { class: 'btn', text: 'Bản đồ', onclick: () => { this.world = st.world; this.go('stage'); } }),
-        ),
       ),
     );
   }
@@ -191,12 +214,14 @@ export class Hub {
   private openStats(): void {
     const s = P.getSave();
     const p = P.progressCount();
+    const mq = P.mainQuestCount();
     const owned = new Set([...s.items, ...s.inbox].filter((i) => i.slot === 'bibao').map((i) => i.bibaoId));
     const rows: [string, string][] = [
       ['Cảnh giới', tierLabel(s.tier, s.tuVi)],
       ['Màn đã vượt', `${p.cleared} / ${p.total}`],
       ['Thế giới đã mở', `${P.highestWorld()} / ${WORLDS.length}`],
       ['Bí bảo sưu tầm', `${owned.size} / ${BIBAOS.length}`],
+      ['Nhiệm vụ chính tuyến', `${mq.claimed} / ${mq.total}`],
       ['Số lần lịch luyện', fmt(s.stats.runs)],
       ['Số trận thắng', fmt(s.stats.wins)],
       ['Tổng số quái hạ gục', fmt(s.stats.kills)],
@@ -204,35 +229,91 @@ export class Hub {
     openModal('Thành Tích', h('div', { class: 'stat-list' }, ...rows.map(([k, v]) => h('div', null, h('span', { class: 'dim', text: k }), h('b', { text: v })))));
   }
 
-  // ------------------------------------------------------------------ Nhân Vật
-  private vHero(): HTMLElement {
+  // ------------------------------------------------------------------ Tu Luyện: Cảnh Giới / Kỹ Năng
+  private vCultivateTab(): HTMLElement {
+    return h('div', null,
+      this.segs(this.cultMode, [['realm', 'Cảnh Giới', 'cultivate'], ['skill', 'Kỹ Năng', 'skill']], (v) => { this.cultMode = v; }),
+      this.cultMode === 'realm' ? this.vCultivate() : this.vSkill(),
+    );
+  }
+
+  // ------------------------------------------------------------------ Hành Trang
+  /** Ô trang bị quanh nhân vật */
+  private slotBox(slot: SlotId): HTMLElement {
+    const it = P.equippedItem(slot);
+    const color = it ? RARITIES[it.rarity].color : '';
+    return h('button', {
+      class: 'eq-slot eq-' + slot + (this.selSlot === slot ? ' on' : '') + (it ? '' : ' empty'),
+      style: it ? `--rc:${color}` : undefined,
+      title: it ? itemName(it) : `${SLOT_NAMES[slot]}: trống`,
+      onclick: () => { this.selSlot = slot; audio.play('click'); this.render(); },
+    }, ic(slot === 'weapon' ? 'forge' : slot === 'bibao' ? 'essence' : 'gear'), h('span', { class: 'eq-name', text: SLOT_NAMES[slot] }), it ? h('span', { class: 'eq-lv', text: `+${it.level}` }) : null);
+  }
+
+  private vBag(): HTMLElement {
     const s = P.getSave();
     const m = P.computeMeta();
     const stat = (k: string, v: string): HTMLElement => h('div', null, h('span', { class: 'dim', text: k }), h('b', { text: v }));
+    const sel = P.equippedItem(this.selSlot);
     return h('div', null,
-      h('div', { class: 'hero-card' },
-        h('div', { class: 'hero-stage' }, heroSprite(4)),
-        h('div', { class: 'hero-info' },
-          h('div', { class: 'hero-name', text: 'Cố Trường Ca' }),
-          h('div', { class: 'gold', text: tierLabel(s.tier, s.tuVi) }),
-          h('div', { class: 'dim hero-bio', text: 'Thiếu niên xuất thân bình thường, đệ tử Vân Hạc Tông. Không gia thế, không thiên phú, chỉ có một con đường đi đến cùng.' }),
-          h('div', { class: 'stat-list compact' },
+      h('div', { class: 'doll-wrap' },
+        h('div', { class: 'doll' },
+          this.slotBox('weapon'), this.slotBox('clothes'), this.slotBox('bibao'),
+          h('div', { class: 'doll-hero' }, heroSprite(4), h('div', { class: 'doll-name', text: 'Cố Trường Ca' }), h('div', { class: 'gold doll-realm', text: tierLabel(s.tier, s.tuVi) })),
+          this.slotBox('shoes'), this.slotBox('accessory'),
+        ),
+        h('div', { class: 'doll-side' },
+          h('div', { class: 'gold hd' }, ic('hero'), 'Chỉ số'),
+          h('div', { class: 'stat-list' },
             stat('Máu', fmt(m.maxHp)), stat('Sát thương', `×${m.damage.toFixed(2)}`), stat('Giáp', String(Math.round(m.armor))),
             stat('Tốc chạy', String(Math.round(m.moveSpeed))), stat('Chí mạng', `${Math.round(m.crit * 100)}%`), stat('Kỹ năng vũ khí', weaponById(m.weaponId).name),
           ),
+          h('div', { class: 'gold hd', style: 'margin-top:12px' }, ic('ore'), 'Nguyên liệu'),
+          h('div', { class: 'mats' },
+            h('div', { class: 'mat' }, ic('linh'), h('span', { text: 'Linh thạch' }), h('b', { text: fmt(s.linh) })),
+            ...MAT_IDS.map((k) => h('div', { class: 'mat' }, ic(MAT_ICON[k]), h('span', { text: MAT_NAMES[k] }), h('b', { text: fmt(s.mats[k]) }))),
+          ),
         ),
       ),
+      h('div', { class: 'gold hd', style: 'margin-top:14px' }, ic('gear'), `Đang mặc: ${SLOT_NAMES[this.selSlot]}`),
+      sel ? this.itemCard(sel, true) : h('div', { class: 'card empty dim' }, `${SLOT_NAMES[this.selSlot]}: trống. ` + (this.selSlot === 'bibao' ? 'Bí bảo nhận khi vượt màn 5 và màn 10 mỗi thế giới lần đầu.' : 'Chọn một món trong kho bên dưới để trang bị, hoặc vào Chế Tạo để luyện khí.')),
       this.vGear(),
     );
   }
 
-  // ------------------------------------------------------------------ Chế Tạo (Luyện Đan + Luyện Khí)
+  // ------------------------------------------------------------------ Chế Tạo (Luyện Khí + Luyện Đan)
   private vCraft(): HTMLElement {
-    const sw = (id: 'alchemy' | 'forge', name: string): HTMLElement =>
-      h('button', { class: 'seg' + (this.craftMode === id ? ' on' : ''), onclick: () => { this.craftMode = id; audio.play('click'); this.render(); } }, ic(id), name);
     return h('div', null,
-      h('div', { class: 'segs' }, sw('alchemy', 'Luyện Đan'), sw('forge', 'Luyện Khí')),
+      this.segs(this.craftMode, [['forge', 'Luyện Khí', 'forge'], ['alchemy', 'Luyện Đan', 'alchemy']], (v) => { this.craftMode = v; }),
       this.craftMode === 'alchemy' ? this.vAlchemy() : this.vForge(),
+    );
+  }
+
+  // ------------------------------------------------------------------ Nhiệm Vụ
+  private questRow(q: P.QuestView): HTMLElement {
+    const pct = Math.round((q.progress / q.goal) * 100);
+    return h('div', { class: 'quest' + (q.claimed ? ' claimed' : q.done ? ' ready' : '') },
+      ic(q.id.startsWith('d_') ? 'quest' : 'stage'),
+      h('div', { class: 'grow' },
+        h('div', { class: 'q-name', text: q.name }),
+        h('div', { class: 'dim q-desc', text: q.desc }),
+        q.goal > 1 ? h('div', { class: 'q-bar' }, h('i', { style: { width: pct + '%' } }), h('span', { text: `${fmt(q.progress)} / ${fmt(q.goal)}` })) : null,
+        h('div', { class: 'q-reward', text: 'Thưởng: ' + P.rewardText(q.reward) }),
+      ),
+      h('button', { class: 'btn small' + (q.done && !q.claimed ? ' primary' : ''), text: q.claimed ? 'Đã nhận' : q.done ? 'Nhận' : 'Chưa xong', disabled: q.done && !q.claimed ? null : 'disabled', onclick: () => this.act(P.claimQuest(q.id)) }),
+    );
+  }
+
+  private vQuest(): HTMLElement {
+    const daily = P.dailyQuests();
+    const main = P.mainQuests();
+    const mq = P.mainQuestCount();
+    return h('div', { class: 'quests' },
+      h('div', { class: 'gold hd' }, ic('quest'), 'Nhiệm vụ hằng ngày'),
+      h('p', { class: 'dim q-note', text: 'Làm mới mỗi ngày (theo giờ trên máy). Hoàn thành tất cả để nhận thêm thưởng.' }),
+      ...daily.map((q) => this.questRow(q)),
+      h('div', { class: 'gold hd', style: 'margin-top:16px' }, ic('stage'), `Nhiệm vụ chính tuyến (${mq.claimed}/${mq.total})`),
+      ...(main.length ? main.map((q) => this.questRow(q)) : [h('div', { class: 'empty-note', text: 'Đã hoàn thành mọi nhiệm vụ chính tuyến.' })]),
     );
   }
 
@@ -283,7 +364,8 @@ export class Hub {
     const pk = P.packInfo();
     const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
     root.append(
-      h('div', { class: 'card' },
+      h('div', { class: 'card realm-card' },
+        h('div', { class: 'meditate', role: 'img', 'aria-label': 'Cố Trường Ca ngồi thiền tu luyện' }),
         h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
         h('div', { class: 'dim', text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '') }),
         ...(P.daoToLocked() ? [h('div', { class: 'gold', style: 'margin-top:6px', text: `Ngưỡng Đạo Tổ còn bị phong ấn: phải đánh bại ${P.FINAL_BOSS_NAME} (màn 10 Hỗn Độn Thần Vực).` })] : []),
@@ -438,17 +520,6 @@ export class Hub {
         h('div', { class: 'row' }, h('span', { class: 'gold grow', text: `Hòm Thư có ${s.inbox.length} món chờ nhận (túi đầy).` }), h('button', { class: 'btn small primary', text: 'Mở Hòm Thư', onclick: () => this.openInbox() })),
       ));
     }
-    const eq = h('div', { class: 'slot-grid' });
-    for (const slot of SLOT_IDS) {
-      const it = P.equippedItem(slot as SlotId);
-      eq.append(it ? this.itemCard(it, true) : h('div', { class: 'card empty dim' }, ic(slot === 'weapon' ? 'forge' : 'gear'), `${SLOT_NAMES[slot]}: trống`));
-    }
-    const m = P.computeMeta();
-    root.append(
-      h('div', { class: 'gold hd' }, ic('gear'), 'Đang trang bị'),
-      eq,
-      h('div', { class: 'dim', style: 'margin-bottom:10px', text: `Tổng: máu ${fmt(m.maxHp)} · sát thương ×${m.damage.toFixed(2)} · giáp ${Math.round(m.armor)} · tốc chạy ${Math.round(m.moveSpeed)} · kỹ năng vũ khí: ${weaponById(m.weaponId).name}` }),
-    );
     // Bộ lọc + sắp xếp túi đồ
     let inv = s.items.filter((i) => s.equipped[i.slot] !== i.uid && (this.filterSlot === 'all' || i.slot === this.filterSlot));
     if (this.sortBy === 'power') inv = inv.slice().sort((a, b) => itemPower(b) - itemPower(a));

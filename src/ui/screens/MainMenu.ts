@@ -1,11 +1,11 @@
-import { h, heroSprite } from '../dom';
+import { h } from '../dom';
 import { getSave, progressCount, gameCompleted } from '../../systems/progression';
 import { tierLabel } from '../../config/realms';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
 
 /**
- * Menu chính: nền Vân Hạc Tông (dùng chung với Lobby), tiêu đề vàng, Cố Trường Ca đứng trước cổng,
+ * Menu chính: nền Vân Hạc Tông (dùng chung với Lobby), tiêu đề vàng,
  * hai nút gọn: Bắt đầu / Tiếp tục và Cài Đặt (âm thanh, save, xóa tiến trình nằm trong bảng Cài Đặt).
  */
 export function buildMainMenu(onPlay: () => void): HTMLElement {
@@ -38,7 +38,6 @@ export function buildMainMenu(onPlay: () => void): HTMLElement {
       h('h1', { class: 'menu-title' }, h('span', { text: 'VẠN GIỚI' }), h('span', { text: 'TẦM QUANG' })),
       h('p', { class: 'menu-tag', text: 'Cố Trường Ca và con đường tu tiên' }),
     ),
-    heroSprite(3, 'menu-hero'),
     nav,
   );
   return root;

@@ -44,7 +44,7 @@
         z-index: 100;
         display: grid;
         place-items: center;
-        background: url('/ui/sect_bg.png') 50% 100% / cover no-repeat #2763d0;
+        background: url('/ui/sect_wide.png') 50% 70% / cover no-repeat #2763d0;
         image-rendering: pixelated;
         color: #e9edff;
         font-family: 'Be Vietnam Pro', 'Segoe UI', Roboto, sans-serif;
@@ -55,6 +55,12 @@
         position: absolute;
         inset: 0;
         background: linear-gradient(180deg, rgba(8, 14, 44, 0.72), rgba(8, 14, 44, 0.55) 50%, rgba(8, 14, 44, 0.8));
+      }
+      @media (max-aspect-ratio: 1/1) {
+        #boot {
+          background-image: url('/ui/sect_tall.png');
+          background-position: 50% 100%;
+        }
       }
       #boot.done {
         opacity: 0;

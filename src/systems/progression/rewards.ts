@@ -6,6 +6,7 @@ import { stageById } from '../../config/worlds';
 import { addItem, makeItem, sellValue } from './inventory';
 import { data, MAX_INBOX, save } from './save';
 import { isCleared } from './worldProgress';
+import { track } from './quests';
 
 export interface StageResult {
   stageId: string;
@@ -52,6 +53,9 @@ export function finishStage(res: StageResult): RewardSummary {
   };
   data.stats.runs++;
   data.stats.kills += res.kills;
+  track('runs');
+  track('kills', res.kills);
+  if (res.victory) track('wins');
 
   if (!res.victory) {
     // Thua: giữ 30% linh thạch nhặt được, không nhận tu vi

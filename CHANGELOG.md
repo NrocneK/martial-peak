@@ -1,5 +1,17 @@
 # Lịch sử phiên bản
 
+## v0.8.0 — Lobby theo ảnh tham khảo, Hành Trang, Nhiệm Vụ
+- **Ảnh nền vẽ lại** với chi tiết dày hơn và **2 bản**: dọc 9:16 cho điện thoại (`sect_tall`), ngang 16:9 cho PC (`sect_wide`). Núi đá vôi, biển mây, vách đá lởm chởm có vân, tùng bonsai, anh đào xum xuê, chính điện 3 tầng + lầu hai bên, thác nước, cầu vòm, đảo nổi, trăng linh quang, Truyền Tống Trận lớn (khung vòm vàng, cờ lam, đèn đá, sàn trận pháp, lan can).
+- **Khung viền vàng pixel art** (9 mảnh) cho thanh dưới, nút bên, bảng, hộp thoại.
+- **Sảnh**: bỏ nhân vật và thẻ Lịch Luyện. **Bấm vào Truyền Tống Trận** (cổng xoáy giữa màn hình, có viền sáng nhịp thở + biển tên) để vào chọn màn. Thanh trên trong suốt để lộ bầu trời.
+- **Thanh dưới mới**: Sảnh · Tu Luyện · Hành Trang · Chế Tạo · Nhiệm Vụ (Cài Đặt ở nút bánh răng góc trên).
+  - **Tu Luyện**: tab *Cảnh Giới* (Cố Trường Ca ngồi thiền có hào quang chuyển động) và tab *Kỹ Năng* (danh sách + chọn kỹ năng mang vào trận).
+  - **Hành Trang**: nhân vật ở giữa, 5 ô trang bị xung quanh (bấm ô để xem / thao tác món đang mặc), chỉ số, nguyên liệu, kho đồ.
+  - **Chế Tạo**: Luyện Khí / Luyện Đan.
+  - **Nhiệm Vụ** (mới): 6 nhiệm vụ hằng ngày + thưởng hoàn thành tất cả (làm mới theo ngày trên máy), nhiệm vụ chính tuyến (vượt màn 5 / màn 10 mỗi thế giới, đạt mỗi đại cảnh giới). Thưởng linh thạch + nguyên liệu, **không cho tu vi**. Số nhiệm vụ chờ nhận hiện trên nút.
+- Menu chính bỏ nhân vật (giống ảnh tham khảo). Màn nạp dùng ảnh nền dọc / ngang theo màn hình.
+- Save thêm trường `quests` (save cũ tự bổ sung, không mất dữ liệu).
+
 ## v0.7.0 — Giao diện mới: màn nạp, Menu, Lobby, nhân vật
 Toàn bộ hình vẽ bằng công cụ pxl (pixel art viết bằng code, miễn phí), nguồn trong `tools/art/`.
 - **Nhân vật Cố Trường Ca** (theo ảnh concept: tóc đen tím buộc đuôi ngựa cao, áo trắng viền lam, đai lam khóa vàng, ủng đen):

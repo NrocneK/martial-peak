@@ -187,4 +187,30 @@ sprite('ic_settings', T, (c) => {
   c.line(8, 8, 11, 11, '5'); c.px(7, 15, '5'); c.px(15, 6, '5')
 })
 
+// ---------------------------------------------------------------- Hành Trang: túi gấm vàng
+sprite('ic_bag', T,
+  poly([8, 10, 22, 10, 28, 20, 26, 28, 4, 28, 2, 20], 'y'), poly([2, 20, 8, 10, 12, 10, 8, 20, 9, 28, 4, 28], 'Y'), poly([20, 12, 22, 10, 28, 20, 26, 28, 21, 28, 24, 20], 'Q'),
+  poly([9, 10, 11, 4, 15, 7, 19, 4, 21, 10], 'y'), poly([11, 4, 15, 7, 13, 9], 'o'), rect(8, 9, 14, 3, 'R'), hline(8, 9, 14, 'e'),
+  circ(15, 19, 4, 'Q'), circ(15, 19, 3, 'y'), px(15, 19, 'o'), px(14, 18, 'o'), hline(6, 26, 18, 'q'),
+)
+// ---------------------------------------------------------------- Nhiệm Vụ: quyển trục + dấu tích
+sprite('ic_quest', T,
+  rect(5, 4, 20, 22, 'W'), rect(5, 4, 3, 22, 'p'), rect(21, 4, 4, 22, 'w'),
+  rect(3, 1, 24, 4, 't'), hline(3, 1, 24, 'Y'), rect(3, 25, 24, 4, 't'), hline(3, 25, 24, 'Y'), rect(1, 1, 3, 4, 'D'), rect(26, 1, 3, 4, 'D'), rect(1, 25, 3, 4, 'D'), rect(26, 25, 3, 4, 'D'),
+  hline(9, 9, 8, 'D'), hline(9, 12, 6, 'D'),
+  poly([8, 17, 12, 21, 23, 8, 26, 11, 12, 26, 5, 20], 'j'), poly([8, 17, 12, 21, 12, 24, 6, 19], 'u'), line(12, 21, 23, 9, 'J'),
+)
+// ---------------------------------------------------------------- Khung viền 9 mảnh (CSS border-image, mỗi góc 8px)
+// frame_panel: bảng / nút thường. frame_on: nút đang chọn (vàng sáng, phát quang).
+function frame(c, edge, edgeHi, fill, glow) {
+  c.rect(0, 0, 24, 24, 'k'); c.rect(2, 2, 20, 20, fill)
+  c.box(1, 1, 22, 22, edge); c.box(3, 3, 18, 18, edgeHi)
+  for (const [x, y] of [[0, 0], [16, 0], [0, 16], [16, 16]]) {
+    c.rect(x + 1, y + 1, 6, 6, edge); c.rect(x + 2, y + 2, 4, 4, fill); c.px(x + 3, y + 3, edgeHi); c.px(x + 4, y + 4, edgeHi); c.px(x + 3, y + 4, glow); c.px(x + 4, y + 3, glow)
+  }
+  c.px(11, 1, edgeHi); c.px(12, 1, edgeHi); c.px(11, 22, edgeHi); c.px(12, 22, edgeHi); c.px(1, 11, edgeHi); c.px(1, 12, edgeHi); c.px(22, 11, edgeHi); c.px(22, 12, edgeHi)
+}
+sprite('frame_panel', { w: 24, h: 24 }, (c) => frame(c, 'Q', 'y', 'b', 'Y'))
+sprite('frame_on', { w: 24, h: 24 }, (c) => frame(c, 'Y', 'o', 'B', 'o'))
+
 sheet('ui_icons', ['ic_*', 'seal'], { pad: 1 })

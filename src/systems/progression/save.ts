@@ -7,6 +7,19 @@ import { MAX_ITEM_LEVEL, type ItemInst } from '../../config/items';
 import { MAX_TIER, TIERS, legacyCumTuVi } from '../../config/realms';
 import { SLOT_IDS, type MatId, type SlotId } from '../../config/types';
 
+export type DailyKey = 'runs' | 'wins' | 'kills' | 'alchemy' | 'forge' | 'cultivate';
+/** Tiến độ nhiệm vụ (logic nằm ở quests.ts) */
+export interface QuestState {
+  /** Ngày (YYYY-MM-DD, giờ máy) của bộ tiến độ hằng ngày hiện tại */
+  day: string;
+  daily: Partial<Record<DailyKey, number>>;
+  /** id nhiệm vụ hằng ngày đã nhận thưởng trong ngày */
+  dailyClaimed: string[];
+  /** id nhiệm vụ chính tuyến đã nhận thưởng */
+  mainClaimed: string[];
+}
+const defaultQuests = (): QuestState => ({ day: '', daily: {}, dailyClaimed: [], mainClaimed: [] });
+
 // Giữ nguyên tên khóa cũ: đổi tên sẽ làm người chơi mất save. Đổi cấu trúc thì tăng SAVE_VERSION và thêm bước trong migrate().
 const SAVE_KEY = 'vo-luyen-survival-save';
 const SAVE_VERSION = 4;
@@ -32,6 +45,8 @@ export interface SaveData {
   inbox: ItemInst[];
   sound: boolean;
   stats: { runs: number; wins: number; kills: number };
+  /** Tiến độ nhiệm vụ (hằng ngày + chính tuyến) */
+  quests: QuestState;
 }
 
 export type Result = { ok: boolean; msg: string };
@@ -55,6 +70,7 @@ function defaultSave(): SaveData {
     inbox: [],
     sound: true,
     stats: { runs: 0, wins: 0, kills: 0 },
+    quests: defaultQuests(),
   };
 }
 
@@ -132,6 +148,10 @@ function normalize(parsed: Partial<SaveData>): SaveData {
   d.equipped = { ...def.equipped, ...(parsed.equipped ?? {}) };
   d.pills = { ...def.pills, ...(parsed.pills ?? {}) };
   d.stats = { ...def.stats, ...(parsed.stats ?? {}) };
+  d.quests = { ...def.quests, ...(parsed.quests ?? {}) };
+  if (!Array.isArray(d.quests.dailyClaimed)) d.quests.dailyClaimed = [];
+  if (!Array.isArray(d.quests.mainClaimed)) d.quests.mainClaimed = [];
+  if (!d.quests.daily || typeof d.quests.daily !== 'object') d.quests.daily = {};
   migrate(d, parsed.v ?? 1);
   d.v = SAVE_VERSION;
   return sanitize(d);
