@@ -4,7 +4,7 @@ import { getDialogue } from '../config/story';
 import { stageById, type StageDef } from '../config/worlds';
 import type { GameScene } from '../scenes/GameScene';
 import type { Card } from '../systems/CardPicker';
-import { finishStage, getSave, type StageResult } from '../systems/Progression';
+import { finishStage, getSave, type StageResult } from '../systems/progression';
 import { audio } from '../systems/Audio';
 import { h } from '../ui/dom';
 import { buildMainMenu } from '../ui/screens/MainMenu';
@@ -98,7 +98,7 @@ export class GameFlow {
   private onStageStart(scene: GameScene): void {
     this.clearScreens();
     this.hud?.destroy();
-    this.hud = new GameHud(scene, () => undefined);
+    this.hud = new GameHud(scene);
     this.ui.append(this.hud.root);
   }
 

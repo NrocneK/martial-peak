@@ -16,7 +16,7 @@ import { SkillSystem } from '../systems/SkillSystem';
 import { Spawner } from '../systems/Spawner';
 import { generateCards, type Card } from '../systems/CardPicker';
 import { RARITIES } from '../config/items';
-import { computeMeta, currentLoadout, equippedItem, tierNow, type StageResult } from '../systems/Progression';
+import { computeMeta, currentLoadout, equippedItem, type StageResult } from '../systems/progression';
 import { WORLD_FIRST_TIER } from '../config/realms';
 import { econScale } from '../config/balance';
 import { mixColor } from '../utils/format';
@@ -130,7 +130,6 @@ export class GameScene extends Phaser.Scene {
 
     this.status = 'running';
     this.game.events.emit('stage-start', this);
-    void tierNow;
   }
 
   /** Bán kính vùng nhìn thấy (để sinh quái ngay ngoài mép màn hình) */

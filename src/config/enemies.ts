@@ -92,14 +92,6 @@ function build(): EnemyDef[] {
 }
 
 export const ENEMIES: EnemyDef[] = build();
-const BY_ID = new Map(ENEMIES.map((e) => [e.id, e]));
-
-export function enemyById(id: string): EnemyDef {
-  const e = BY_ID.get(id);
-  if (!e) throw new Error('Không có quái ' + id);
-  return e;
-}
-
 export function enemiesOfWorld(world: number): EnemyDef[] {
   return ENEMIES.filter((e) => e.world === world);
 }

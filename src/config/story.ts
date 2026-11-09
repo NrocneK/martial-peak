@@ -5,7 +5,7 @@
 // =====================================================================
 
 import type { DialogueLine } from './types';
-import { stageById, worldById, type StageDef } from './worlds';
+import { stageById, type StageDef } from './worlds';
 
 const KHAI = 'Cố Trường Ca';
 const NARR = 'Dẫn truyện';
@@ -191,8 +191,4 @@ export function getDialogue(stageId: string, when: 'pre' | 'post'): DialogueLine
   if (o) return o;
   const stage = stageById(stageId);
   return when === 'pre' ? preLines(stage) : postLines(stage);
-}
-
-export function worldNameOf(stage: StageDef): string {
-  return worldById(stage.world).name;
 }

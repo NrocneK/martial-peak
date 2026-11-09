@@ -1,7 +1,8 @@
 import { h } from '../dom';
-import { getSave, progressCount, resetAll, setSound, gameCompleted, exportSave, importSave, unlockAll } from '../../systems/Progression';
+import { getSave, progressCount, resetAll, setSound, gameCompleted, exportSave, importSave, unlockAll } from '../../systems/progression';
 import { tierLabel } from '../../config/realms';
 import { audio } from '../../systems/Audio';
+import { isDebugMode } from '../../utils/env';
 
 /** Vị trí ngọn đèn trong ảnh nền 384x216 (pixel) — dùng để đặt nguồn sáng của tiêu đề */
 const LAMP = { x: 101, y: 136 };
@@ -49,11 +50,14 @@ export function buildMainMenu(onPlay: () => void): HTMLElement {
         });
         inp.click();
       }),
-      row('Chế độ TEST', 'mở khóa tất cả', () => {
-        if (!window.confirm('Mở khóa tất cả để test: cảnh giới tối đa, vượt hết 60 màn, nhiều tài nguyên, trang bị mạnh và đủ bí bảo?\n(Cộng thêm vào save hiện tại. Nên bấm "Xuất save" trước nếu muốn giữ bản gốc.)')) return;
-        window.alert(unlockAll().msg);
-        render();
-      }, 'test'),
+      // Nút test chỉ hiện ở chế độ gỡ lỗi (npm run dev hoặc ?debug), người chơi thật không thấy
+      ...(isDebugMode()
+        ? [row('Chế độ TEST', 'mở khóa tất cả', () => {
+            if (!window.confirm('Mở khóa tất cả để test: cảnh giới tối đa, vượt hết 60 màn, nhiều tài nguyên, trang bị mạnh và đủ bí bảo?\n(Cộng thêm vào save hiện tại. Nên bấm "Xuất save" trước nếu muốn giữ bản gốc.)')) return;
+            window.alert(unlockAll().msg);
+            render();
+          }, 'test')]
+        : []),
       row('Xóa toàn bộ tiến trình', '', () => {
         if (window.confirm('Xóa toàn bộ tiến trình và bắt đầu lại từ đầu?')) {
           resetAll();

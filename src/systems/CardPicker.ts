@@ -1,5 +1,5 @@
 import { RUN } from '../config/balance';
-import { ACTIVES, activeById } from '../config/activeSkills';
+import { activeById } from '../config/activeSkills';
 import { weaponById } from '../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../config/passiveSkills';
 import type { RunState } from './RunState';
@@ -164,4 +164,3 @@ export function generateCards(run: RunState): Card[] {
   return cards;
 }
 
-export { ACTIVES };

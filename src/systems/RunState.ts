@@ -2,7 +2,7 @@ import { RUN, xpForLevel } from '../config/balance';
 import { newRunMods, type RunMods } from '../config/types';
 import { PASSIVES } from '../config/passiveSkills';
 import type { PlayerStats } from '../config/game';
-import type { MetaStats } from './Progression';
+import type { MetaStats } from './progression';
 
 export interface OwnedSkill {
   id: string;

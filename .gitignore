@@ -1,4 +1,17 @@
+# Thư viện & bản build
 node_modules
 dist
 *.local
+
+# Hệ điều hành / editor
 .DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Ảnh xuất tạm từ công cụ pxl (tools/art) — chỉ commit ảnh đã chép vào public/
+tools/art/out*/
+
+# Skill cài cục bộ cho Claude (không đưa vào repo)
+.claude/skills/

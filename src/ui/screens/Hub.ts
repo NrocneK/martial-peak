@@ -7,7 +7,7 @@ import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
 import { MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
-import * as P from '../../systems/Progression';
+import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 
 /** Biểu tượng pixel (xem tools/art/ui.px.js) */

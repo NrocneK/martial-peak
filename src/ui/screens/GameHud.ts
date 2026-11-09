@@ -24,10 +24,7 @@ export class GameHud {
   private raf = 0;
   private overlay: HTMLElement | null = null;
 
-  constructor(
-    private readonly scene: GameScene,
-    private readonly onQuit: () => void,
-  ) {
+  constructor(private readonly scene: GameScene) {
     const pauseBtn = h('button', { class: 'btn small', text: 'Tạm dừng ⏸', onclick: () => this.togglePause() });
     this.speedBtn.addEventListener('click', () => this.cycleSpeed());
     this.syncSpeed();

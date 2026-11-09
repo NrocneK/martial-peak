@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { installDebug } from './debug';
 import { GameFlow } from './flow/GameFlow';
+import { isDebugMode } from './utils/env';
 import './ui/styles.css';
 
 // Điểm khởi động của game: tạo đối tượng Phaser.Game với cấu hình chung.
@@ -53,4 +54,4 @@ new GameFlow(game);
 if (import.meta.env.DEV) {
   (window as unknown as { __game: Phaser.Game }).__game = game;
 }
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) installDebug(game);
+if (isDebugMode()) installDebug(game);

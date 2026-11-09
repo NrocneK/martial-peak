@@ -57,7 +57,7 @@ Thêm kiểu hành vi quái mới = thêm một `case` trong `EnemyManager.think
 
 ## Gỡ lỗi / kiểm thử
 
-Bản dev (hoặc thêm `?debug` vào địa chỉ) có đối tượng `__vls` trong console:
+Bản dev (hoặc thêm `?debug` vào địa chỉ) có đối tượng `__vls` trong console và nút **Chế độ TEST** (mở khóa tất cả) ở menu chính:
 
 ```js
 __vls.grant({ tier: 12, linh: 1e6, mats: 99, clearAll: true }) // cấp tài nguyên / mở khóa
@@ -89,10 +89,17 @@ src/
 │   ├── CardPicker.ts      # Quy tắc thẻ lên cấp + thức tỉnh
 │   ├── RunState.ts        # Cấp, XP, kỹ năng đang có, tính lại chỉ số
 │   ├── Projectiles.ts / Pickups.ts / Fx.ts / FloatingText.ts / SpatialGrid.ts
-│   ├── Progression.ts     # Lưu tiến trình, tu vi, trang bị, đan, thưởng
+│   ├── progression/       # Tiến trình vĩnh viễn (không phụ thuộc Phaser)
+│   │   ├── save.ts        #   Cấu trúc save, localStorage, nâng cấp save cũ, xuất / nhập
+│   │   ├── stats.ts       #   Chỉ số tổng hợp (cảnh giới + trang bị + đan)
+│   │   ├── cultivation.ts #   Cảnh giới, đột phá, luyện đan, kỹ năng mang theo
+│   │   ├── inventory.ts   #   Trang bị, luyện khí, cường hóa, phân giải, tái luyện
+│   │   ├── worldProgress.ts # Mở khóa thế giới / màn
+│   │   ├── rewards.ts     #   Thưởng sau màn
+│   │   └── cheats.ts      #   Công cụ gỡ lỗi (grant, mở khóa tất cả)
 │   └── Audio.ts           # Âm thanh tạm (WebAudio)
 ├── input/, ui/            # Bàn phím + joystick; giao diện HTML (screens/, styles.css)
-└── utils/format.ts
+└── utils/                 # format.ts (định dạng số), env.ts (isDebugMode)
 ```
 
 ## Các quyết định kỹ thuật chính
@@ -113,10 +120,6 @@ src/
 - **Tên boss phụ và tên quái** là tên tạm (boss chính theo danh sách của bạn).
 - **Hình ảnh / âm thanh:** đồ tạm, chưa có hoạt ảnh.
 
+## Lịch sử phiên bản
 
-## Tính năng mới (v0.4)
-- Cốt truyện và toàn bộ tên gọi viết mới (6 thế giới giữ nguyên cấu trúc).
-- Trang bị: tiền tố phụ, khóa, phân giải (Tinh hoa), tái luyện, so sánh, lọc/sắp xếp, chọn loại vũ khí khi luyện.
-- Hòm thưởng (bí bảo không mất khi túi đầy); 12 bí bảo có hiệu ứng trong trận.
-- Vũ khí cầm tay đổi ngoại hình theo loại và phẩm chất.
-- Xuất/nhập save ở menu chính; tăng tốc x2/x4 (phím X).
+Xem [`CHANGELOG.md`](CHANGELOG.md).

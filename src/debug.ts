@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import type { GameScene } from './scenes/GameScene';
 import { SCENES } from './config/assets';
-import * as Prog from './systems/Progression';
-import { debugGrant } from './systems/Progression';
+import * as Prog from './systems/progression';
+import { debugGrant } from './systems/progression';
 
 /**
  * API gỡ lỗi `window.__vls` — chỉ bật ở chế độ dev hoặc khi URL có `?debug`.

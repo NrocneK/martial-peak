@@ -1,8 +1,8 @@
 import { h } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
-import type { RewardSummary } from '../../systems/Progression';
+import type { RewardSummary } from '../../systems/progression';
 import { itemName, RARITIES } from '../../config/items';
-import { getSave } from '../../systems/Progression';
+import { getSave } from '../../systems/progression';
 import { MAX_TIER } from '../../config/realms';
 import type { StageDef } from '../../config/worlds';
 
