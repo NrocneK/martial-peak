@@ -37,7 +37,7 @@ Nhân vật chính: **Cố Trường Ca** (1 nhân vật duy nhất, không phâ
 | 2 | Thương Lan Giới | Nguyên Anh, Hóa Thần, Luyện Hư | Hải tộc, ma tu, tông môn thù địch |
 | 3 | Thiên Huyền Tinh Vực | Hợp Thể, Đại Thừa, Độ Kiếp | Thú tinh không, tu sĩ ngoại vực, sứ giả tiên giới |
 | 4 | Cửu Thiên Tiên Giới | Chân Tiên, Thiên Tiên, Huyền Tiên | Thiên binh, chấp pháp sứ, tiên nhân bị thao túng |
-| 5 | Thượng Cổ Tiên Vực | Kim Tiên, Đại La Kim Tiên, Tiên Đế | Cổ thần, Tiên Vương, tàn hồn thượng cổ |
+| 5 | Thượng Cổ Tiên Vực | Kim Tiên, Đại La Kim Tiên, Tiên Đế | Cổ thần, Đại La Kim Tiên thượng cổ, tàn hồn thượng cổ |
 | 6 | Hỗn Độn Thần Vực | Đạo Tổ | Đạo nô, chấp hành giả Đại Đạo Lô |
 
 Mỗi **màn** trong một thế giới = một mốc **sự kiện đánh nhau lớn** của thế giới đó. Cần **vượt tất cả màn** và **đạt cảnh giới yêu cầu** mới sang thế giới kế tiếp.
@@ -129,7 +129,7 @@ Khi **kỹ năng chủ động đạt cấp 5** và người chơi **đã sở h
 
 | Thế giới | Cảnh giới | Tầng nhỏ |
 |---|---|---|
-Tổng **17 đại cảnh giới**; 16 đại cảnh giới đầu chia **3 kỳ: Sơ kỳ, Trung kỳ, Hậu kỳ**, riêng **Đạo Tổ không chia kỳ** (49 bậc). Tiên Đế Viên mãn đột phá thẳng lên Đạo Tổ. Khi ở Hậu kỳ mà tu vi đạt tối đa thì đạt **Viên mãn** (hiển thị "· Viên mãn").
+Tổng **17 đại cảnh giới**; 16 đại cảnh giới đầu chia **3 kỳ: Sơ kỳ, Trung kỳ, Hậu kỳ**, riêng **Đạo Tổ không chia kỳ** (49 bậc). Tiên Đế Viên mãn **và đã đánh bại Thái Hư Đạo Tổ** (màn 10 Hỗn Độn Thần Vực) mới đột phá được lên Đạo Tổ; khoảnh khắc đó chiếu **đoạn kết mở**: Trường Ca nhận ra mình mới chỉ đặt bước chân đầu tiên lên Đại Đạo (để mở rộng game sau này). Khi ở Hậu kỳ mà tu vi đạt tối đa thì đạt **Viên mãn** (hiển thị "· Viên mãn").
 
 | Thế giới | Đại cảnh giới |
 |---|---|
@@ -142,7 +142,12 @@ Tổng **17 đại cảnh giới**; 16 đại cảnh giới đầu chia **3 kỳ
 
 ### 6.3 Điều kiện sang thế giới kế tiếp
 - Thế giới 1 → 5: đạt **Hậu kỳ** của đại cảnh giới cuối thế giới đó + qua hết màn.
-- Thế giới 5 → 6: **không có giới hạn cảnh giới**, chỉ cần **giết boss cuối thế giới 5**.
+- Thế giới 5 → 6: **không có giới hạn cảnh giới**, chỉ cần **giết boss cuối thế giới 5**. Lý do cốt truyện: Hỗn Độn Thần Vực vốn là một phần của Thượng Cổ Tiên Vực bị tách ra trong trận chiến của các đại năng thượng cổ, thực chất cùng một vị diện.
+
+### 6.3b Độ khó tu luyện (`CULTIVATION` trong `src/config/realms.ts`)
+- **Bình cảnh:** bước từ Hậu kỳ sang Sơ kỳ của đại cảnh giới mới tốn **×2,5** tu vi so với bước thường; bước Tiên Đế → Đạo Tổ tốn thêm **×2** nữa.
+- Vượt **lần đầu** cả 10 màn của một thế giới chỉ cho **~60%** tu vi cần để leo hết cảnh giới của thế giới đó. Phần còn lại phải đánh lại màn (nhận 50%), cắn linh thạch, uống đan.
+- Sức mạnh nhân vật vẫn tính theo bậc (`powerIdx`), nên độ khó tăng là ở *thời gian tu luyện*, không làm nhân vật yếu đi.
 - Save cũ được **tự động chuyển** sang thang 49 bậc khi tải.
 
 ### 6.4 Tác dụng của cảnh giới
@@ -224,7 +229,7 @@ Danh sách boss do bạn cung cấp. Mỗi boss có **2-3 chiêu đặc trưng**
 | 2. Thương Lan | Hải Yêu Vương Thương Lan, Tông Chủ Thiên Kiếm Tông, Ma Tôn Cửu U, Thánh Nữ Băng Hải Cung, Long Quy Trưởng Lão, Thương Lan Hải Hoàng |
 | 3. Thiên Huyền | Tinh Không Cự Thú, Tông Chủ Tinh Huyền Môn, Sứ Giả Cửu Thiên Điện, Lôi Kiếp Hóa Thân, Tinh Chủ Thiên Huyền |
 | 4. Cửu Thiên | Thiên Binh Thống Lĩnh, Linh Chi Tiên Tử, Thiên Hình Tôn Giả, Thanh Loan Tiên Quân, Cửu Thiên Điện Chủ |
-| 5. Thượng Cổ | Thượng Cổ Thủ Vệ, Tiên Vương Huyết Kiếm, Tiên Vương Hội Trưởng, Cổ Thần Phế Tích, Tiên Đế Vĩnh Dạ |
+| 5. Thượng Cổ | Thượng Cổ Thủ Vệ, Đại La Huyết Kiếm, Đại La Hội Trưởng, Cổ Thần Phế Tích, Tiên Đế Vĩnh Dạ |
 | 6. Hỗn Độn | Hỗn Độn Linh Thể, Đạo Nô Thủ Hộ, Chấp Hành Giả Đại Đạo Lô, Hóa Thân Thái Hư, Thái Hư Đạo Tổ |
 
 ### Kế hoạch 10 màn mỗi thế giới

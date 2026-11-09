@@ -8,7 +8,8 @@
 //   Thế giới 4: Chân Tiên → Thiên Tiên → Huyền Tiên (3)
 //   Thế giới 5: Kim Tiên → Đại La Kim Tiên → Tiên Đế (3)
 //   Thế giới 6: Đạo Tổ (1, KHÔNG chia kỳ, không còn thanh tu vi)
-// Tiên Đế Viên mãn đột phá thẳng lên Đạo Tổ.
+// Tiên Đế Viên mãn + đánh bại boss cuối (màn 10 Hỗn Độn Thần Vực) mới đột phá được lên Đạo Tổ.
+// Bước sang đại cảnh giới mới gặp "bình cảnh": tốn nhiều tu vi hơn (xem CULTIVATION).
 // =====================================================================
 
 export interface RealmTier {
@@ -42,10 +43,33 @@ export function powerIdx(tier: number): number {
   return (tier * 36) / 48;
 }
 
-/** Chi phí tu vi để lên tier i (từ tier i-1). */
-export function stepCost(i: number): number {
+/**
+ * NHỊP TU LUYỆN — chỉnh ở đây để thay đổi độ khó lên cảnh giới.
+ * Chỉ ảnh hưởng lượng tu vi cần, KHÔNG ảnh hưởng sức mạnh nhân vật (sức mạnh tính theo powerIdx).
+ */
+export const CULTIVATION = {
+  /** Bình cảnh: bước đột phá sang đại cảnh giới mới (Hậu kỳ → Sơ kỳ kế tiếp) tốn gấp bao nhiêu lần bước thường */
+  majorBreakMult: 2.5,
+  /** Bước cuối Tiên Đế → Đạo Tổ tốn thêm gấp bao nhiêu lần (nhân chồng lên majorBreakMult) */
+  daoToMult: 2,
+  /**
+   * Phần tu vi nhận được khi vượt LẦN ĐẦU cả 10 màn của một thế giới, so với tổng tu vi cần để leo hết cảnh giới
+   * của thế giới đó. 0.6 = vượt hết 10 màn mới được ~60%; phần còn lại phải đánh lại màn, cắn linh thạch, uống đan.
+   */
+  firstClearShare: 0.6,
+};
+
+/** Chi phí gốc (chưa tính bình cảnh) để lên tier i từ tier i-1. Cũng là công thức của save phiên bản 3. */
+function baseStepCost(i: number): number {
   if (i <= 0) return 0;
   return Math.round(40 * Math.pow(1.28, powerIdx(i - 1)));
+}
+
+/** Tổng tu vi để đạt tier i theo công thức cũ (save phiên bản 3, chưa có bình cảnh) — chỉ dùng để nâng cấp save. */
+export function legacyCumTuVi(i: number): number {
+  let sum = 0;
+  for (let k = 1; k <= i; k++) sum += baseStepCost(k);
+  return sum;
 }
 
 function build(): RealmTier[] {
@@ -54,11 +78,14 @@ function build(): RealmTier[] {
     for (const group of WORLD_REALMS[w]) {
       // Đạo Tổ (thế giới 6) là một bậc duy nhất, không chia kỳ
       const phases = w === 6 ? [''] : PHASES;
-      for (const phase of phases) {
+      phases.forEach((phase, p) => {
         const index = list.length;
         const prev = index === 0 ? 0 : list[index - 1].cumTuVi;
-        list.push({ index, world: w, name: phase ? `${group} · ${phase}` : group, group, phase, cumTuVi: prev + stepCost(index) });
-      }
+        // Bước vào kỳ đầu của một đại cảnh giới mới = gặp bình cảnh
+        let cost = baseStepCost(index);
+        if (index > 0 && p === 0) cost = Math.round(cost * CULTIVATION.majorBreakMult * (w === 6 ? CULTIVATION.daoToMult : 1));
+        list.push({ index, world: w, name: phase ? `${group} · ${phase}` : group, group, phase, cumTuVi: prev + cost });
+      });
     }
   }
   return list;
@@ -98,7 +125,8 @@ export function tierLabel(tier: number, tuVi: number): string {
   return isPerfect(tier, tuVi) ? `${t.group} · Viên mãn` : t.name;
 }
 
-/** Chi phí bước kế tiếp (dùng cho giá gói tu vi, đan dược...) */
+/** Tu vi cần cho bước kế tiếp, đã tính bình cảnh (dùng cho giá gói tu vi, đan dược...) */
 export function nextStep(tier: number): number {
-  return stepCost(Math.min(MAX_TIER, tier + 1));
+  const t = Math.min(MAX_TIER, tier + 1);
+  return TIERS[t].cumTuVi - TIERS[t - 1].cumTuVi;
 }

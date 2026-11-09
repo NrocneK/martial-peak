@@ -3,7 +3,9 @@
 import { ACTIVES } from '../../config/activeSkills';
 import { PILLS, type PillId } from '../../config/items';
 import { MAX_TIER, TIERS, isPerfect, nextStep, nextTierNeed } from '../../config/realms';
+import { ALL_STAGES } from '../../config/worlds';
 import { data, fail, ok, save, type Result } from './save';
+import { gameCompleted } from './worldProgress';
 
 // ---------------------------------------------------------------------
 // Cảnh giới / tu vi
@@ -13,15 +15,29 @@ export function perfected(): boolean {
   return isPerfect(data.tier, data.tuVi);
 }
 
-export function canBreakthrough(): boolean {
-  const need = nextTierNeed(data.tier);
-  return need !== null && data.tuVi >= need;
+/** Boss cuối game: phải đánh bại mới được bước lên Đạo Tổ */
+export const FINAL_BOSS_NAME = ALL_STAGES[ALL_STAGES.length - 1].boss.name;
+
+/** Đang đứng trước ngưỡng Đạo Tổ nhưng chưa đánh bại boss cuối */
+export function daoToLocked(): boolean {
+  return data.tier === MAX_TIER - 1 && !gameCompleted();
 }
 
-export function breakthrough(): Result {
+export function canBreakthrough(): boolean {
+  const need = nextTierNeed(data.tier);
+  return need !== null && data.tuVi >= need && !daoToLocked();
+}
+
+/** `ending: true` khi vừa bước lên Đạo Tổ (giao diện sẽ chiếu đoạn kết) */
+export function breakthrough(): Result & { ending?: boolean } {
   if (data.tier >= MAX_TIER) return fail('Đã đạt cảnh giới cao nhất.');
+  if (daoToLocked()) return fail(`Phải đánh bại ${FINAL_BOSS_NAME} mới có thể bước lên Đạo Tổ.`);
   if (!canBreakthrough()) return fail('Chưa đủ tu vi để đột phá.');
   data.tier++;
+  if (data.tier === MAX_TIER) {
+    save();
+    return { ...ok(`Đột phá thành công: ${TIERS[data.tier].name}!`), ending: true };
+  }
   // Đột phá có thể mở khóa kỹ năng chủ động mới
   const unlocked = ACTIVES.filter((a) => a.unlockTier === data.tier).map((a) => a.name);
   save();

@@ -61,8 +61,23 @@ const WORLD_OUTRO: Record<number, DialogueLine[]> = {
   6: [
     { speaker: NARR, text: 'Thái Hư Đạo Tổ tan biến. Đại Đạo Lô ngừng quay, vòng thu hoạch kéo dài vô số kỷ nguyên cuối cùng cũng chấm dứt.' },
     { speaker: KHAI, text: 'Ta không thay hắn ngồi lên ngai. Con đường tu luyện từ nay thuộc về chính những người bước đi trên nó.' },
+    { speaker: NARR, text: 'Nơi Đại Đạo Lô từng đứng, một ngưỡng cửa lặng lẽ mở ra. Chỉ người có tu vi Tiên Đế Viên mãn mới bước qua được.' },
+    { speaker: NARR, text: '(Đạt Tiên Đế Viên mãn rồi vào mục Tu Luyện để đột phá lên Đạo Tổ.)' },
   ],
 };
+
+/**
+ * ĐOẠN KẾT: chiếu khi người chơi đột phá lên Đạo Tổ (sau khi đã đánh bại boss cuối).
+ * Kết mở: Đạo Tổ không phải điểm cuối mà mới là bước đầu tiên trên Đại Đạo (chỗ để mở rộng game sau này).
+ */
+export const DAO_TO_ENDING: DialogueLine[] = [
+  { speaker: NARR, text: 'Tu vi viên mãn, Cố Trường Ca bước qua ngưỡng cửa cuối cùng. Hỗn Độn lặng đi.' },
+  { speaker: NARR, text: 'Lần đầu tiên, Đại Đạo hiện ra trước mắt anh, không qua lò luyện nào, không qua bàn tay của bất kỳ ai.' },
+  { speaker: KHAI, text: 'Từ một tiểu tông môn ở Thanh Vân... ta từng nghĩ Đạo Tổ là điểm cuối của con đường.' },
+  { speaker: NARR, text: 'Nhưng phía trước, Đại Đạo trải dài vô tận: những tầng trời chưa có tên, những vị diện chưa ai đặt chân tới, và những ánh mắt đang lặng lẽ dõi theo từ nơi còn xa hơn cả Hỗn Độn.' },
+  { speaker: KHAI, text: 'Thì ra... ta mới chỉ vừa đặt bước chân đầu tiên lên Đại Đạo.' },
+  { speaker: NARR, text: 'Cố Trường Ca · Đạo Tổ. Con đường thật sự, giờ mới bắt đầu.' },
+];
 
 /** Ghi đè hội thoại cho một màn cụ thể: { w1s3: { pre: [...], post: [...] } } */
 const OVERRIDES: Record<string, { pre?: DialogueLine[]; post?: DialogueLine[] }> = {
@@ -124,7 +139,7 @@ const OVERRIDES: Record<string, { pre?: DialogueLine[]; post?: DialogueLine[] }>
   },
   w5s5: {
     pre: [
-      { speaker: NARR, text: 'Trong tàn tích thượng cổ, một vị Tiên Vương cuối cùng còn tỉnh táo đang chờ Trường Ca.' },
+      { speaker: NARR, text: 'Trong tàn tích thượng cổ, một vị Đại La Kim Tiên cuối cùng còn tỉnh táo đang chờ Trường Ca.' },
       { speaker: KHAI, text: 'Ngài biết mọi thứ. Ngài có chịu nói không?' },
     ],
     post: [{ speaker: KHAI, text: 'Lệnh bài này là chứng cứ. Mọi người cần biết sự thật.' }],

@@ -7,10 +7,12 @@
 import { stageDuration } from './balance';
 import { FILLER_BOSSES, MAIN_BOSSES, makeBoss, type BossDef } from './bosses';
 import { WORLD_COLORS } from './enemies';
-import { TIERS, WORLD_FIRST_TIER, WORLD_LAST_TIER } from './realms';
+import { CULTIVATION, TIERS, WORLD_FIRST_TIER, WORLD_LAST_TIER } from './realms';
 import { econScale } from './balance';
 
 export const STAGES_PER_WORLD = 10;
+/** Tổng trọng số thưởng tu vi của 10 màn: Σ (1 + 0.06·i), i = 0..9 */
+const STAGE_WEIGHT_SUM = Array.from({ length: STAGES_PER_WORLD }, (_, i) => 1 + 0.06 * i).reduce((a, b) => a + b, 0);
 
 export interface StageDef {
   /** Ví dụ "w1s5" */
@@ -85,7 +87,8 @@ function buildWorld(w: number): WorldDef {
     const boss = makeBoss(w, bossName, `boss_${id}`, !!mainName, final);
     const fixed = i === 4 || final;
     const first = WORLD_FIRST_TIER[w];
-    const tuVi = Math.round(0.07 * worldTuViSum(w) * (1 + 0.06 * i));
+    // Màn sau thưởng nhiều hơn màn trước; tổng 10 màn (lần đầu) = firstClearShare × tu vi cần cho cả thế giới
+    const tuVi = Math.round((CULTIVATION.firstClearShare * worldTuViSum(w) * (1 + 0.06 * i)) / STAGE_WEIGHT_SUM);
     stages.push({
       id,
       world: w,

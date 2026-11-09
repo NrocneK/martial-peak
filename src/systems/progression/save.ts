@@ -4,12 +4,12 @@
 // =====================================================================
 
 import { MAX_ITEM_LEVEL, type ItemInst } from '../../config/items';
-import { MAX_TIER, TIERS } from '../../config/realms';
+import { MAX_TIER, TIERS, legacyCumTuVi } from '../../config/realms';
 import { SLOT_IDS, type MatId, type SlotId } from '../../config/types';
 
-// Giữ nguyên tên khóa cũ: đổi tên sẽ làm người chơi mất save.
+// Giữ nguyên tên khóa cũ: đổi tên sẽ làm người chơi mất save. Đổi cấu trúc thì tăng SAVE_VERSION và thêm bước trong migrate().
 const SAVE_KEY = 'vo-luyen-survival-save';
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 export const MAX_ITEMS = 120;
 /** Hòm thưởng: nơi chứa đồ khi túi đầy, nhận lại khi có chỗ */
 export const MAX_INBOX = 20;
@@ -58,15 +58,31 @@ function defaultSave(): SaveData {
   };
 }
 
-/** Nâng cấp save cũ: v1 dùng 37 bậc; v2 dùng 51 bậc (Đạo Tổ chia 3 kỳ); v3 dùng 49 bậc (Đạo Tổ một bậc). */
+/**
+ * Nâng cấp save cũ:
+ *  v1: 37 bậc → quy đổi sang 49 bậc.  v2: Đạo Tổ chia 3 kỳ (51 bậc) → kẹp về 49 bậc.
+ *  v3: chưa có bình cảnh → giữ nguyên bậc, quy đổi tu vi để thanh tu vi trong bậc hiện tại giữ đúng tỉ lệ %.
+ */
 function migrate(d: SaveData, from: number): void {
-  if (from >= 3) return;
+  if (from >= 4) return;
   if (from < 2) {
     d.tier = Math.round((Math.max(0, d.tier || 0) * 48) / 36);
     d.tuVi = TIERS[Math.min(MAX_TIER, d.tier)].cumTuVi;
   }
   d.tier = Math.max(0, Math.min(MAX_TIER, d.tier || 0));
-  if (d.tier >= MAX_TIER) d.tuVi = TIERS[MAX_TIER].cumTuVi;
+  if (d.tier >= MAX_TIER) {
+    d.tuVi = TIERS[MAX_TIER].cumTuVi;
+    return;
+  }
+  if (from === 3) {
+    const t = d.tier;
+    const o0 = legacyCumTuVi(t);
+    const o1 = legacyCumTuVi(t + 1);
+    const frac = Math.max(0, Math.min(1, ((d.tuVi || 0) - o0) / (o1 - o0)));
+    d.tuVi = Math.round(TIERS[t].cumTuVi + frac * (TIERS[t + 1].cumTuVi - TIERS[t].cumTuVi));
+  } else {
+    d.tuVi = Math.max(d.tuVi || 0, TIERS[d.tier].cumTuVi);
+  }
 }
 
 function isInt(n: unknown, lo: number, hi: number): n is number {

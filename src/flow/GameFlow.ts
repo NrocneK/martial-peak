@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { SCENES } from '../config/assets';
-import { getDialogue } from '../config/story';
+import { DAO_TO_ENDING, getDialogue } from '../config/story';
 import { stageById, type StageDef } from '../config/worlds';
 import type { GameScene } from '../scenes/GameScene';
 import type { Card } from '../systems/CardPicker';
@@ -32,6 +32,7 @@ export class GameFlow {
       (st) => this.startStage(st),
       () => this.showMenu(),
       (m) => this.toast(m),
+      () => this.showEnding(),
     );
     const bootEl = document.getElementById('boot');
     const tip = document.getElementById('boot-tip');
@@ -81,6 +82,12 @@ export class GameFlow {
     this.clearScreens();
     this.ui.append(this.hub.root);
     this.hub.open(world);
+  }
+
+  /** Đoạn kết khi lên Đạo Tổ; xong quay lại Hub */
+  showEnding(): void {
+    this.clearScreens();
+    this.put(showDialogue(DAO_TO_ENDING, () => this.showHub()));
   }
 
   /** Bắt đầu một màn: hội thoại trước (bỏ qua được) rồi vào trận */

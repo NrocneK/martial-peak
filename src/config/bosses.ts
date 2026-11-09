@@ -30,7 +30,7 @@ export const MAIN_BOSSES: Record<number, string[]> = {
   2: ['Hải Yêu Vương Thương Lan', 'Tông Chủ Thiên Kiếm Tông', 'Ma Tôn Cửu U', 'Thánh Nữ Băng Hải Cung', 'Long Quy Trưởng Lão', 'Thương Lan Hải Hoàng'],
   3: ['Tinh Không Cự Thú', 'Tông Chủ Tinh Huyền Môn', 'Sứ Giả Cửu Thiên Điện', 'Lôi Kiếp Hóa Thân', 'Tinh Chủ Thiên Huyền'],
   4: ['Thiên Binh Thống Lĩnh', 'Linh Chi Tiên Tử', 'Thiên Hình Tôn Giả', 'Thanh Loan Tiên Quân', 'Cửu Thiên Điện Chủ'],
-  5: ['Thượng Cổ Thủ Vệ', 'Tiên Vương Huyết Kiếm', 'Tiên Vương Hội Trưởng', 'Cổ Thần Phế Tích', 'Tiên Đế Vĩnh Dạ'],
+  5: ['Thượng Cổ Thủ Vệ', 'Đại La Huyết Kiếm', 'Đại La Hội Trưởng', 'Cổ Thần Phế Tích', 'Tiên Đế Vĩnh Dạ'],
   6: ['Hỗn Độn Linh Thể', 'Đạo Nô Thủ Hộ', 'Chấp Hành Giả Đại Đạo Lô', 'Hóa Thân Thái Hư', 'Thái Hư Đạo Tổ'],
 };
 
@@ -40,7 +40,7 @@ export const FILLER_BOSSES: Record<number, string[]> = {
   2: ['Hải Tộc Hộ Vệ', 'Kiếm Tu Phản Tông', 'Ma Tu Tiên Phong', 'Giao Nhân Tế Tư'],
   3: ['Ngoại Vực Cường Giả', 'Hộ Pháp Tinh Huyền', 'Trùng Tộc Thống Lĩnh', 'Kiếp Lôi Thú', 'Thám Tử Tiên Giới'],
   4: ['Thiên Binh Tiên Phong', 'Hộ Pháp Cửu Thiên', 'Chấp Pháp Sứ', 'Thần Thú Trấn Giới', 'Tiên Tướng Sa Đọa'],
-  5: ['Thượng Cổ Linh Thú', 'Hộ Vệ Tiên Vương', 'Tàn Hồn Cổ Tiên', 'Thạch Tượng Thượng Cổ', 'Tiên Binh Phản Loạn'],
+  5: ['Thượng Cổ Linh Thú', 'Hộ Vệ Đại La', 'Tàn Hồn Cổ Tiên', 'Thạch Tượng Thượng Cổ', 'Tiên Binh Phản Loạn'],
   6: ['Hỗn Độn Ma Thú', 'Đạo Binh Vô Tâm', 'Tàn Niệm Đạo Tổ', 'Hư Không Cự Thú', 'Nô Lệ Đại Đạo'],
 };
 

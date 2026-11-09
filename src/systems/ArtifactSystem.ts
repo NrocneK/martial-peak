@@ -114,7 +114,7 @@ export class ArtifactSystem {
           this.setBuff('pickup', p.hp < p.stats.maxHp * 0.5 ? 1.1 : 1);
         }
         break;
-      case 'bb_w5_5': // Tiên Vương Lệnh: >=30 quái gần → +10% sát thương, tắt khi <20
+      case 'bb_w5_5': // Đại La Lệnh: >=30 quái gần → +10% sát thương, tắt khi <20
         this.scan -= dt;
         if (this.scan <= 0) {
           this.scan = 0.5;

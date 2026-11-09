@@ -37,6 +37,8 @@ export class Hub {
     private readonly onStage: (s: StageDef) => void,
     private readonly onBack: () => void,
     private readonly toast: (m: string) => void,
+    /** Chiếu đoạn kết (khi vừa lên Đạo Tổ, hoặc bấm xem lại) */
+    private readonly onEnding: () => void,
   ) {
     this.root.append(this.head, h('div', { class: 'hub-main' }, this.tabs, this.body));
   }
@@ -134,9 +136,20 @@ export class Hub {
     root.append(
       h('div', { class: 'card' },
         h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
-        h('div', { class: 'dim', text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` + (nextIsNewRealm ? ' Đây là bước lên đại cảnh giới mới.' : '') }),
-        h('div', { class: 'dim', style: 'margin-top:6px', text: `Tu vi nhận từ việc vượt màn. 17 đại cảnh giới, mỗi cảnh giới 3 kỳ (Sơ, Trung, Hậu). Hậu kỳ đầy tu vi là Viên mãn; Tiên Đế Viên mãn đột phá lên Đạo Tổ (không chia kỳ). Cảnh giới càng cao, máu và sát thương càng lớn, mở khóa kỹ năng chủ động mới (bậc ${s.tier}/${MAX_TIER}).` }),
-        h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn primary', text: nextIsNewRealm ? 'Đột phá đại cảnh giới' : 'Đột phá', disabled: P.canBreakthrough() ? null : 'disabled', onclick: () => this.act(P.breakthrough()) })),
+        h('div', { class: 'dim', text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '') }),
+        ...(P.daoToLocked() ? [h('div', { class: 'gold', style: 'margin-top:6px', text: `Ngưỡng Đạo Tổ còn bị phong ấn: phải đánh bại ${P.FINAL_BOSS_NAME} (màn 10 Hỗn Độn Thần Vực).` })] : []),
+        h('div', { class: 'dim', style: 'margin-top:6px', text: `Tu vi nhận từ việc vượt màn (đánh lại màn vẫn nhận một nửa), cắn linh thạch và đan dược. 17 đại cảnh giới, mỗi cảnh giới 3 kỳ (Sơ, Trung, Hậu). Hậu kỳ đầy tu vi là Viên mãn; Tiên Đế Viên mãn và đã đánh bại ${P.FINAL_BOSS_NAME} thì đột phá lên Đạo Tổ (không chia kỳ). Cảnh giới càng cao, máu và sát thương càng lớn, mở khóa kỹ năng chủ động mới (bậc ${s.tier}/${MAX_TIER}).` }),
+        h('div', { style: 'margin-top:10px' },
+          s.tier >= MAX_TIER
+            ? h('button', { class: 'btn', text: 'Xem lại đoạn kết', onclick: () => this.onEnding() })
+            : h('button', { class: 'btn primary', text: nextIsNewRealm ? 'Đột phá đại cảnh giới' : 'Đột phá', disabled: P.canBreakthrough() ? null : 'disabled', onclick: () => {
+                const r = P.breakthrough();
+                if (r.ending) {
+                  audio.play('click');
+                  this.onEnding();
+                } else this.act(r);
+              } }),
+        ),
       ),
       ...(s.tier >= MAX_TIER ? [] : [h('div', { class: 'card', style: 'margin-top:10px' },
         h('div', { class: 'gold hd' }, ic('linh'), 'Cắn linh thạch'),

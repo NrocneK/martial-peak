@@ -1,5 +1,12 @@
 # Lịch sử phiên bản
 
+## v0.6.0 — Đạo Tổ là cái kết, tu luyện khó hơn
+- **Đạo Tổ khóa theo cốt truyện:** Tiên Đế Viên mãn chưa đủ, phải đánh bại **Thái Hư Đạo Tổ** (màn 10 Hỗn Độn Thần Vực) mới đột phá được. Mục Tu Luyện hiện thông báo "ngưỡng Đạo Tổ còn bị phong ấn".
+- **Đoạn kết mở** khi bước lên Đạo Tổ: Trường Ca nhận ra mình mới chỉ đặt bước chân đầu tiên lên Đại Đạo. Có nút "Xem lại đoạn kết" trong mục Tu Luyện. Thoại sau màn 10 Hỗn Độn Thần Vực nhắc người chơi về ngưỡng cửa này.
+- **Bình cảnh:** bước sang đại cảnh giới mới tốn ×2,5 tu vi; bước lên Đạo Tổ tốn thêm ×2. Vượt lần đầu 10 màn của một thế giới chỉ cho ~60% tu vi cần (trước đây ~89%). Tổng tu vi cần mỗi thế giới tăng ~40%, riêng bước Đạo Tổ ×5. Chỉnh trong `CULTIVATION` (`src/config/realms.ts`).
+- Đổi tên các nhân vật / vật phẩm mang chữ "Tiên Vương" (không còn là cảnh giới): boss **Đại La Huyết Kiếm**, **Đại La Hội Trưởng**, boss phụ **Hộ Vệ Đại La**, quái **Đại La Hộ Vệ**, bí bảo **Đại La Lệnh**.
+- **Save phiên bản 4:** save cũ giữ nguyên cảnh giới, tu vi được quy đổi để thanh tu vi giữ đúng tỉ lệ % trong bậc hiện tại.
+
 ## v0.5.2 — Chốt hệ thống cảnh giới
 - Đổi tên đại cảnh giới thứ hai của thế giới 5 từ **Tiên Vương** thành **Đại La Kim Tiên**. Thứ tự 17 đại cảnh giới: Luyện Thể → Luyện Khí → Trúc Cơ → Kim Đan → Nguyên Anh → Hóa Thần → Luyện Hư → Hợp Thể → Đại Thừa → Độ Kiếp → Chân Tiên → Thiên Tiên → Huyền Tiên → Kim Tiên → Đại La Kim Tiên → Tiên Đế → Đạo Tổ.
 - Save cũ không bị ảnh hưởng (tên cảnh giới tính từ số bậc, không lưu trong save).

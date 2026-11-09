@@ -46,7 +46,7 @@ Quy tắc trong màn: tối đa **6 kỹ năng** (tính cả kỹ năng vũ khí
 | Chỉ số gốc từng kiểu quái, thêm / đổi tên quái | `src/config/enemies.ts` |
 | Tên boss, chiêu thức boss, chỉ số boss | `src/config/bosses.ts` |
 | Kỹ năng vũ khí / chủ động / bị động | `src/config/weapons.ts`, `activeSkills.ts`, `passiveSkills.ts` |
-| Cảnh giới, tu vi cần thiết | `src/config/realms.ts` |
+| Cảnh giới, tu vi cần thiết, độ khó tu luyện (`CULTIVATION`: bình cảnh, % tu vi từ màn) | `src/config/realms.ts` |
 | Trang bị, độ hiếm, đan dược, bí bảo | `src/config/items.ts` |
 | Số màn, thưởng, điều kiện mở thế giới | `src/config/worlds.ts` |
 | **Lời thoại cốt truyện** | `src/config/story.ts` (bảng `OVERRIDES` theo id màn như `w1s1`) |

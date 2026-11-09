@@ -69,7 +69,7 @@ const NAMES: Record<number, string[]> = {
   2: ['Hải Binh', 'Giao Lang', 'Quy Giáp Thú', 'Pháp Sư Hải Tộc', 'U Linh Biển', 'Cầu Thủy Nổ', 'Y Sư Giao Nhân', 'Mẫu Hải Yêu', 'Tôm Binh', 'Hộ Vệ Hải Hoàng', 'Trưởng Lão Thiên Kiếm'],
   3: ['Tinh Thú', 'Lang Tinh Không', 'Giáp Thiết Ngoại Vực', 'Pháp Sư Tinh Huyền', 'Tinh Linh', 'Cầu Tinh Bạo', 'Tế Sư Lôi Môn', 'Trùng Mẫu', 'Tinh Trùng', 'Hộ Vệ Tinh Chủ', 'Sứ Giả Tiên Giới'],
   4: ['Thiên Binh', 'Phi Hạc Thần', 'Kim Giáp Thiên Tướng', 'Cung Thủ Thiên Binh', 'Du Hồn Tiên Giới', 'Lôi Châu Bạo', 'Tiên Y Cửu Thiên', 'Mẫu Linh Thú', 'Tiểu Linh Thú', 'Chấp Pháp Sứ', 'Hộ Pháp Cửu Thiên'],
-  5: ['Tàn Hồn Cổ Tiên', 'Thượng Cổ Hung Thú', 'Thạch Tượng Thượng Cổ', 'Cổ Tiên Xạ Thủ', 'Oán Linh Cổ Tiên', 'Cổ Hỏa Bạo', 'Tế Tự Thượng Cổ', 'Mẫu Cổ Thú', 'Trùng Cổ', 'Tiên Vương Hộ Vệ', 'Cổ Thần Tàn Niệm'],
+  5: ['Tàn Hồn Cổ Tiên', 'Thượng Cổ Hung Thú', 'Thạch Tượng Thượng Cổ', 'Cổ Tiên Xạ Thủ', 'Oán Linh Cổ Tiên', 'Cổ Hỏa Bạo', 'Tế Tự Thượng Cổ', 'Mẫu Cổ Thú', 'Trùng Cổ', 'Đại La Hộ Vệ', 'Cổ Thần Tàn Niệm'],
   6: ['Đạo Nô', 'Hỗn Độn Thú', 'Hỗn Độn Giáp', 'Xạ Thủ Hỗn Độn', 'Bóng Hỗn Độn', 'Hỗn Độn Bạo', 'Chú Sư Đạo Nô', 'Mẫu Hỗn Độn', 'Trùng Hỗn Độn', 'Chấp Hành Giả', 'Hộ Vệ Đạo Tổ'],
 };
 

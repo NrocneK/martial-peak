@@ -77,7 +77,7 @@ export const BIBAOS: BibaoDef[] = [
   { id: 'bb_w3_10', name: 'Huyền Tinh Hạch', world: 3, stageNo: 10, desc: 'Hạch tinh thể của Tinh Chủ Thiên Huyền, hé lộ một phần âm mưu của tiên giới.' },
   { id: 'bb_w4_5', name: 'Thiên Binh Giáp Phiến', world: 4, stageNo: 5, desc: 'Mảnh giáp của thiên binh, mang theo thần lực hộ thể.' },
   { id: 'bb_w4_10', name: 'Thanh Loan Vũ', world: 4, stageNo: 10, desc: 'Lông vũ của Thanh Loan Tiên Quân, nhẹ như gió, nhanh như chớp.' },
-  { id: 'bb_w5_5', name: 'Tiên Vương Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của một vị Tiên Vương thượng cổ.' },
+  { id: 'bb_w5_5', name: 'Đại La Lệnh', world: 5, stageNo: 5, desc: 'Lệnh bài quyền uy của một vị Đại La Kim Tiên thượng cổ.' },
   { id: 'bb_w5_10', name: 'Thượng Cổ Tàn Bi', world: 5, stageNo: 10, desc: 'Mảnh bia đá khắc sự thật về nguồn gốc con đường tu luyện.' },
   { id: 'bb_w6_5', name: 'Hỗn Độn Chi Tâm', world: 6, stageNo: 5, desc: 'Lõi sức mạnh của Hỗn Độn Thần Vực.' },
   { id: 'bb_w6_10', name: 'Đạo Tổ Ấn', world: 6, stageNo: 10, desc: 'Ấn ký của Đạo Tổ: vật chứng cho con đường tự mình tạo ra.' },
