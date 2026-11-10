@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/game';
 import { RUN } from '../config/balance';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
-import { BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
+import { BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
 import { HERO_HANDS } from '../config/heroHands';
 
 /**
@@ -36,6 +36,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   private weaponImg: Phaser.GameObjects.Image | null = null;
   /** nửa sau (phía đốc) của vũ khí dài — luôn vẽ sau thân */
   private weaponBack: Phaser.GameObjects.Image | null = null;
+  private weaponId = '';
   private fists: Phaser.GameObjects.Image[] = [];
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -47,6 +48,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   /** Đặt ngoại hình vũ khí theo loại + cấp (quyền sáo: găng hai tay) */
   setWeaponLook(weaponId: string, tier: number): void {
+    this.weaponId = weaponId;
     if (weaponId === 'wp_fist') {
       this.fists = (['near', 'far'] as const).map((hand) => this.scene.add.image(this.x, this.y, fistKey(hand, tier)));
       return;
@@ -72,7 +74,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       const [hx, hy] = hands.R[col];
       const fi = PLAYER_DIRS.indexOf(this.face);
       this.weaponImg.setFrame(fi).setOrigin(0.5, 0.5)
-        .setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth + (hands.front ? 1 : -1)).setAlpha(alpha);
+        .setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth + ((BATTLE_FRONT_OVERRIDE[this.weaponId]?.[this.face] ?? hands.front) ? 1 : -1)).setAlpha(alpha);
       this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth - 1).setAlpha(alpha);
     }
     if (this.fists.length) {

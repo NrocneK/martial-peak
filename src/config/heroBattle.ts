@@ -9,7 +9,7 @@ export const BATTLE_WEAPON: Record<string, number> = {
   wp_sword: 64,
   wp_blade: 64,
   wp_spear: 80,
-  wp_bow: 64,
+  wp_bow: 96,
   wp_fan: 32,
 };
 
@@ -18,6 +18,11 @@ export const BATTLE_WEAPON: Record<string, number> = {
  * wp_{loại}_bk_{cấp} = nửa phía đốc / cánh còn lại (luôn SAU thân) — giống ở lobby: cán chạy ra sau lưng.
  */
 export const BATTLE_SPLIT = new Set(['wp_spear', 'wp_bow']);
+
+/** Hướng mà vũ khí (nửa trước) vẽ TRƯỚC thân dù tay phải khuất — cung ở w / nw: đoạn bị che đã tách sang nửa sau */
+export const BATTLE_FRONT_OVERRIDE: Record<string, Partial<Record<string, boolean>>> = {
+  wp_bow: { w: true, nw: true },
+};
 
 export const battleWeaponKey = (weaponId: string, tier: number): string => `bw_${weaponId}_${tier}`;
 export const fistKey = (hand: 'near' | 'far', tier: number): string => `bf_${hand}_${tier}`;

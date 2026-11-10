@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.12.3 — Chỉnh thương và cung trong trận theo mẫu
+- Thương hướng N / NE: cán chạy chéo qua LƯNG lên vai trái (nhìn từ sau lưng nên cán nằm trước, thấy được), góc theo đường mẫu (`SPEAR_ANG`).
+- Cung W, NW, N, NE, E, SE vẽ đúng theo đường cong mẫu (`BOW_FIT`: đầu cánh trên, giữa thân, đầu cánh dưới tính từ bàn tay); W / NW: đoạn bị thân che (phần tô trắng trong mẫu) tách ra sau thân. Khung cung 96x96.
+
 ## v0.12.2 — Vũ khí cầm tay trong trận
 - Nhân vật trong trận cầm vũ khí ĐÚNG CÁCH Ở LOBBY (nắm chuôi, lưỡi / mũi chĩa chéo xuống ra ngoài), chỉ xoay theo 8 hướng — góc lấy theo đường mẫu người dùng kẻ (`BATTLE_ANG` trong `tools/art/gear.px.js`).
 - Hình `public/gear/wp_{loại}_b_{cấp}.png`: dải 8 khung theo hướng, điểm cầm ở giữa khung; vẽ bằng chính hàm vẽ trang bị (đủ màu, kiểu dáng theo cấp; đao luôn quay lưỡi xuống). Thương, cung tách đôi tại chỗ cầm (`_bf` trước thân, `_bk` sau thân) để cán / cánh chạy ra sau lưng như ở lobby. Quạt: quạt gấp cầm tay. Quyền sáo: găng đeo cả hai tay.
