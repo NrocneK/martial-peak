@@ -209,7 +209,7 @@ function drawSword(c, t, o) {
   hilt(c, ax, P, pom, g0 + 0.5, q, false)
   guard(c, ax, P, gc, S.guard, S.gw, q)
   outlineNow(c)
-  if (P.tassel) { const [px, py] = ax.xy(-2.2 * ax.s, 0); tassel(c, Math.round(px), Math.round(py), P.tassel, Math.round((t >= 2 ? 10 : 7) * ax.k), o.ph, t === 5) }
+  if (P.tassel && !o.held) { const [px, py] = ax.xy(-2.2 * ax.s, 0); tassel(c, Math.round(px), Math.round(py), P.tassel, Math.round((t >= 2 ? 10 : 7) * ax.k), o.ph, t === 5) }
   tierFx(c, ax, P, t, g1 + 2, tip - 2, S.hw + 1.6, o)
 }
 
@@ -253,7 +253,7 @@ function drawBlade(c, t, o) {
   hilt(c, ax, P, 2.6, g0 + 0.5, q, true)
   guard(c, ax, P, gc, D.guard, D.gw, q)
   outlineNow(c)
-  if (P.tassel) { const [px, py] = ax.xy(-3.6 * ax.s, 0); tassel(c, Math.round(px), Math.round(py), P.tassel, Math.round((t >= 2 ? 10 : 7) * ax.k), o.ph, t === 5) }
+  if (P.tassel && !o.held) { const [px, py] = ax.xy(-3.6 * ax.s, 0); tassel(c, Math.round(px), Math.round(py), P.tassel, Math.round((t >= 2 ? 10 : 7) * ax.k), o.ph, t === 5) }
   tierFx(c, ax, P, t, g1 + 2, tip - 2, 7.5, o)
 }
 
@@ -900,6 +900,7 @@ for (let t = 0; t < 6; t++) {
   // kiếm / đao: cầm ngược (xoay 180°) — chuôi trên-phải trong tay, lưỡi chĩa xuống-trái; 48x52.
   // Điểm cầm ở phần TRÊN chuôi (u = 6.5 → (38,11)): dưới nắm tay còn lộ một đoạn chuôi rồi mới tới hộ thủ → nhìn ra là đang nắm.
   // Đao lật bên (mv = -1): lưỡi sắc quay xuống-phải (phía trước-dưới), sống ở trên.
+  // Không vẽ tua khi cầm: đốc + tua nằm khuất sau thân.
   anim(`wp_sword_held_${t}`, { w: 48, h: 52, ...HELD }, (c) => drawSword(c, t, { ax: axis(42, 8, 0.7, -1), ph: ph(c), held: true }), ...GLOW(t))
   anim(`wp_blade_held_${t}`, { w: 48, h: 52, ...HELD }, (c) => drawBlade(c, t, { ax: axis(42, 8, 0.7, -1, -1), ph: ph(c), held: true }), ...GLOW(t))
   // thương: đốc trên-phải (sau vai), mũi dưới-trái; 82x82. Cầm GIỮA CÁN, cách khâu mũi 24 đơn vị (u = 62 → điểm cầm (39,41))

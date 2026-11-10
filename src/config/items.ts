@@ -132,6 +132,9 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
  *   near   : (vũ khí nằm sau thân) bán kính quanh điểm cầm, tính bằng điểm ảnh hình, được đưa ra TRƯỚC thân —
  *            đoạn cán / chuôi trong lòng bàn tay lộ ra rồi nắm tay (cover) đè lên, phần còn lại vẫn khuất sau lưng
  *   nearAt : tâm vùng đưa ra trước (điểm ảnh trên hình), mặc định = điểm cầm
+ *   front  : thay cho near — đa giác (điểm ảnh trên hình) được đưa ra TRƯỚC thân. Kiếm / đao: nửa phía hộ thủ của đường
+ *            vuông góc với chuôi đi qua giữa lòng bàn tay, chặn ở mép phải bàn tay (để tua rủ sau vai vẫn khuất sau thân)
+ *            → chuôi lộ tới giữa bàn tay rồi khuất sau các ngón, đường nối thẳng tự nhiên
  */
 export interface WeaponHold {
   w: number;
@@ -144,14 +147,17 @@ export interface WeaponHold {
   cover?: boolean;
   near?: number;
   nearAt?: [number, number];
+  front?: number[];
 }
+/** Kiếm / đao: đường cắt y = x - 26.3 (vuông góc chuôi, qua giữa bàn tay (38.3, 12)), chặn ở x = 41 (mép phải bàn tay) */
+const SWORD_FRONT = [-200, -226.3, 41, 14.7, 41, 200, -200, 200];
 /** Số khung của hình cầm tay */
 export const HELD_FRAMES = 8;
 export const WEAPON_HOLD: Record<string, WeaponHold> = {
   // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước. Cả thanh nằm SAU thân (chuôi, đốc, tua bị che);
-  // chỉ một chút chuôi sát hộ thủ đè lên mép dưới nắm tay (chỗ ngón cái) → nhìn ra là đang nắm
-  wp_sword: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'back', near: 2.6, nearAt: [36.5, 14] },
-  wp_blade: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'back', near: 2.6, nearAt: [36.5, 14] },
+  // nửa chuôi phía hộ thủ đè lên bàn tay tới giữa lòng bàn tay (chỗ ngón cái), nửa trên khuất sau ngón → nhìn ra là đang nắm
+  wp_sword: { w: 48, h: 52, gx: 38, gy: 11, anchor: 'fist', layer: 'back', front: SWORD_FRONT },
+  wp_blade: { w: 48, h: 52, gx: 38, gy: 11, anchor: 'fist', layer: 'back', front: SWORD_FRONT },
   // thương cầm chéo: mũi chĩa xuống trước chân, đốc sau vai phải; đoạn qua lưng bị che
   wp_spear: { w: 82, h: 82, gx: 40, gy: 41, anchor: 'fist', layer: 'back', near: 7, cover: true },
   // cung xoay chéo: bụng cung tại nắm tay, cánh trên vươn ra ngoài, cánh dưới chạy sau thân
@@ -176,7 +182,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'he
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 10;
+export const GEAR_ART_V = 11;
 
 export interface BibaoDef {
   id: string;

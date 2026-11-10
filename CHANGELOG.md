@@ -1,5 +1,10 @@
 # Lịch sử phiên bản
 
+## v0.11.3 — Chỗ nắm chuôi kiếm, đao
+- Kiếm / đao dịch xuống 1 điểm ảnh: chuôi đi qua giữa bàn tay.
+- Đường nối tự nhiên hơn: thay vùng tròn bằng đường cắt THẲNG vuông góc với chuôi đi qua giữa lòng bàn tay (`front` trong `WEAPON_HOLD`): nửa chuôi phía hộ thủ đè lên tay, nửa trên khuất sau ngón.
+- Hình kiếm / đao cầm tay không vẽ tua (đốc + tua nằm khuất sau thân).
+
 ## v0.11.2 — Kiếm, đao trở lại sau thân
 - Kiếm / đao nằm SAU nhân vật (chuôi, đốc, tua bị che); chỉ một chút chuôi sát hộ thủ đè lên mép dưới nắm tay (chỗ ngón cái) — `near` + `nearAt` trong `WEAPON_HOLD`. Bỏ nắm tay vẽ đè cho kiếm / đao (chuôi không còn đâm ra trước đùi).
 

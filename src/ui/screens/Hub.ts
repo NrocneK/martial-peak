@@ -530,6 +530,11 @@ export class Hub {
           `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
         kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
         // đoạn quanh điểm cầm đưa ra trước thân (bản sao cắt tròn), để nắm tay đè lên thấy rõ là đang nắm
+        if (hd.front) {
+          const pts: string[] = [];
+          for (let i = 0; i < hd.front.length; i += 2) pts.push(`${hd.front[i] * scale}px ${hd.front[i + 1] * scale}px`);
+          kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:polygon(${pts.join(',')})` }));
+        }
         if (hd.near) {
           const [nx, ny] = hd.nearAt ?? [hd.gx + 0.5, hd.gy + 0.5];
           kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:circle(${hd.near * scale}px at ${nx * scale}px ${ny * scale}px)` }));
