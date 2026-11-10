@@ -5,8 +5,9 @@ import { powerIdx } from './realms';
 // =====================================================================
 
 export const RUN = {
-  /** Tổng số kỹ năng tối đa trong một màn (tính cả kỹ năng vũ khí, không phân biệt chủ động / bị động) */
-  maxSkills: 6,
+  /** Tổng số kỹ năng tối đa trong một màn (tính cả kỹ năng vũ khí, không phân biệt chủ động / bị động).
+   *  7 = vũ khí + 6 ô: đủ cho 3 chủ động + 3 bị động liên kết (thức tỉnh được cả bộ) nhưng vẫn phải chọn lọc. */
+  maxSkills: 7,
   /** Cấp tối đa của một kỹ năng */
   maxLevel: 5,
   /** Số kỹ năng chủ động được mang vào màn */

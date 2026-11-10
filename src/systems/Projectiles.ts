@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { TEX } from '../config/assets';
-import { RUN } from '../config/balance';
 import type { Enemy } from '../entities/Enemy';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
@@ -30,6 +29,12 @@ export class Proj {
   trail = 0;
   trailW = 0;
   spark = false;
+  /** Đánh lặp: sau bao nhiêu giây được đánh lại cùng quái (0 = không); bộ đếm */
+  rehit = 0;
+  rehitT = 0;
+  /** Lốc xoáy: chậm dần về phía quái gần nhất, không quay đầu như boomerang */
+  drift = false;
+  slowTime = 2;
   /** Những quái đã bị trúng (để xuyên mà không đánh trùng) */
   readonly hit: Enemy[] = [];
   constructor(readonly img: Phaser.GameObjects.Image) {
@@ -87,6 +92,9 @@ export class Projectiles {
     trail?: number;
     trailW?: number;
     spark?: boolean;
+    rehit?: number;
+    drift?: boolean;
+    slowTime?: number;
   }): void {
     const p = this.take(this.mine, TEX.PROJ, 220);
     if (!p) return;
@@ -109,6 +117,10 @@ export class Projectiles {
     p.trail = o.trail ?? 0;
     p.trailW = o.trailW ?? 0;
     p.spark = !!o.spark;
+    p.rehit = o.rehit ?? 0;
+    p.rehitT = p.rehit;
+    p.drift = !!o.drift;
+    p.slowTime = o.slowTime ?? 2;
     if (o.tex) p.img.setTexture(o.tex).clearTint().setScale(o.texScale ?? 1).setRotation(o.angle).setPosition(p.x, p.y);
     else p.img.setTexture(TEX.PROJ).setTint(o.color).setScale(Math.max(0.6, o.r / 9)).setRotation(o.angle).setPosition(p.x, p.y);
   }
@@ -138,6 +150,14 @@ export class Projectiles {
         continue;
       }
       if (p.homing) this.steer(p, dt);
+      if (p.rehit > 0 && (p.rehitT -= dt) <= 0) {
+        p.rehitT = p.rehit;
+        p.hit.length = 0;
+      }
+      if (p.drift) {
+        this.steer(p, dt, 1.4);
+        p.img.rotation += dt * 14;
+      }
       if (p.boomerang) {
         if (!p.returning && p.traveled >= p.maxDist) {
           p.returning = true;
@@ -161,7 +181,7 @@ export class Projectiles {
       p.y += sy;
       p.traveled += Math.hypot(sx, sy);
       p.img.setPosition(p.x, p.y);
-      if (!p.boomerang) p.img.setRotation(Math.atan2(p.vy, p.vx));
+      if (!p.boomerang && !p.drift) p.img.setRotation(Math.atan2(p.vy, p.vx));
 
       this.enemies.grid.query(p.x, p.y, p.r + 60, this.tmp);
       for (let i = 0; i < this.tmp.length; i++) {
@@ -172,9 +192,9 @@ export class Projectiles {
         const dy = e.y - p.y;
         if (dx * dx + dy * dy > rr * rr) continue;
         p.hit.push(e);
-        this.enemies.hurt(e, p.dmg, p.slow);
+        this.enemies.hurt(e, p.dmg, p.slow, false, p.slowTime);
         if (p.spark && this.fx) this.fx.spark(e.x, e.y, Math.atan2(p.vy, p.vx), p.trail || p.color);
-        if (!p.boomerang) {
+        if (!p.boomerang && !p.drift) {
           if (p.pierce <= 0) {
             this.kill(p);
             break;
@@ -203,12 +223,12 @@ export class Projectiles {
   }
 
   /** Đạn tự tìm quái: quay dần về phía quái gần nhất */
-  private steer(p: Proj, dt: number): void {
+  private steer(p: Proj, dt: number, turn = 5): void {
     const t = this.enemies.nearest(p.x, p.y, 520, p.hit);
     if (!t) return;
     const want = Math.atan2(t.y - p.y, t.x - p.x);
     const cur = Math.atan2(p.vy, p.vx);
-    const na = Phaser.Math.Angle.RotateTo(cur, want, 5 * dt);
+    const na = Phaser.Math.Angle.RotateTo(cur, want, turn * dt);
     p.vx = Math.cos(na) * p.speed;
     p.vy = Math.sin(na) * p.speed;
   }
@@ -229,4 +249,3 @@ export class Projectiles {
   }
 }
 
-void RUN;

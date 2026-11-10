@@ -29,6 +29,6 @@ export function passiveById(id: string): PassiveDef {
 export function passiveValueText(p: PassiveDef, level: number): string {
   const v = p.per * level;
   if (p.unit === 'flat') return `+${Math.round(v)}`;
-  const pct = v * 100;
+  const pct = Math.round(v * 1000) / 10;   // làm tròn 0.1% (tránh 0.1 × 3 = 30.000000004%)
   return `+${pct % 1 === 0 ? pct : pct.toFixed(1)}%`;
 }

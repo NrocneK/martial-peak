@@ -47,7 +47,10 @@ export type SkillKind =
   | 'aura' // vùng sát thương quanh người (luôn bật)
   | 'strike' // giáng xuống vị trí quái ngẫu nhiên (có báo trước)
   | 'boomerang' // bay ra rồi quay về
-  | 'heal'; // hồi máu
+  | 'heal' // hồi máu
+  | 'chain' // tia sét nảy từ quái này sang quái khác (count = số lần nảy, area = tầm nảy)
+  | 'rain' // kiếm / vật từ trời giáng tức thì xuống nhiều quái (count = số điểm, area = bán kính nổ)
+  | 'tornado'; // lốc xoáy trôi chậm về phía quái, xuyên + đánh lặp lại (area = quãng đường trôi)
 
 export interface SkillNumbers {
   /** Sát thương gốc (kỹ năng 'heal': tỉ lệ máu hồi, ví dụ 0.1 = 10%) */
@@ -75,6 +78,10 @@ export interface AwakenDef {
   countAdd: number;
   areaMul: number;
   cooldownMul: number;
+  /** Xuyên thêm bao nhiêu quái */
+  pierceAdd?: number;
+  /** Nhân thời gian khống chế (làm chậm / đóng băng / choáng) */
+  ctrlMul?: number;
 }
 
 export interface SkillDef {
@@ -92,8 +99,18 @@ export interface SkillDef {
   /** Số lượng ở từng cấp 1..5. Nếu không có thì dùng base.count */
   countByLevel?: number[];
   homing?: boolean;
-  /** Làm chậm quái (0..1, ví dụ 0.4 = chậm 40%) */
+  /** Làm chậm quái (0..1, ví dụ 0.4 = chậm 40%; 1 = đóng băng / choáng đứng yên) */
   slow?: number;
+  /** Thời gian làm chậm (giây, mặc định 2) */
+  slowTime?: number;
+  /** Sát thương tăng mỗi cấp (mặc định 0.28 = +28%/cấp) */
+  growth?: number;
+  /** Lực đẩy lùi quái khi trúng (mặc định theo kiểu kỹ năng) */
+  knock?: number;
+  /** Để lại vùng cháy sau khi nổ: mỗi 0.5 giây gây `pct` × sát thương, kéo dài `time` giây */
+  burn?: { pct: number; time: number };
+  /** Lốc xoáy / đạn xuyên: khoảng giây giữa hai lần đánh trúng cùng một quái */
+  rehit?: number;
   awaken?: AwakenDef;
 }
 

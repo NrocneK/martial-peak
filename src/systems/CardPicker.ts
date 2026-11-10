@@ -4,6 +4,8 @@ import { weaponById } from '../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../config/passiveSkills';
 import type { RunState } from './RunState';
 import type { SkillDef } from '../config/types';
+import type { PlayerStats } from '../config/game';
+import { resolveSkill, type Resolved } from './SkillSystem';
 
 export type CardKind = 'weapon' | 'active' | 'passive' | 'awaken' | 'heal' | 'linh';
 
@@ -21,6 +23,47 @@ export interface Card {
   tag: string;
   /** Các dòng chú thích liên kết kỹ năng ↔ bị động ↔ thức tỉnh (hiện dưới thẻ) */
   links: string[];
+  /** Số liệu thay đổi khi chọn thẻ, ví dụ "Sát thương 28 → 36" */
+  stats: string[];
+}
+
+const fmtN = (v: number): string => (v >= 100 ? Math.round(v).toString() : v >= 10 ? v.toFixed(0) : v.toFixed(1).replace(/\.0$/, ''));
+const fmtS = (v: number): string => v.toFixed(2).replace(/0$/, '').replace(/\.0$/, '') + ' giây';
+
+/** Nhãn số lượng theo kiểu kỹ năng */
+function countLabel(def: SkillDef): string {
+  switch (def.kind) {
+    case 'orbit': return 'Số kiếm';
+    case 'strike': return 'Số điểm giáng';
+    case 'chain': return 'Số lần nảy';
+    case 'rain': return 'Số kiếm giáng';
+    case 'tornado': return 'Số lốc xoáy';
+    case 'slash': return 'Số nhát chém';
+    case 'beam': return 'Số tia';
+    default: return 'Số lượng';
+  }
+}
+
+/**
+ * Dòng số liệu cho thẻ: so sánh trước (a, null = chưa có) → sau (b).
+ * Thẻ mới: liệt kê số liệu cấp 1. Thẻ nâng cấp / thức tỉnh: chỉ các dòng thay đổi (sát thương luôn hiện).
+ */
+function statLines(def: SkillDef, a: Resolved | null, b: Resolved): string[] {
+  const rows: [string, number | undefined, number, (v: number) => string][] = [];
+  const heal = def.kind === 'heal';
+  const pct = (v: number) => `${fmtN(v * 100)}% máu`;
+  rows.push([heal ? 'Hồi máu' : 'Sát thương', a?.damage, b.damage, heal ? pct : fmtN]);
+  if (def.kind !== 'nova' && def.kind !== 'aura' && def.kind !== 'heal') rows.push([countLabel(def), a?.count, b.count, (v) => String(v)]);
+  rows.push([def.kind === 'orbit' || def.kind === 'aura' ? 'Nhịp đánh' : 'Hồi chiêu', a?.cooldown, b.cooldown, fmtS]);
+  if (b.area > 0 && def.kind !== 'heal' && def.kind !== 'projectile') rows.push([def.kind === 'beam' ? 'Chiều dài' : def.kind === 'tornado' || def.kind === 'boomerang' ? 'Tầm bay' : 'Phạm vi', a?.area, b.area, fmtN]);
+  if (b.pierce > 0 && b.pierce < 99) rows.push(['Xuyên quái', a?.pierce, b.pierce, (v) => String(v)]);
+  if (b.slow > 0) rows.push([b.slow >= 1 ? 'Khống chế' : 'Làm chậm', a?.slowTime, b.slowTime, (v) => `${fmtN(v)} giây`]);
+  const out: string[] = [];
+  for (const [label, x, y, f] of rows) {
+    if (x === undefined) out.push(`${label}: ${f(y)}`);
+    else if (f(x) !== f(y) || label === 'Sát thương' || label === 'Hồi máu') out.push(`${label}: ${f(x)} → ${f(y)}`);
+  }
+  return out;
 }
 
 function skillDef(id: string): SkillDef {
@@ -69,13 +112,15 @@ function passiveLinks(run: RunState, passiveId: string): string[] {
 /**
  * Sinh thẻ khi lên cấp theo quy tắc trong GDD:
  *  - Kho thẻ = kỹ năng vũ khí + 3 kỹ năng chủ động đã mang + mọi kỹ năng bị động.
- *  - Tối đa 6 kỹ năng một màn (vũ khí tính 1). Hết chỗ thì chỉ ra thẻ nâng cấp kỹ năng đã có.
+ *  - Tối đa RUN.maxSkills (7) kỹ năng một màn (vũ khí tính 1). Hết chỗ thì chỉ ra thẻ nâng cấp kỹ năng đã có.
  *  - Nếu đã chọn một kỹ năng chủ động: nó và bị động liên kết có tỉ lệ ×3.
  *  - Kỹ năng chủ động đạt cấp 5 + đã có bị động liên kết (bất kỳ cấp) → lần ra thẻ kế tiếp CHẮC CHẮN có thẻ thức tỉnh.
  *  - Không đủ thẻ hợp lệ thì bù bằng thẻ hồi máu / linh thạch.
  */
 export function generateCards(run: RunState): Card[] {
   const cards: Card[] = [];
+  const st: PlayerStats = run.recompute();
+  const rs = (def: SkillDef, lv: number, aw: boolean): Resolved => resolveSkill(def, lv, aw, st);
 
   // 1. Thẻ thức tỉnh (chắc chắn xuất hiện)
   for (const s of run.skills) {
@@ -92,6 +137,7 @@ export function generateCards(run: RunState): Card[] {
       color: 0xffd700,
       tag: 'Thức tỉnh',
       links: [`🔗 Điều kiện đã đủ: ${def.name} Cấp ${RUN.maxLevel} + ${passiveById(def.linkedPassive).name}`],
+      stats: statLines(def, rs(def, s.level, false), rs(def, s.level, true)),
     });
     break; // mỗi lần chỉ một thẻ thức tỉnh
   }
@@ -112,12 +158,18 @@ export function generateCards(run: RunState): Card[] {
       if (own.level >= RUN.maxLevel) return;
       cands.push({
         w: weightOf(def.id),
-        card: { kind, id: def.id, name: def.name, desc: def.desc, level: own.level + 1, isNew: false, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động', links: skillLinks(run, def) },
+        card: {
+          kind, id: def.id, name: def.name, desc: def.desc, level: own.level + 1, isNew: false, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động',
+          links: skillLinks(run, def), stats: statLines(def, rs(def, own.level, own.awakened), rs(def, own.level + 1, own.awakened)),
+        },
       });
     } else if (run.hasFreeSlot) {
       cands.push({
         w: weightOf(def.id),
-        card: { kind, id: def.id, name: def.name, desc: def.desc, level: 1, isNew: true, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động', links: skillLinks(run, def) },
+        card: {
+          kind, id: def.id, name: def.name, desc: def.desc, level: 1, isNew: true, color: def.color, tag: kind === 'weapon' ? 'Vũ khí' : 'Chủ động',
+          links: skillLinks(run, def), stats: statLines(def, null, rs(def, 1, false)),
+        },
       });
     }
   };
@@ -130,12 +182,18 @@ export function generateCards(run: RunState): Card[] {
       if (own.level >= RUN.maxLevel) continue;
       cands.push({
         w: weightOf(p.id),
-        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, own.level + 1)})`, level: own.level + 1, isNew: false, color: p.color, tag: 'Bị động', links: passiveLinks(run, p.id) },
+        card: {
+          kind: 'passive', id: p.id, name: p.name, desc: p.desc, level: own.level + 1, isNew: false, color: p.color, tag: 'Bị động',
+          links: passiveLinks(run, p.id), stats: [`${passiveValueText(p, own.level)} → ${passiveValueText(p, own.level + 1)}`],
+        },
       });
     } else if (run.hasFreeSlot) {
       cands.push({
         w: weightOf(p.id),
-        card: { kind: 'passive', id: p.id, name: p.name, desc: `${p.desc} (${passiveValueText(p, 1)})`, level: 1, isNew: true, color: p.color, tag: 'Bị động', links: passiveLinks(run, p.id) },
+        card: {
+          kind: 'passive', id: p.id, name: p.name, desc: p.desc, level: 1, isNew: true, color: p.color, tag: 'Bị động',
+          links: passiveLinks(run, p.id), stats: [passiveValueText(p, 1)],
+        },
       });
     }
   }
@@ -156,8 +214,8 @@ export function generateCards(run: RunState): Card[] {
 
   // 4. Bù thẻ phụ
   const fillers: Card[] = [
-    { kind: 'heal', id: 'heal', name: 'Điều Tức', desc: 'Hồi 35% máu tối đa.', level: 0, isNew: false, color: 0xff7080, tag: 'Phụ', links: [] },
-    { kind: 'linh', id: 'linh', name: 'Thu Hoạch', desc: 'Nhận ngay một ít linh thạch.', level: 0, isNew: false, color: 0xffd860, tag: 'Phụ', links: [] },
+    { kind: 'heal', id: 'heal', name: 'Điều Tức', desc: 'Hồi 35% máu tối đa.', level: 0, isNew: false, color: 0xff7080, tag: 'Phụ', links: [], stats: [] },
+    { kind: 'linh', id: 'linh', name: 'Thu Hoạch', desc: 'Nhận ngay một ít linh thạch.', level: 0, isNew: false, color: 0xffd860, tag: 'Phụ', links: [], stats: [] },
   ];
   let fi = 0;
   while (cards.length < RUN.cardChoices) cards.push(fillers[fi++ % fillers.length]);

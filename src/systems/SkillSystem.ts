@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { RUN } from '../config/balance';
 import { TEX } from '../config/assets';
 import { activeById } from '../config/activeSkills';
 import { weaponById } from '../config/weapons';
@@ -22,11 +21,15 @@ export interface Resolved {
   pierce: number;
   arc: number;
   width: number;
+  /** Khống chế: mức làm chậm (0..1) và thời gian (giây) */
+  slow: number;
+  slowTime: number;
 }
 
 /**
- * Công thức cấp độ (áp cho mọi kỹ năng): sát thương +28%/cấp, hồi chiêu -5%/cấp, phạm vi +7%/cấp.
- * Thức tỉnh nhân thêm các hệ số trong `awaken`.
+ * Công thức cấp độ (áp cho mọi kỹ năng): sát thương +28%/cấp (hoặc `growth` riêng), hồi chiêu -5%/cấp, phạm vi +7%/cấp.
+ * Thức tỉnh nhân thêm các hệ số trong `awaken` (kể cả xuyên thêm, khống chế lâu hơn).
+ * Kỹ năng 'heal': `damage` là TỈ LỆ máu hồi (không nhân chỉ số sát thương của nhân vật).
  */
 export function resolveSkill(def: SkillDef, level: number, awakened: boolean, st: Player['stats']): Resolved {
   const L = level - 1;
@@ -34,14 +37,16 @@ export function resolveSkill(def: SkillDef, level: number, awakened: boolean, st
   const b = def.base;
   const count = (def.countByLevel?.[Math.min(L, def.countByLevel.length - 1)] ?? b.count) + (aw?.countAdd ?? 0);
   return {
-    damage: b.damage * (1 + 0.28 * L) * st.damage * (aw?.damageMul ?? 1),
+    damage: b.damage * (1 + (def.growth ?? 0.28) * L) * (def.kind === 'heal' ? 1 : st.damage) * (aw?.damageMul ?? 1),
     cooldown: Math.max(0.12, (b.cooldown * (1 - 0.05 * L) * (aw?.cooldownMul ?? 1)) / st.attackSpeed),
     count,
     area: b.area * (1 + 0.07 * L) * st.area * (aw?.areaMul ?? 1),
     speed: b.speed,
-    pierce: b.pierce,
+    pierce: b.pierce + (aw?.pierceAdd ?? 0),
     arc: ((b.arc ?? 90) * Math.PI) / 180,
-    width: b.width ?? 10,
+    width: (b.width ?? 10) * (def.kind === 'tornado' ? Math.sqrt(st.area * (aw?.areaMul ?? 1)) : 1),
+    slow: def.slow ?? 0,
+    slowTime: (def.slowTime ?? 2) * (aw?.ctrlMul ?? 1),
   };
 }
 
@@ -53,6 +58,22 @@ interface Strike {
   area: number;
   color: number;
   slow: number;
+  slowTime: number;
+  knock: number;
+  /** vùng cháy để lại sau khi nổ (0 = không) */
+  burnPct: number;
+  burnTime: number;
+}
+
+/** Vùng cháy trên mặt đất: mỗi 0.5 giây đốt quái bên trong */
+interface Zone {
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+  tick: number;
+  dmg: number;
+  color: number;
 }
 
 export function defOf(s: OwnedSkill): SkillDef {
@@ -66,6 +87,7 @@ export function defOf(s: OwnedSkill): SkillDef {
 export class SkillSystem {
   private readonly cd = new Map<string, number>();
   private readonly strikes: Strike[] = [];
+  private readonly zones: Zone[] = [];
   private readonly blades: Phaser.GameObjects.Image[] = [];
   private readonly buf: Enemy[] = [];
   private readonly buf2: Enemy[] = [];
@@ -105,6 +127,12 @@ export class SkillSystem {
     // Ẩn các lưỡi kiếm dư
     for (let i = blade; i < this.blades.length; i++) this.blades[i].setVisible(false);
     this.updateStrikes(dt);
+    this.updateZones(dt);
+  }
+
+  /** Gây sát thương + khống chế theo số liệu kỹ năng */
+  private hit(e: Enemy, r: Resolved, dmg = r.damage, noText = false): void {
+    this.enemies.hurt(e, dmg, r.slow, noText, r.slowTime);
   }
 
   /** Thi triển một kỹ năng. Trả về false nếu chưa có mục tiêu (không tốn hồi chiêu). */
@@ -124,7 +152,7 @@ export class SkillSystem {
           if (i === 0 && def.group === 'weapon') p.playAttack(a);
           this.proj.fireMine({
             x: p.x, y: p.y, angle: a, speed: r.speed, r: r.width * 0.9, dmg: r.damage, pierce: r.pierce,
-            color: def.color, homing: def.homing, slow: def.slow, ...look,
+            color: def.color, homing: def.homing, slow: r.slow, slowTime: r.slowTime, ...look,
           });
         }
         audio.play('cast');
@@ -133,24 +161,12 @@ export class SkillSystem {
       case 'slash': {
         const t = this.enemies.nearest(p.x, p.y, r.area + 200);
         if (!t) return false;
-        const base = Math.atan2(t.y - p.y, t.x - p.x);
-        if (def.group === 'weapon') p.playAttack(base);
+        const a = Math.atan2(t.y - p.y, t.x - p.x);
+        // nhiều nhát = chém LIỀN nhau cùng hướng (mỗi nhát cách 0.18 giây), không chém ra sau lưng
         for (let i = 0; i < r.count; i++) {
-          const a = base + (i * Math.PI * 2) / r.count;
-          if (def.group === 'weapon') this.fx.sweep(p.x, p.y, r.area, a, r.arc, def.color);
-          else this.fx.arc(p.x, p.y, r.area, a, r.arc, def.color);
-          this.enemies.inRadius(p.x, p.y, r.area, this.buf);
-          let sparks = 0;
-          for (const e of this.buf) {
-            const d = Math.abs(Phaser.Math.Angle.Wrap(Math.atan2(e.y - p.y, e.x - p.x) - a));
-            if (d <= r.arc / 2) {
-              this.enemies.hurt(e, r.damage, def.slow ?? 0);
-              this.knock(e, 160);
-              if (def.group === 'weapon' && sparks++ < 8) this.fx.spark(e.x, e.y, Math.atan2(e.y - p.y, e.x - p.x), def.color);
-            }
-          }
+          if (i === 0) this.slash(def, r, a);
+          else this.scene.time.delayedCall(180 * i, () => this.slash(def, r, a));
         }
-        audio.play('cast');
         return true;
       }
       case 'beam': {
@@ -164,7 +180,7 @@ export class SkillSystem {
           const ey = p.y + Math.sin(a) * r.area;
           if (def.group === 'weapon') this.fx.thrust(p.x, p.y, ex, ey, r.width + 4, def.color);
           else this.fx.line(p.x, p.y, ex, ey, r.width + 6, def.color, 0.22);
-          this.hitLine(p.x, p.y, ex, ey, r.width, r.damage, def.slow ?? 0);
+          this.hitLine(p.x, p.y, ex, ey, r.width, r);
         }
         audio.play('cast');
         return true;
@@ -184,8 +200,8 @@ export class SkillSystem {
         }
         let sparks = 0;
         for (const e of this.buf) {
-          this.enemies.hurt(e, r.damage, def.slow ?? 0);
-          this.knock(e, 220);
+          this.hit(e, r);
+          this.knock(e, def.knock ?? 220);
           if (def.group === 'weapon' && sparks++ < 8) this.fx.spark(e.x, e.y, Math.atan2(e.y - p.y, e.x - p.x), def.color);
         }
         audio.play('cast');
@@ -193,7 +209,10 @@ export class SkillSystem {
       }
       case 'aura': {
         this.enemies.inRadius(p.x, p.y, r.area, this.buf);
-        for (const e of this.buf) this.enemies.hurt(e, r.damage, def.slow ?? 0, true);
+        for (const e of this.buf) {
+          this.hit(e, r, r.damage, true);
+          if (def.knock) this.knock(e, def.knock);
+        }
         return true; // luôn hoạt động theo nhịp
       }
       case 'strike': {
@@ -202,7 +221,11 @@ export class SkillSystem {
         // Chọn ngẫu nhiên không lặp
         const pick = near.slice().sort(() => Math.random() - 0.5).slice(0, r.count);
         for (const t of pick) {
-          this.strikes.push({ x: t.x, y: t.y, t: 0.6, dmg: r.damage, area: r.area, color: def.color, slow: def.slow ?? 0 });
+          const burn = def.burn ?? (s.awakened && def.id === 'ac_skyfire' ? { pct: 0.18, time: 3 } : null);
+          this.strikes.push({
+            x: t.x, y: t.y, t: 0.6, dmg: r.damage, area: r.area, color: def.color, slow: r.slow, slowTime: r.slowTime,
+            knock: def.knock ?? 0, burnPct: burn?.pct ?? 0, burnTime: burn?.time ?? 0,
+          });
           this.fx.warn(t.x, t.y, r.area, 0.6, def.color);
         }
         audio.play('cast');
@@ -215,7 +238,7 @@ export class SkillSystem {
         if (def.group === 'weapon') p.playAttack(base);
         for (let i = 0; i < r.count; i++) {
           this.proj.fireMine({
-            x: p.x, y: p.y, angle: base + (i - (r.count - 1) / 2) * 0.4, speed: r.speed, r: 16, dmg: r.damage,
+            x: p.x, y: p.y, angle: base + (i - (r.count - 1) / 2) * 0.4, speed: r.speed, r: r.width, dmg: r.damage,
             pierce: 99, color: def.color, boomerang: true, maxDist: r.area, life: 6,
             ...(def.id === 'wp_fan' ? { tex: TEX.VFX_FAN, texScale: 1.4, trail: 0xd0b0ff, trailW: 4, spark: true } : {}),
           });
@@ -224,8 +247,56 @@ export class SkillSystem {
         return true;
       }
       case 'heal': {
-        p.heal(p.stats.maxHp * def.base.damage * (1 + 0.2 * (s.level - 1)));
+        // chỉ vận công khi đã mất >= 10% máu (không phí hồi chiêu lúc máu đầy)
+        if (p.hp > p.stats.maxHp * 0.9) return false;
+        p.heal(p.stats.maxHp * r.damage);
         this.fx.ring(p.x, p.y, 60, def.color, 0.5);
+        this.fx.burst(p.x, p.y, 50, def.color, 0.35);
+        return true;
+      }
+      case 'chain': {
+        // sét đánh quái gần nhất, rồi nảy sang quái gần đó chưa bị đánh (tối đa count lần)
+        let cur = this.enemies.nearest(p.x, p.y, 560);
+        if (!cur) return false;
+        let fx0 = p.x, fy0 = p.y - 20;
+        const done: Enemy[] = [];
+        for (let i = 0; i < r.count && cur; i++) {
+          this.fx.line(fx0, fy0, cur.x, cur.y, i === 0 ? 7 : 5, def.color, 0.2);
+          this.fx.burst(cur.x, cur.y, 26, def.color, 0.2);
+          this.hit(cur, r);
+          done.push(cur);
+          fx0 = cur.x; fy0 = cur.y;
+          cur = this.enemies.nearest(cur.x, cur.y, r.area, done);
+        }
+        audio.play('cast');
+        return true;
+      }
+      case 'rain': {
+        // kiếm giáng tức thì xuống nhiều quái khác nhau trong tầm
+        const near = this.nearestN(r.count * 2, 480);
+        if (near.length === 0) return false;
+        const pick = near.sort(() => Math.random() - 0.5).slice(0, r.count);
+        for (const t of pick) {
+          this.fx.line(t.x, t.y - 150, t.x, t.y, 6, def.color, 0.18);
+          this.fx.burst(t.x, t.y, r.area, def.color, 0.22);
+          this.enemies.inRadius(t.x, t.y, r.area, this.buf);
+          for (const e of this.buf) this.hit(e, r);
+        }
+        audio.play('cast');
+        return true;
+      }
+      case 'tornado': {
+        const t = this.enemies.nearest(p.x, p.y, 520);
+        if (!t) return false;
+        const base = Math.atan2(t.y - p.y, t.x - p.x);
+        for (let i = 0; i < r.count; i++) {
+          this.proj.fireMine({
+            x: p.x, y: p.y, angle: base + (i - (r.count - 1) / 2) * 0.7, speed: r.speed, r: r.width, dmg: r.damage,
+            pierce: 999, color: def.color, life: r.area / r.speed, rehit: def.rehit ?? 0.35, drift: true,
+            slow: r.slow, slowTime: r.slowTime, trail: def.color, trailW: 3,
+          });
+        }
+        audio.play('cast');
         return true;
       }
       default:
@@ -252,8 +323,8 @@ export class SkillSystem {
       for (const e of this.buf2) {
         if (e.tick[s.slot] > 0) continue;
         e.tick[s.slot] = r.cooldown;
-        this.enemies.hurt(e, r.damage, def.slow ?? 0);
-        this.knock(e, 120);
+        this.hit(e, r);
+        this.knock(e, def.knock ?? 120);
       }
     }
     void dt;
@@ -270,12 +341,55 @@ export class SkillSystem {
       this.fx.ring(s.x, s.y, s.area, s.color, 0.3);
       audio.play('explode');
       this.enemies.inRadius(s.x, s.y, s.area, this.buf);
-      for (const e of this.buf) this.enemies.hurt(e, s.dmg, s.slow);
+      for (const e of this.buf) {
+        this.enemies.hurt(e, s.dmg, s.slow, false, s.slowTime);
+        if (s.knock) this.knockFrom(e, s.x, s.y, s.knock);
+      }
+      if (s.burnPct > 0 && this.zones.length < 40) {
+        this.zones.push({ x: s.x, y: s.y, r: s.area * 0.85, t: s.burnTime, tick: 0.5, dmg: s.dmg * s.burnPct, color: s.color });
+      }
     }
   }
 
+  private updateZones(dt: number): void {
+    for (let i = this.zones.length - 1; i >= 0; i--) {
+      const z = this.zones[i];
+      z.t -= dt;
+      if (z.t <= 0) {
+        this.zones.splice(i, 1);
+        continue;
+      }
+      this.fx.frameCircle(z.x, z.y, z.r, z.color, 0.1 * Math.min(1, z.t), 0.25 * Math.min(1, z.t));
+      z.tick -= dt;
+      if (z.tick > 0) continue;
+      z.tick += 0.5;
+      this.enemies.inRadius(z.x, z.y, z.r, this.buf);
+      for (const e of this.buf) this.enemies.hurt(e, z.dmg, 0, true);
+    }
+  }
+
+  /** Một nhát chém hình quạt (kỹ năng 'slash') */
+  private slash(def: SkillDef, r: Resolved, a: number): void {
+    const p = this.player;
+    if (!p.active) return;
+    if (def.group === 'weapon') {
+      p.playAttack(a);
+      this.fx.sweep(p.x, p.y, r.area, a, r.arc, def.color);
+    } else this.fx.arc(p.x, p.y, r.area, a, r.arc, def.color);
+    this.enemies.inRadius(p.x, p.y, r.area, this.buf);
+    let sparks = 0;
+    for (const e of this.buf) {
+      const d = Math.abs(Phaser.Math.Angle.Wrap(Math.atan2(e.y - p.y, e.x - p.x) - a));
+      if (d > r.arc / 2) continue;
+      this.hit(e, r);
+      this.knock(e, def.knock ?? 160);
+      if (def.group === 'weapon' && sparks++ < 8) this.fx.spark(e.x, e.y, Math.atan2(e.y - p.y, e.x - p.x), def.color);
+    }
+    audio.play('cast');
+  }
+
   /** Gây sát thương cho mọi quái nằm gần đoạn thẳng (x1,y1)-(x2,y2) */
-  private hitLine(x1: number, y1: number, x2: number, y2: number, w: number, dmg: number, slow: number): void {
+  private hitLine(x1: number, y1: number, x2: number, y2: number, w: number, r: Resolved): void {
     const cx = (x1 + x2) / 2;
     const cy = (y1 + y2) / 2;
     const half = Math.hypot(x2 - x1, y2 - y1) / 2;
@@ -290,14 +404,19 @@ export class SkillSystem {
       const px = x1 + dx * t;
       const py = y1 + dy * t;
       const rr = w / 2 + e.r;
-      if ((e.x - px) ** 2 + (e.y - py) ** 2 <= rr * rr) this.enemies.hurt(e, dmg, slow);
+      if ((e.x - px) ** 2 + (e.y - py) ** 2 <= rr * rr) this.hit(e, r);
     }
   }
 
   private knock(e: Enemy, power: number): void {
-    if (e.isBoss) return;
-    const dx = e.x - this.player.x;
-    const dy = e.y - this.player.y;
+    this.knockFrom(e, this.player.x, this.player.y, power);
+  }
+
+  /** Đẩy quái ra xa điểm (x, y) */
+  private knockFrom(e: Enemy, x: number, y: number, power: number): void {
+    if (e.isBoss || power <= 0) return;
+    const dx = e.x - x;
+    const dy = e.y - y;
     const d = Math.hypot(dx, dy) || 1;
     e.kx += (dx / d) * power;
     e.ky += (dy / d) * power;
@@ -319,9 +438,9 @@ export class SkillSystem {
 
   clear(): void {
     this.strikes.length = 0;
+    this.zones.length = 0;
     this.cd.clear();
     for (const b of this.blades) b.setVisible(false);
   }
 }
 
-void RUN;

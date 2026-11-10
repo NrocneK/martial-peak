@@ -190,7 +190,8 @@ export class EnemyManager {
   }
 
   // ------------------------------------------------------------------ sát thương
-  hurt(e: Enemy, raw: number, slow = 0, noText = false): void {
+  /** slow: 0..1 (1 = đứng yên); slowTime: số giây khống chế */
+  hurt(e: Enemy, raw: number, slow = 0, noText = false, slowTime = 2): void {
     if (!e.active) return;
     let dmg = raw * (e.slow > 0 ? this.slowBonus : 1);
     const crit = Math.random() < this.crit;
@@ -198,8 +199,9 @@ export class EnemyManager {
     e.hp -= dmg;
     e.flash = 0.08;
     if (slow > 0) {
+      // khống chế mạnh hơn thì thay; cùng mức thì giữ thời gian dài hơn
+      if (slow >= e.slow) e.slowT = slow > e.slow ? slowTime : Math.max(e.slowT, slowTime);
       e.slow = Math.max(e.slow, slow);
-      e.slowT = 2;
     }
     if (!noText) this.texts.show(e.x, e.y - e.r, fmt(dmg), crit ? '#ffd24a' : '#ffffff', crit ? 18 : 14);
     audio.play('hit');

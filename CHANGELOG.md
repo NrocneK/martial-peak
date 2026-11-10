@@ -1,5 +1,37 @@
 # Lịch sử phiên bản
 
+## v0.14.0 — Tối ưu hệ thống kỹ năng
+**Sửa lỗi (mô tả nói một đằng, code làm một nẻo)**
+- Thức tỉnh Kiếm Khí Trảm giờ xuyên thêm 2 quái thật (`pierceAdd`); Vạn Châm Truy Hồn cũng xuyên thêm 2.
+- Thức tỉnh Hàn Băng Chưởng đóng băng lâu gấp 1.8 (`ctrlMul`); Khai Tiên Nhất Kích choáng lâu gấp 1.6.
+- Thức tỉnh Hồi Xuân Quyết hồi gấp đôi thật; Hồi Xuân Quyết không còn tự vận khi máu gần đầy (phí hồi chiêu); lượng hồi không bị nhân nhầm chỉ số sát thương.
+- Hồi Toàn Phiến dùng đúng độ to lưỡi trong cấu hình.
+- Hiển thị bị động không còn lỗi làm tròn (+30.0% → +30%).
+
+**Mỗi kỹ năng chủ động có cơ chế riêng** (kỹ năng mở sau không còn là "bản số to hơn" của kỹ năng trước):
+- Liệt Hỏa Phù: để lại vùng lửa cháy 2.5 giây.
+- Hàn Băng Chưởng: đóng băng quái đứng yên 1.3 giây (boss: chậm 50%).
+- Lôi Đình Phù (kiểu mới `chain`): sét đánh quái gần nhất rồi nảy sang 3–6 quái lân cận.
+- Cuồng Phong Trảm (kiểu mới `tornado`): lốc xoáy trôi chậm về phía quái, cắt lặp lại mỗi 0.35 giây.
+- Kim Cang Hộ Thể: hào quang đẩy lùi quái. Đạo Tổ Chân Ngôn: trói chân (chậm 40%).
+- Thiên Hỏa Liệu Nguyên: hất văng quái; thức tỉnh để lại biển lửa.
+- Huyền Âm Kiếm Trận (kiểu mới `rain`): kiếm giáng tức thì xuống nhiều quái (thay cho vòng kiếm trùng với Hộ Thân Kiếm Luân).
+- Khai Tiên Nhất Kích: choáng mọi quái trúng đòn.
+
+**Cân bằng**
+- Kỹ năng mở muộn giảm sức mạnh danh nghĩa (sức mạnh đã đến từ cảnh giới); Huyền Âm Kiếm Trận hết mạnh vượt trội.
+- Phích Lịch Quyền (quyền sáo): sát thương +50%/cấp (trước +28%), thức tỉnh ×2.
+- Hàn Băng Chưởng mạnh hơn (40 sát thương, hồi chiêu 4 giây) + đóng băng.
+- Mở khóa sớm hơn: chủ động thứ 2 ở Luyện Thể Trung kỳ, kỹ năng cuối ở Đại La Kim Tiên Hậu kỳ (trước là Đạo Tổ — cảnh giới tối đa).
+
+**Liên kết bị động phân bổ lại** (mỗi bị động 1–3 kỹ năng, không còn bị động "vô chủ"): quyền sáo → Hộ Thể Thần Công; Liệt Hỏa Phù → Tụ Bảo Phù; Huyền Âm Kiếm Trận → Ngộ Tính Thiên Phú; Khai Tiên Nhất Kích → Phá Giáp Chân Ý.
+
+**Nhịp chọn thẻ**
+- Giới hạn kỹ năng trong màn 6 → 7 (vũ khí + 6 ô): đủ 3 chủ động + 3 bị động liên kết để thức tỉnh cả bộ.
+- Đao nhiều nhát: chém LIỀN nhau cùng hướng (trước: nhát 2 chém ra sau lưng).
+- Thẻ lên cấp hiện số liệu thay đổi: sát thương, số lượng, hồi chiêu, phạm vi, xuyên, khống chế (ví dụ "Sát thương 69 → 131").
+- GDD mục 5 cập nhật + bảng kỹ năng 5.5.
+
 ## v0.13.4 — Động tác KÉO CUNG theo mẫu vẽ tay
 - `tools/art/trace_bow.py` chuyển 2 sheet mẫu (`tools/art/ref/hero_battle_bow_draw.png` kéo căng, `hero_battle_bow_release.png` buông dây) thành `public/ui/hero_b_draw.png`: giữ nguyên cây cung, dây, mũi tên như mẫu; khung 84x72 (cung + tên vươn ra ngoài khung nhân vật). Cánh cung (vàng trong mẫu) tô lại theo màu từng cấp cung → 6 bộ khung (cấp Đạo: cầu vồng).
 - Trong trận: bắn cung = kéo căng (55% thời gian) → buông dây; thời lượng 0.34 giây. Khung kéo cung vẽ đè đúng chỗ nhân vật, ẩn thân + cung thường trong lúc bắn.

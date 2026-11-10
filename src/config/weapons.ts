@@ -1,7 +1,7 @@
 // =====================================================================
 // KỸ NĂNG THEO VŨ KHÍ. Mỗi loại vũ khí có 1 kỹ năng riêng, là đòn đánh thường TỰ ĐỘNG thi triển.
 // Vũ khí là một ô trang bị; loại vũ khí quyết định kỹ năng này.
-// Cấp 5 + sở hữu bị động liên kết → thẻ thức tỉnh (awaken). Mọi cấp: sát thương +28%, hồi chiêu -5%, phạm vi +7% mỗi cấp (xem resolveSkill).
+// Cấp 5 + sở hữu bị động liên kết → thẻ thức tỉnh (awaken). Mọi cấp: sát thương +28% (hoặc `growth`), hồi chiêu -5%, phạm vi +7% mỗi cấp (xem resolveSkill).
 // =====================================================================
 
 import type { SkillDef } from './types';
@@ -18,12 +18,12 @@ export const WEAPONS: SkillDef[] = [
     color: 0xcfe8ff,
     base: { damage: 14, cooldown: 0.85, count: 1, area: 0, speed: 520, pierce: 1, width: 10 },
     countByLevel: [1, 1, 2, 2, 3],
-    awaken: { name: 'Vạn Kiếm Quy Nhất', desc: 'Kiếm khí hóa thành mưa kiếm, nhiều tia hơn và xuyên thêm quái.', damageMul: 1.8, countAdd: 2, areaMul: 1.2, cooldownMul: 0.85 },
+    awaken: { name: 'Vạn Kiếm Quy Nhất', desc: 'Kiếm khí hóa thành mưa kiếm, nhiều tia hơn và xuyên thêm 2 quái.', damageMul: 1.8, countAdd: 2, areaMul: 1.2, cooldownMul: 0.85, pierceAdd: 2 },
   },
   {
     id: 'wp_blade',
     name: 'Liệt Đao Trảm',
-    desc: 'Chém một nhát hình quạt rộng về phía quái gần nhất.',
+    desc: 'Chém một nhát hình quạt rộng về phía quái gần nhất (cấp cao: chém liền nhiều nhát).',
     group: 'weapon',
     kind: 'slash',
     linkedPassive: 'p_hp',
@@ -31,7 +31,7 @@ export const WEAPONS: SkillDef[] = [
     color: 0xffb070,
     base: { damage: 22, cooldown: 1.1, count: 1, area: 125, speed: 0, pierce: 0, arc: 110 },
     countByLevel: [1, 1, 2, 2, 2],
-    awaken: { name: 'Liệt Thiên Đao Ý', desc: 'Nhát chém rộng gấp rưỡi, chém thêm một nhát.', damageMul: 1.9, countAdd: 1, areaMul: 1.5, cooldownMul: 0.85 },
+    awaken: { name: 'Liệt Thiên Đao Ý', desc: 'Nhát chém rộng gấp rưỡi, chém liền thêm một nhát.', damageMul: 1.9, countAdd: 1, areaMul: 1.5, cooldownMul: 0.85 },
   },
   {
     id: 'wp_spear',
@@ -52,11 +52,12 @@ export const WEAPONS: SkillDef[] = [
     desc: 'Quyền kình nổ ra quanh người, đánh mọi quái ở gần.',
     group: 'weapon',
     kind: 'nova',
-    linkedPassive: 'p_atk',
+    linkedPassive: 'p_armor',
     unlockTier: 0,
     color: 0xff9090,
-    base: { damage: 12, cooldown: 0.7, count: 1, area: 88, speed: 0, pierce: 0 },
-    awaken: { name: 'Bá Vương Chấn Địa', desc: 'Quyền kình lan ra cực rộng, đánh dồn dập.', damageMul: 1.8, countAdd: 0, areaMul: 1.6, cooldownMul: 0.7 },
+    base: { damage: 14, cooldown: 0.7, count: 1, area: 90, speed: 0, pierce: 0 },
+    growth: 0.5,
+    awaken: { name: 'Bá Vương Chấn Địa', desc: 'Quyền kình lan ra cực rộng, đánh dồn dập.', damageMul: 2, countAdd: 0, areaMul: 1.6, cooldownMul: 0.7 },
   },
   {
     id: 'wp_bow',

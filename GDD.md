@@ -92,8 +92,8 @@ Chỉ số **XP trong màn độc lập với tu vi cảnh giới** (XP chỉ đ
 | **Kỹ năng bị động** | Tăng chỉ số hoặc hiệu ứng. Mỗi kỹ năng vũ khí / chủ động **liên kết** với 1 bị động. |
 
 ### 5.2 Giới hạn trong màn
-- Tổng số kỹ năng sở hữu trong một màn tối đa **6**, tính cả kỹ năng vũ khí, **không phân biệt chủ động hay bị động**.
-- Kỹ năng vũ khí luôn chiếm 1 ô ngay từ đầu, còn tối đa **5 ô** cho chủ động + bị động. Ví dụ: 3 chủ động thì chỉ còn 2 bị động; hoặc 2 chủ động + 3 bị động. Đây là chỗ tạo ra sự lựa chọn build.
+- Tổng số kỹ năng sở hữu trong một màn tối đa **7**, tính cả kỹ năng vũ khí, **không phân biệt chủ động hay bị động** (v0.14: nâng từ 6 lên 7).
+- Kỹ năng vũ khí luôn chiếm 1 ô ngay từ đầu, còn tối đa **6 ô** cho chủ động + bị động. Ví dụ: 3 chủ động + 3 bị động liên kết (thức tỉnh được cả bộ chủ động); hoặc 2 chủ động + 4 bị động. Đây là chỗ tạo ra sự lựa chọn build.
 - Mỗi kỹ năng có **5 cấp**.
 
 ### 5.3 Thẻ khi lên cấp
@@ -114,7 +114,32 @@ Loại thẻ:
 ### 5.4 Thức tỉnh
 Khi **kỹ năng chủ động đạt cấp 5** và người chơi **đã sở hữu bị động liên kết**, thì **lần chọn thẻ kế tiếp sẽ có thẻ thức tỉnh** của kỹ năng đó. Thức tỉnh thay thế kỹ năng bằng phiên bản mạnh hơn (hiệu ứng, phạm vi, sát thương lớn hơn).
 
-**Đã chốt:** chỉ cần sở hữu bị động liên kết (bất kỳ cấp), không bắt buộc cấp 5. Chỉ kỹ năng chủ động mới thức tỉnh; kỹ năng vũ khí hiện chưa có thức tỉnh.
+**Theo code hiện tại (v0.14):** kỹ năng đạt cấp 5 + sở hữu bị động liên kết (bất kỳ cấp). Cả kỹ năng vũ khí lẫn chủ động đều thức tỉnh được. Thức tỉnh có thể thêm xuyên quái (`pierceAdd`) và kéo dài khống chế (`ctrlMul`).
+
+### 5.5 Bảng kỹ năng (v0.14)
+Nguyên tắc: sức mạnh nhân vật đã tăng theo cảnh giới, nên kỹ năng mở sau **không chỉ là bản số to hơn** — mỗi kỹ năng có cơ chế riêng để kỹ năng cũ vẫn đáng mang.
+
+| Kỹ năng | Mở | Cơ chế | Bị động liên kết |
+|---|---|---|---|
+| Kiếm Khí Trảm (kiếm) | — | Kiếm khí bay thẳng, xuyên 1 quái | Cương Khí Công |
+| Liệt Đao Trảm (đao) | — | Chém quạt rộng, cấp cao chém liền nhiều nhát | Cường Thể Quyết |
+| Phá Không Thương (thương) | — | Đâm đường thẳng xuyên mọi quái | Đạo Vận Ấn |
+| Phích Lịch Quyền (quyền sáo) | — | Quyền kình nổ quanh người, tăng mạnh theo cấp (+50%/cấp) | Hộ Thể Thần Công |
+| Truy Phong Tiễn (cung) | — | Bắn nhanh nhiều mũi tên | Phá Giáp Chân Ý |
+| Hồi Toàn Phiến (quạt) | — | Quạt bay ra rồi quay về | Phong Ảnh Bộ |
+| Liệt Hỏa Phù | Luyện Thể Sơ kỳ | Bùa giáng có báo trước + **vùng lửa cháy** | Tụ Bảo Phù |
+| Hộ Thân Kiếm Luân | Luyện Thể Trung kỳ | Kiếm xoay quanh người | Phong Ảnh Bộ |
+| Hàn Băng Chưởng | Luyện Khí Sơ kỳ | Nổ băng quanh người, **đóng băng** quái | Hộ Thể Thần Công |
+| Lôi Đình Phù | Luyện Khí Hậu kỳ | Sét **nảy** từ quái này sang quái khác | Phá Giáp Chân Ý |
+| Cuồng Phong Trảm | Trúc Cơ Hậu kỳ | **Lốc xoáy** trôi chậm, cắt lặp lại | Tâm Pháp Tinh Thông |
+| Hồi Xuân Quyết | Kim Đan Hậu kỳ | Hồi % máu (chỉ khi mất ≥ 10% máu) | Hồi Nguyên Quyết |
+| Kim Cang Hộ Thể | Nguyên Anh Hậu kỳ | Hào quang gây sát thương + **đẩy lùi** | Cường Thể Quyết |
+| Truy Hồn Châm | Luyện Hư Sơ kỳ | Kim bạc tự tìm quái | Linh Thức Dẫn Khí |
+| Phong Lôi Dực | Hợp Thể Trung kỳ | Tia dài xuyên mọi quái | Cương Khí Công |
+| Thiên Hỏa Liệu Nguyên | Độ Kiếp Sơ kỳ | Hỏa cầu lớn, **hất văng** quái | Đạo Vận Ấn |
+| Huyền Âm Kiếm Trận | Chân Tiên Hậu kỳ | Kiếm **giáng tức thì** xuống nhiều quái | Ngộ Tính Thiên Phú |
+| Khai Tiên Nhất Kích | Huyền Tiên Hậu kỳ | Nổ cực rộng, **choáng** quái | Phá Giáp Chân Ý |
+| Đạo Tổ Chân Ngôn | Đại La Kim Tiên Hậu kỳ | Vùng thần lực thiêu đốt + **trói chân** | Hồi Nguyên Quyết |
 
 ---
 
