@@ -237,6 +237,9 @@ export class Hub {
     if (this.measuring) return;
     const body = this.body.querySelector<HTMLElement>('.panel-body');
     if (!body) return;
+    // đo ở cỡ thật (bỏ co của lần trước), số hàng tính xong mới co nếu vẫn thiếu chỗ
+    const inner = body.firstElementChild as HTMLElement | null;
+    if (inner) inner.style.zoom = '';
     let changed = false;
     body.querySelectorAll<HTMLElement>('.paged[data-key]').forEach((pg) => {
       const grid = pg.querySelector<HTMLElement>('.pg-grid');
@@ -257,6 +260,24 @@ export class Hub {
       this.measuring = true;
       this.render();
       this.measuring = false;
+      return; // lần vẽ lại sẽ tự đo + co lần nữa
+    }
+    this.shrinkToFit(body);
+  }
+
+  /**
+   * Lưới bảo vệ cuối cùng để KHÔNG BAO GIỜ phải cuộn: nếu nội dung vẫn cao hơn khung
+   * (máy đặt cỡ chữ hệ thống lớn, màn hình rất thấp...) thì thu nhỏ cả khối nội dung vừa đủ lọt khung.
+   */
+  private shrinkToFit(body: HTMLElement): void {
+    const inner = body.firstElementChild as HTMLElement | null;
+    if (!inner) return;
+    inner.style.zoom = '';
+    for (let i = 0; i < 3; i++) {
+      const over = body.scrollHeight - body.clientHeight;
+      if (over <= 1) return;
+      const cur = parseFloat(inner.style.zoom || '1');
+      inner.style.zoom = String(Math.max(0.55, cur * (body.clientHeight / body.scrollHeight) - 0.01));
     }
   }
 
@@ -488,7 +509,7 @@ export class Hub {
       h('div', { class: 'doll' },
         this.slotBox('weapon'), this.slotBox('clothes'), this.slotBox('bibao'),
         // tên + cảnh giới đã có ở thanh trên → chỉ để nhân vật cho gọn
-        h('div', { class: 'doll-hero' }, heroSprite(3)),
+        h('div', { class: 'doll-hero' }, heroSprite(narrow ? 2 : 3)),
         this.slotBox('shoes'), this.slotBox('accessory'),
         narrow ? h('button', { class: 'eq-slot eq-stats', onclick: () => { audio.play('click'); this.detail('Chỉ số & Nguyên liệu', () => this.statsBox()); } }, ic('hero'), h('span', { class: 'eq-name', text: 'Chỉ số' })) : null,
       ),

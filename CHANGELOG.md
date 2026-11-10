@@ -1,5 +1,12 @@
 # Lịch sử phiên bản
 
+## v0.9.4 — Điện thoại: nội dung luôn trọn trong khung
+- Chặn trình duyệt di động tự phóng chữ (`text-size-adjust: 100%`) — nguyên nhân chữ to hơn thiết kế ~35% trên một số máy.
+- Hành Trang: nhân vật đổi cỡ theo màn hình ngay khi vẽ (trước đây thuộc tính trên thẻ đè CSS nên vẫn ×3, đẩy ô trang bị bên phải ra ngoài khung).
+- Bố cục điện thoại gọn hơn: thanh trên, khung bảng, tiêu đề nhỏ lại; "Cắn linh thạch" dồn một hàng; 6 thế giới ở Lịch Luyện thành lưới 3×2 (không vuốt ngang).
+- **Lưới bảo vệ cuối**: nếu nội dung vẫn cao hơn khung (cỡ chữ hệ thống rất lớn, màn hình rất thấp) thì tự thu nhỏ khối nội dung cho vừa — không bao giờ phải cuộn. Danh sách chia trang được đo ở cỡ thật trước, co sau.
+- Đã thử ở 305×520 (tương đương máy phóng chữ 35%), 360×640, 375×560, 412×703, iPhone 13 và PC 1280×720: không tab nào tràn.
+
 ## v0.9.3 — Làm sạch sprite nhân vật
 - **Đốm trắng ở rìa**: ảnh concept nhòe nên giữa viền đen và nền giấy có dải điểm xám / trắng mờ. `trace_hero.py` giờ bào dải này (3 lượt, chỉ điểm sáng ít màu nằm sát nền) và bỏ các điểm chỉ phủ một phần khi thu nhỏ.
 - **Mảng trắng giữa tay phải và thân**: là giấy nền bị tay + thân bao kín nên loang từ mép không tới. Giờ xóa mọi mảng "giấy" (sáng, ngả ấm: đỏ − lam ≥ 11; áo trắng của nhân vật ngả lạnh) từ 40 điểm trở lên; tròng trắng mắt (~11–16 điểm) được giữ.

@@ -27,6 +27,9 @@
         overscroll-behavior: none;
         -webkit-user-select: none;
         user-select: none;
+        /* Không cho trình duyệt di động tự phóng to chữ (font boosting) làm vỡ bố cục */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
       #game {
         width: 100vw;

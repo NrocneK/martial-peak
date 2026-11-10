@@ -473,3 +473,39 @@
   .note { font-size: 12px; margin-bottom: 6px; }
 }
 @keyframes meditate-s { to { background-position: -1152px 0; } }
+
+/* ---------- Điện thoại: gọn khung để nội dung vừa màn hình (cơ chế tự co chỉ là lưới bảo vệ cuối) ---------- */
+@media (max-width: 760px) {
+  .lb-top { padding: 6px 8px 4px; gap: 6px; }
+  .avatar { width: 42px; height: 42px; }
+  .avatar i { background-position: -41px -27px; }
+  .pf-name { font-size: 15px; }
+  .pf-realm { font-size: 12px; }
+  .pf-text .bar { width: 130px; height: 12px; }
+  .pf-text .bar .lbl { font-size: 9.5px; line-height: 12px; }
+  .icon-btn { width: 40px; height: 40px; border-width: 8px; border-image-width: 8px; }
+  .icon-btn .ic { width: 22px; height: 22px; }
+  .lb-top .res { gap: 4px; }
+  .chip { padding: 1px 8px 1px 4px; font-size: 12px; gap: 4px; }
+  .chip .ic { width: 20px; height: 20px; }
+  .panel { inset: 4px; border-width: 12px; border-image-width: 12px; }
+  .panel-head { padding: 0 4px 6px; }
+  .panel-head h2 { font-size: 18px; }
+  .panel-head .back { width: 30px; height: 30px; }
+  .panel-body { padding: 8px 2px 4px; }
+  /* Tu Luyện: gọn hàng "cắn linh thạch" */
+  .realm-info { gap: 4px; }
+  .realm-info p { font-size: 13px; }
+  .pack { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; padding: 6px 8px; margin-top: 2px; }
+  .pack .hd { margin: 0; font-size: 14px; }
+  .pack .dim { font-size: 12px; }
+  /* Lịch Luyện: 6 thế giới thành lưới 3×2, không vuốt ngang */
+  .journey { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; overflow: visible; padding: 0; margin-bottom: 6px; }
+  .jn { flex: none; flex-direction: row; justify-content: flex-start; gap: 5px; padding: 4px 6px; border: 1px solid #34406f; border-radius: 4px; background: rgba(10, 16, 48, 0.5); text-align: left; }
+  .jn::before { display: none; }
+  .jn .node { width: 10px; height: 10px; flex-shrink: 0; }
+  .jn .jn-name { font-size: 10.5px; line-height: 1.2; }
+  .jn .jn-sub { display: none; }
+  .jn.on { border-color: var(--gold); }
+  .world-desc h3 { font-size: 16px; }
+}
