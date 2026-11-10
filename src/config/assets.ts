@@ -9,10 +9,10 @@ export const TEX = {
   PLAYER: 'player',
   /** Tư thế CẦM QUẠT (tay phải trước ngực): public/ui/hero_bf_walk.png, cùng bố cục với PLAYER */
   PLAYER_FAN: 'player_fan',
-  /** Ra đòn (tư thế thường): public/ui/hero_b_atk.png — 8 hàng hướng × 10 cột (6 khung vung + 4 khung kéo cung), xem heroAttack.ts */
-  PLAYER_ATK: 'player_atk',
   /** Chém kiếm / đao theo mẫu: public/ui/hero_b_slash.png — 8 hàng hướng × 2 cột (lấy đà, chém), xem heroSlash.ts */
   PLAYER_SLASH: 'player_slash',
+  /** Kéo cung theo mẫu: public/ui/hero_b_draw.png — 8 hàng hướng × 12 cột (cấp cung 0..5 × [kéo, buông]), khung 84x72 */
+  PLAYER_DRAW: 'player_draw',
   /** Nền đất lặp vô hạn */
   GROUND: 'ground',
   /** Hình dạng quái (màu trắng, được nhuộm màu bằng setTint). Key = 'shape_' + tên hình. */

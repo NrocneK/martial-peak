@@ -1,5 +1,10 @@
 # Lịch sử phiên bản
 
+## v0.13.4 — Động tác KÉO CUNG theo mẫu vẽ tay
+- `tools/art/trace_bow.py` chuyển 2 sheet mẫu (`tools/art/ref/hero_battle_bow_draw.png` kéo căng, `hero_battle_bow_release.png` buông dây) thành `public/ui/hero_b_draw.png`: giữ nguyên cây cung, dây, mũi tên như mẫu; khung 84x72 (cung + tên vươn ra ngoài khung nhân vật). Cánh cung (vàng trong mẫu) tô lại theo màu từng cấp cung → 6 bộ khung (cấp Đạo: cầu vồng).
+- Trong trận: bắn cung = kéo căng (55% thời gian) → buông dây; thời lượng 0.34 giây. Khung kéo cung vẽ đè đúng chỗ nhân vật, ẩn thân + cung thường trong lúc bắn.
+- Bỏ bản cánh tay vẽ tự động của v0.13.2 (`attack_battle.py`, `hero_b_atk.png`, `heroAttack.ts`) và cung tư thế bắn + dây vẽ lúc chạy.
+
 ## v0.13.3 — Động tác CHÉM kiếm / đao theo mẫu vẽ tay
 - `tools/art/trace_attack.py` chuyển 2 sheet mẫu (`tools/art/ref/hero_battle_slash_windup.png` lấy đà, `hero_battle_slash_strike.png` chém) thành `public/ui/hero_b_slash.png` (8 hướng × 2 khung): lấy mẫu đúng lưới ảnh xuất, căn chân, đưa màu về bảng màu nhân vật, tách thanh kiếm trong mẫu → đo điểm cầm + góc lưỡi → xóa kiếm, vá thân, vẽ lại viền.
 - `src/config/heroSlash.ts` (tự sinh): điểm cầm, góc lưỡi, kiếm trước / sau thân cho từng hướng × tư thế. Ô kiếm bị thân che trong mẫu: ước điểm cầm, vũ khí vẽ sau thân.

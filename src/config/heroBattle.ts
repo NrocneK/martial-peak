@@ -55,6 +55,6 @@ export const WEAPON_ATTACK: Record<string, { type: AttackType; dur: number }> = 
   wp_blade: { type: 'swing', dur: 0.28 },
   wp_spear: { type: 'thrust', dur: 0.26 },
   wp_fist: { type: 'punch', dur: 0.2 },
-  wp_bow: { type: 'draw', dur: 0.24 },
+  wp_bow: { type: 'draw', dur: 0.34 },
   wp_fan: { type: 'throw', dur: 0.5 },
 };
