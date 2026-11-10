@@ -25,12 +25,25 @@ function shift(c, x0, y0, x1, y1, dx, dy) {
   for (const [x, y, k] of buf) if (k && k !== '.' && k !== '_') c.px(x + dx, y + dy, k)
 }
 
+/** Phất tà áo sang ngang 1 bước. Khi phất RA NGOÀI, cột phía trong bị bỏ trống được giữ màu cũ (không để lỗ hở). */
+function hem(c, r, dx, outerRight) {
+  if (!dx) return
+  const outward = outerRight ? dx > 0 : dx < 0
+  if (!outward) return shift(c, r[0], r[1], r[2], r[3], dx, 0)
+  const buf = []
+  for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) buf.push([x, y, c.key(x, y)])
+  for (const [x, y, k] of buf) if (k && k !== '.' && k !== '_') c.px(x + dx, y, k)
+}
+
 // Mốc trên lưới 56x104 (xem số hàng trong hero_trace.px.js)
 // Chạy lại trace_hero.py thì kiểm tra lại các mốc này (in lưới ra xem hàng / cột).
 const BELT = 41                   // hàng trên cùng của đai lưng
 const BODY_X = 36                 // cột giữa thân (khóa đai)
 const RIBBON = [0, 48, 19, 66]    // dải đai bay (x0, y0, x1, y1)
 const TAIL = [10, 13, 25, 28]     // đuôi tóc rủ bên trái
+const BOOT = 88                   // hàng trên cùng của đôi ủng (đứng yên khi thở)
+const HEM_L = [8, 74, 20, 89]     // tà áo ngoài bên trái (x0, y0, x1, y1)
+const HEM_R = [47, 74, 56, 88]    // tà áo ngoài bên phải
 /** Khóa màu của concept gần nhất với một màu cho trước (lấy đúng chất liệu: quần, áo, da...) */
 const nearest = (hex) => {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -47,11 +60,15 @@ sprite('_hero_base', G.HERO_GRID)
 anim('hero_full', { w: 56, h: 104, frames: 4, fps: 4, outline: 'k', flip: 'x' }, (c) => {
   c.stamp('_hero_base', 0, 0)
   const f = c.frame
-  // thở: thân trên hạ 1px ở khung 1-2 (chân + vạt áo đứng yên)
-  if (f === 1 || f === 2) shift(c, 0, 0, 56, BELT, 0, 1)
+  // thở: CẢ NGƯỜI (trừ đôi ủng) hạ 1px ở khung 1-2 → thân trên, tay, vạt áo, quần cùng nhún theo nhịp thở
+  // (vũ khí / quyền sáo / quạt cầm tay nhún cùng nhịp bằng CSS: .figure .wpn, xem styles.css)
+  if (f === 1 || f === 2) shift(c, 0, 0, 56, BOOT, 0, 1)
   // dải đai + đuôi tóc lay theo gió
   const sway = [0, -1, 0, 1][f]
   shift(c, RIBBON[0], RIBBON[1], RIBBON[2], RIBBON[3], sway, f === 2 ? -1 : 0)
+  // tà áo hai bên phất nhẹ ngược nhịp với dải đai
+  hem(c, HEM_L, -sway, false)
+  hem(c, HEM_R, sway, true)
   if (f === 1 || f === 2) shift(c, TAIL[0], TAIL[1] + 1, TAIL[2], TAIL[3] + 1, -1, 0)
 })
 

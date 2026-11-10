@@ -1,5 +1,11 @@
 # Lịch sử phiên bản
 
+## v0.10.5 — Nhịp thở cả người
+- Hoạt ảnh đứng (`hero_full`): khi thở CẢ NGƯỜI hạ 1px (trước đây chỉ thân trên, nửa dưới đứng im); chỉ đôi ủng giữ nguyên trên mặt đất.
+- Hai tà áo ngoài phất nhẹ ngược nhịp với dải đai; khi phất ra ngoài không để lộ khe hở.
+- Vũ khí cầm tay, quyền sáo, quạt nhún cùng nhịp thở (CSS `wpn-breath`, dùng `translate` để không đè góc xoay của kiếm/đao).
+- `hero_poses.py`: xóa nắm tay theo đúng khung thở khi tạo `hero_full_fan.png`.
+
 ## v0.10.4 — Chỉnh thương và quyền sáo
 - **Thương**: đảo đầu — mũi thương chĩa xuống trước chân (lộ rõ), đốc cán ở sau vai phải.
 - **Quyền sáo**: vẽ lại thành găng giáp có khối và viền đen (ống cổ tay, phiến giáp mu bàn tay, gai đốt ngón nhô ra trước), to hơn nắm tay một chút để không còn trông như hình xăm.

@@ -18,11 +18,13 @@ FW = 58                     # bề rộng một khung
 FIST = (3, 52, 10, 60)      # x0, y0, x1, y1: nắm tay phải + cổ tay áo trên khung đã lật
 OUTLINE = (18, 14, 28, 255)
 SLEEVE_IN = (38, 40, 56, 255)
+BREATH = [0, 1, 1, 0]       # hero_full: cả người (trừ ủng) hạ 1px ở khung 1-2 → nắm tay cũng hạ theo
 
 a = np.array(Image.open(SRC).convert('RGBA'))
 for f in range(a.shape[1] // FW):
     fr = a[:, f * FW:(f + 1) * FW]
     x0, y0, x1, y1 = FIST
+    y0 += BREATH[f]; y1 += BREATH[f]
     fr[y0:y1, x0:x1] = 0
     # miệng ống tay áo: hàng ngay trên vùng xóa, những điểm là vải (không phải viền) → tô tối
     for x in range(x0 + 1, x1 - 1):

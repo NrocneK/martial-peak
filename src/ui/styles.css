@@ -50,12 +50,12 @@
 /* khung viền vàng pixel art (9 mảnh, mỗi góc 8px ảnh → 16px màn hình) */
 .fr { border: 16px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 16px / 0 stretch; image-rendering: pixelated; }
 .hero-sprite { --s: 3; flex-shrink: 0; width: calc(58px * var(--s)); height: calc(106px * var(--s));
-  background: url('/ui/hero_full.png?v=0.9.5') 0 0 / calc(232px * var(--s)) calc(106px * var(--s)) no-repeat; image-rendering: pixelated;
+  background: url('/ui/hero_full.png?v=0.10.5') 0 0 / calc(232px * var(--s)) calc(106px * var(--s)) no-repeat; image-rendering: pixelated;
   animation: hero-idle 1s steps(4) infinite; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
 @keyframes hero-idle { from { background-position: 0 0; } to { background-position: calc(-232px * var(--s)) 0; } }
 .avatar { position: relative; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   background: radial-gradient(circle at 50% 35%, #8ccaf8, #2763d0); border: 2px solid #e8b24a; box-shadow: 0 0 0 2px #0a1030, 0 0 10px #ffd96a66; }
-.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png?v=0.9.5') -16px -12px / 464px 212px no-repeat; image-rendering: pixelated; }
+.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png?v=0.10.5') -16px -12px / 464px 212px no-repeat; image-rendering: pixelated; }
 
 /* ---------- Menu chính ---------- */
 .menu { overflow: hidden; --frame: #e8b24a; --frame-hi: #fff0b0; --panel1: #1c2a63; --panel2: #0e1738; }
@@ -542,8 +542,12 @@
 /* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
 .figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
 .figure .wpn.front { z-index: 3; }
+/* vũ khí cầm tay nhún cùng nhịp thở với hero_full (1s, 4 khung; khung 1-2 cả người hạ 1px ảnh).
+   Dùng thuộc tính `translate` riêng để không đè `transform: rotate` của .turn-r180. */
+.figure .wpn { animation: wpn-breath 1s steps(1, end) infinite; }
+@keyframes wpn-breath { 0%, 75%, 100% { translate: 0 0; } 25%, 50% { translate: 0 calc(1px * var(--s)); } }
 .figure .wpn.turn-r180 { transform: rotate(180deg); }
-.figure .hero-sprite.pose-fan { background-image: url('/ui/hero_full_fan.png?v=0.10.2'); }
+.figure .hero-sprite.pose-fan { background-image: url('/ui/hero_full_fan.png?v=0.10.5'); }
 .figure .bb-float { position: absolute; z-index: 5; right: -8%; top: 4%; image-rendering: pixelated; pointer-events: none;
   filter: drop-shadow(0 0 6px rgba(143, 228, 248, 0.85)); animation: bb-bob 2.6s ease-in-out infinite; }
 .figure .bb-float.bb-left { right: auto; left: -10%; }
@@ -553,4 +557,4 @@
   .eq-slot .eq-name { font-size: 9.5px; }
   .it-tile .gi { max-height: 40px; }
 }
-@media (prefers-reduced-motion: reduce) { .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .figure .wpn, .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
