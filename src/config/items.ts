@@ -121,26 +121,40 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
   return `/gear/${gearKey(it)}_${it.tier}.png?v=${GEAR_ART_V}`;
 }
 /**
- * Điểm cầm (pixel trên hình vũ khí 50x50) — trùng với tâm nắm tay phải của nhân vật khi hiển thị.
- * Khi cầm, hình được LẬT NGANG: lưỡi vươn lên-trái, ra phía ngoài thân (không đè lên người).
- * `front`: vẽ ĐÈ lên nhân vật (quyền sáo đeo trên tay); còn lại nằm SAU, nắm tay che chuôi.
+ * CÁCH CẦM vũ khí trên nhân vật (Hành Trang). Thứ tự lớp: nhân vật → vũ khí → BÀN TAY (public/ui/hero_rhand.png),
+ * nên chuôi chui vào trong nắm tay: núm chuôi ló trên, lưỡi đi ra dưới — trông như đang cầm thật.
+ *   img  : 'icon' = hình ô đồ (50x50) · 'held' = hình riêng khi cầm (thương dựng đứng) · 'worn' = đeo trùm lên tay (quyền sáo)
+ *   gx,gy: tâm chuôi trên hình GỐC (chưa xoay), tính cả viền
+ *   turn : 'r180' xoay 180° (kiếm, đao: tay buông → lưỡi chĩa xuống chéo về phía trước) · 'flipx' lật ngang · 'none'
  */
-export const WEAPON_GRIP: Record<string, { x: number; y: number; front?: boolean; noFlip?: boolean }> = {
-  wp_sword: { x: 10, y: 40 },
-  wp_blade: { x: 10, y: 40 },
-  wp_spear: { x: 13, y: 37 },
-  wp_fist: { x: 22, y: 30, front: true },
-  // cung: không lật (dây hướng vào người); đặt TRƯỚC lớp nhân vật vì cung nằm cùng độ sâu với nắm tay, nếu đặt sau sẽ bị tay áo + vạt áo che hết
-  wp_bow: { x: 11, y: 25, noFlip: true, front: true },
-  wp_fan: { x: 9, y: 41 },
+export interface WeaponHold {
+  img: 'icon' | 'held' | 'worn';
+  w: number;
+  h: number;
+  gx: number;
+  gy: number;
+  turn: 'r180' | 'flipx' | 'none';
+}
+export const WEAPON_HOLD: Record<string, WeaponHold> = {
+  wp_sword: { img: 'icon', w: 50, h: 50, gx: 10, gy: 40, turn: 'r180' },
+  wp_blade: { img: 'icon', w: 50, h: 50, gx: 10, gy: 40, turn: 'r180' },
+  wp_spear: { img: 'held', w: 16, h: 102, gx: 8, gy: 59, turn: 'none' },
+  wp_bow: { img: 'icon', w: 50, h: 50, gx: 11, gy: 25, turn: 'none' },
+  wp_fan: { img: 'icon', w: 50, h: 50, gx: 10, gy: 42, turn: 'flipx' },
+  wp_fist: { img: 'worn', w: 12, h: 13, gx: 6, gy: 6.5, turn: 'none' },
 };
-/** Tâm nắm tay PHẢI (tay phía xa, bên trái màn hình) trên sprite hero_full 58x106 đã lật */
-export const HERO_RIGHT_FIST = { x: 7.5, y: 56.5 };
-/** Cỡ hình vũ khí (50x50 kể cả viền) */
-export const WEAPON_PX = 50;
+/** Tâm nắm tay PHẢI (tay phía xa, bên trái màn hình) trên sprite hero_full 58x106 đã lật — khớp BOX trong tools/art/cut_hand.py */
+export const HERO_RIGHT_FIST = { x: 6, y: 57 };
+
+/** Hình dùng khi cầm (theo WEAPON_HOLD.img) */
+export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, hold: WeaponHold): string {
+  if (hold.img === 'held') return `/gear/${it.weaponId}_held_${it.tier}.png?v=${GEAR_ART_V}`;
+  if (hold.img === 'worn') return `/gear/${it.weaponId}_worn_${it.tier}.png?v=${GEAR_ART_V}`;
+  return `/gear/${it.weaponId}_${it.tier}.png?v=${GEAR_ART_V}`;
+}
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 2;
+export const GEAR_ART_V = 3;
 
 export interface BibaoDef {
   id: string;

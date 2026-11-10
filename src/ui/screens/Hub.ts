@@ -6,7 +6,7 @@ import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { BIBAOS, DAO_TIER, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_GRIP, WEAPON_ITEM_NAMES, WEAPON_PX, affixText, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -514,17 +514,19 @@ export class Hub {
   private figure(scale: number): HTMLElement {
     const wpn = P.equippedItem('weapon');
     const bb = P.equippedItem('bibao');
-    const kids: HTMLElement[] = [];
+    const kids: HTMLElement[] = [heroSprite(scale)];
+    let hand = true;
     if (wpn?.weaponId) {
-      const g = WEAPON_GRIP[wpn.weaponId] ?? WEAPON_GRIP.wp_sword;
-      // găng quyền sáo nhỏ hơn một bậc cho cân với nắm tay; hình lật ngang nên điểm cầm x = WEAPON_PX - g.x
-      const ws = wpn.weaponId === 'wp_fist' ? Math.max(1, scale - 1) : scale;
-      const left = HERO_RIGHT_FIST.x * scale - (g.noFlip ? g.x : WEAPON_PX - g.x) * ws;
-      const top = HERO_RIGHT_FIST.y * scale - g.y * ws;
-      kids.push(h('img', { class: 'wpn' + (g.front ? ' front' : '') + (g.noFlip ? ' no-flip' : ''), src: itemIcon(wpn), alt: '', draggable: 'false',
-        style: `left:${left}px;top:${top}px;width:${WEAPON_PX * ws}px` }));
+      const hd = WEAPON_HOLD[wpn.weaponId] ?? WEAPON_HOLD.wp_sword;
+      // tâm chuôi SAU khi xoay / lật (tọa độ liên tục: +0.5 là tâm điểm ảnh)
+      const gx = hd.turn === 'none' ? hd.gx + 0.5 : hd.w - hd.gx - 0.5;
+      const gy = hd.turn === 'r180' ? hd.h - hd.gy - 0.5 : hd.gy + 0.5;
+      kids.push(h('img', { class: 'wpn turn-' + hd.turn, src: weaponHoldSrc(wpn, hd), alt: '', draggable: 'false',
+        style: `left:${(HERO_RIGHT_FIST.x - gx) * scale}px;top:${(HERO_RIGHT_FIST.y - gy) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px` }));
+      hand = hd.img !== 'worn'; // quyền sáo đeo trùm lên tay → không vẽ lại bàn tay
     }
-    kids.push(heroSprite(scale));
+    // bàn tay phải đè lên chuôi → trông như đang nắm
+    if (hand) kids.push(h('img', { class: 'rhand', src: '/ui/hero_rhand.png?v=0.10.1', alt: '', draggable: 'false' }));
     if (bb) kids.push(h('img', { class: 'bb-float', src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
     return h('div', { class: 'figure', style: `--s:${scale}` }, ...kids);
   }

@@ -226,3 +226,30 @@ const BB = {
   bb_w6_10: (c) => { c.rect(6, 14, 20, 14, '#c9cfdf'); c.rect(7, 15, 18, 12, '#eef1f7'); c.poly([10, 14, 12, 6, 20, 6, 22, 14], '#e8a93a'); c.poly([12, 6, 16, 2, 20, 6], '#ffe08a'); c.rect(10, 18, 12, 6, '#d8463c'); c.hline(12, 20, 8, '#eef1f7'); c.vline(16, 18, 6, '#eef1f7') },
 }
 for (const [id, fn] of Object.entries(BB)) sprite(id, { w: 32, h: 32, outline: 'k' }, fn)
+
+// ================================================================ HÌNH "KHI CẦM" (chỉ để hiển thị trên tay nhân vật, không phải ô đồ)
+// Thương dựng đứng 14x100: cán thẳng đứng ở x = 7, mũi ở trên; điểm cầm (chỗ nắm tay) ở y = 58.
+function spearHeld(c, t) {
+  const P = T[t], M = P.m, A = P.a
+  c.rect(6, 22, 3, 78, P.h[0]); c.vline(7, 22, 78, P.h[1])
+  for (const y of [34, 50, 70, 86]) c.hline(6, y, 3, A[1])
+  c.rect(5, 97, 5, 3, M[1])                                       // đế cán
+  c.poly([5, 20, 4, 26, 7, 24, 10, 26, 9, 20], A[1]); c.px(7, 22, A[2])   // tua dưới mũi
+  c.poly([7, 1, 10, 8, 10, 16, 7, 21, 4, 16, 4, 8], M[1]); c.poly([7, 2, 9, 8, 9, 15, 7, 19], M[2]); c.vline(7, 3, 15, M[3])
+  if (t >= 2) { c.poly([3, 15, 0, 12, 4, 18], A[2]); c.poly([11, 15, 14, 12, 10, 18], A[2]) }   // ngạnh mây
+  if (P.g) c.px(7, 19, P.g)
+  if (t === 5) for (let i = 0; i < 6; i++) c.px(7, 30 + i * 11, RAINBOW[i])
+  sparkles(c, t, [[11, 6], [3, 40]])
+}
+for (let t = 0; t < 6; t++) sprite(`wp_spear_held_${t}`, { w: 14, h: 100, outline: 'k' }, (c) => spearHeld(c, t))
+
+// Quyền sáo đeo tay 10x11: bao tay kim loại trùm lên nắm tay đang buông (đốt ngón hướng về phía trước = trái màn hình sau khi lật)
+function fistWorn(c, t) {
+  const P = T[t], M = P.m, A = P.a
+  c.rect(1, 0, 8, 3, P.h[0]); c.hline(1, 0, 8, A[1])                // bao cổ tay
+  c.rect(0, 3, 10, 7, M[1]); c.rect(1, 4, 8, 5, M[2]); c.hline(1, 4, 7, M[3])   // bao nắm tay
+  for (let i = 0; i < 4; i++) c.px(1 + i * 2, 10, t >= 3 ? A[2] : M[3])          // gai đốt ngón
+  if (P.g) c.px(5, 6, P.g)
+  if (t === 5) { c.px(2, 7, RAINBOW[0]); c.px(4, 7, RAINBOW[2]); c.px(6, 7, RAINBOW[4]); c.px(8, 7, RAINBOW[5]) }
+}
+for (let t = 0; t < 6; t++) sprite(`wp_fist_worn_${t}`, { w: 10, h: 11, outline: 'k' }, (c) => fistWorn(c, t))

@@ -1,5 +1,10 @@
 # Lịch sử phiên bản
 
+## v0.10.1 — Nhân vật CẦM vũ khí (không còn "dán" vào tay)
+- Thứ tự lớp ở Hành Trang: nhân vật → vũ khí → **bàn tay phải** (`public/ui/hero_rhand.png`, cắt từ sprite bằng `tools/art/cut_hand.py`). Chuôi chui vào trong nắm tay: núm chuôi ló trên, lưỡi ra dưới, ngón tay phủ lên chuôi.
+- Hướng cầm theo dáng tay buông (`WEAPON_HOLD` trong `src/config/items.ts`): kiếm, đao xoay 180° (lưỡi chĩa xuống chéo phía trước); thương dùng hình **dựng đứng** riêng (`wp_spear_held_*`), mũi trên đầu; cung dựng đứng; quạt xòe ra ngoài; quyền sáo dùng hình **đeo tay** cỡ vừa nắm tay (`wp_fist_worn_*`) trùm lên bàn tay.
+- Thêm 12 hình phụ khi cầm (6 thương dựng đứng + 6 quyền sáo đeo tay).
+
 ## v0.10.0 — Bộ sưu tập trang bị mới (Cấp × Phẩm)
 - **6 Cấp**: Phàm (3 phẩm) · Linh (4) · Tiên (5) · Thần (5) · Thánh (5) · Đạo (không phân phẩm). **Phẩm** Hạ / Trung / Thượng / Cực / Thượng Cổ = trắng / xanh lá / xanh dương / tím / cam; Đạo cấp: viền **thất thải** chuyển màu + tên chữ cầu vồng. Màu phẩm chỉ ở viền ảnh và tên, không đổi màu món đồ.
 - **66 hình pixel art** (`tools/art/gear.px.js`): 6 vũ khí (kiếm, đao, thương, quyền sáo, cung, quạt) + y phục, giày, trang sức × 6 cấp, và 12 bí bảo riêng. Hình đổi theo chất liệu cấp: Phàm sắt-gỗ, Linh đồng-ngọc, Tiên bạc-mây, Thần vàng-đỏ, Thánh bạch kim hào quang, Đạo hắc thạch tinh quang.
