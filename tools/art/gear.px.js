@@ -230,18 +230,20 @@ for (const [id, fn] of Object.entries(BB)) sprite(id, { w: 32, h: 32, outline: '
 // ================================================================ HÌNH "KHI CẦM" (chỉ hiển thị trên tay nhân vật, không phải ô đồ)
 // Tọa độ khớp nắm tay trên sprite nhân vật (xem WEAPON_HOLD trong src/config/items.ts).
 
-// --- Thương cầm CHÉO 80x80: đốc cán dưới-trái (trước chân), mũi trên-phải (sau vai). Điểm cầm (24,55).
+// --- Thương cầm CHÉO 80x80: MŨI dưới-trái (trước chân, chĩa xuống), ĐỐC trên-phải (sau vai). Điểm cầm (24,55).
+// Mũi vẽ bằng tọa độ lật tâm: m(x) = 79 - x (áp cho cả x lẫn y) để giữ nguyên hình mũi lá cũ.
 function spearDiag(c, t) {
   const P = T[t], M = P.m, A = P.a
-  c.line(3, 76, 66, 13, P.h[0], 3); c.line(4, 75, 65, 14, P.h[1], 1)            // cán
-  for (const d of [14, 34, 48]) c.line(3 + d, 76 - d, 4 + d, 75 - d, A[1], 3)   // vòng đai cán
-  c.line(1, 78, 4, 75, M[1], 3)                                                   // đế cán bịt kim loại
-  c.poly([62, 15, 60, 23, 64, 20, 67, 24, 69, 17], A[1]); c.px(64, 18, A[2])     // tua dưới mũi
-  c.poly([65, 14, 70, 5, 78, 1, 75, 9, 67, 16], M[1]); c.poly([66, 14, 71, 6, 77, 2, 69, 13], M[2]); c.line(67, 13, 77, 2, M[3], 1)   // mũi lá
-  if (t >= 2) { c.poly([64, 11, 68, 13, 66, 9], A[2]); c.poly([68, 17, 70, 13, 72, 15], A[2]) }   // ngạnh mây
-  if (P.g) c.px(66, 15, P.g)
-  if (t === 5) for (let i = 0; i < 6; i++) c.px(10 + i * 9, 69 - i * 9, RAINBOW[i])
-  sparkles(c, t, [[74, 10], [40, 40]])
+  const m = (v) => 79 - v, mp = (arr) => arr.map(m)
+  c.line(13, 66, 76, 3, P.h[0], 3); c.line(14, 65, 75, 4, P.h[1], 1)           // cán
+  for (const d of [30, 44, 62]) c.line(3 + d, 76 - d, 4 + d, 75 - d, A[1], 3)   // vòng đai cán
+  c.line(75, 4, 78, 1, M[1], 3)                                                   // đốc cán bịt kim loại (sau vai)
+  c.poly(mp([62, 15, 60, 23, 64, 20, 67, 24, 69, 17]), A[1]); c.px(m(64), m(18), A[2])   // tua dưới mũi
+  c.poly(mp([65, 14, 70, 5, 78, 1, 75, 9, 67, 16]), M[1]); c.poly(mp([66, 14, 71, 6, 77, 2, 69, 13]), M[2]); c.line(m(67), m(13), m(77), m(2), M[3], 1)   // mũi lá
+  if (t >= 2) { c.poly(mp([64, 11, 68, 13, 66, 9]), A[2]); c.poly(mp([68, 17, 70, 13, 72, 15]), A[2]) }   // ngạnh mây
+  if (P.g) c.px(m(66), m(15), P.g)
+  if (t === 5) for (let i = 0; i < 6; i++) c.px(24 + i * 9, 55 - i * 9, RAINBOW[i])
+  sparkles(c, t, [[5, 69], [40, 40]])
 }
 for (let t = 0; t < 6; t++) sprite(`wp_spear_diag_${t}`, { w: 80, h: 80, outline: 'k' }, (c) => spearDiag(c, t))
 
@@ -288,17 +290,20 @@ function fanHeld(c, t) {
 }
 for (let t = 0; t < 6; t++) sprite(`wp_fan_held_${t}`, { w: 30, h: 22, outline: 'k' }, (c) => fanHeld(c, t))
 
-// --- Quyền sáo đeo CẢ HAI TAY (gọn): phiến giáp mu bàn tay + hàng đinh đốt ngón (phía trước = trái) + vòng cổ tay.
-// near = tay gần (giữa thân, to hơn), far = tay xa (mép trái, nhỏ hơn). Không viền ngoài để khớp viền sẵn của nắm tay.
+// --- Quyền sáo đeo CẢ HAI TAY: găng giáp có khối + viền đen (nổi lên khỏi nắm tay, không dẹt như hình xăm).
+// Cấu tạo (nhìn nghiêng, phía trước = trái): ống cổ tay loe ở trên, phiến giáp mu bàn tay, hàng gai đốt ngón nhô ra trước.
+// near = tay gần (giữa thân), far = tay xa (mép trái, nhỏ hơn).
 function knuckle(c, t, w, h) {
   const P = T[t], M = P.m, A = P.a
-  c.rect(1, 0, w - 2, 2, M[1]); c.hline(1, 0, w - 2, M[3])                       // vòng cổ tay
-  c.rect(2, 3, w - 3, h - 4, M[1]); c.rect(2, 3, w - 3, 1, M[3]); c.rect(3, 4, w - 5, h - 6, M[2])   // phiến mu bàn tay
-  for (let y = 3; y < h - 1; y += 2) c.px(1, y, t >= 3 ? A[2] : M[3])             // đinh đốt ngón
-  if (P.g) c.px(Math.floor(w / 2), Math.floor(h / 2) + 1, P.g)
-  if (t === 5) { c.px(3, h - 3, RAINBOW[0]); c.px(5, h - 3, RAINBOW[3]) }
+  c.rect(2, 0, w - 2, 3, A[1]); c.hline(2, 0, w - 2, A[2]); c.hline(2, 2, w - 2, A[0] ?? M[0])   // ống cổ tay (màu điểm nhấn)
+  c.rect(1, 3, w - 1, h - 3, M[1])                                                // phiến giáp
+  c.rect(2, 4, w - 4, 1, M[3]); c.vline(w - 2, 4, h - 5, M[2]); c.hline(2, h - 1, w - 2, M[0])   // sáng mép trên, tối mép dưới → có khối
+  c.rect(3, 5, w - 6, h - 7, M[2])
+  for (let y = 4; y < h - 1; y += 2) { c.px(0, y, M[3]); c.px(1, y, t >= 3 ? A[2] : M[2]) }   // gai đốt ngón nhô ra trước
+  if (P.g) c.px(Math.floor(w / 2) + 1, Math.floor(h / 2) + 1, P.g)
+  if (t === 5) { c.px(3, h - 2, RAINBOW[0]); c.px(5, h - 2, RAINBOW[3]); c.px(w - 3, 1, RAINBOW[5]) }
 }
 for (let t = 0; t < 6; t++) {
-  sprite(`wp_fist_near_${t}`, { w: 9, h: 8 }, (c) => knuckle(c, t, 9, 8))
-  sprite(`wp_fist_far_${t}`, { w: 6, h: 7 }, (c) => knuckle(c, t, 6, 7))
+  sprite(`wp_fist_near_${t}`, { w: 11, h: 11, outline: 'k' }, (c) => knuckle(c, t, 11, 11))
+  sprite(`wp_fist_far_${t}`, { w: 8, h: 10, outline: 'k' }, (c) => knuckle(c, t, 8, 10))
 }

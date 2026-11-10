@@ -144,22 +144,22 @@ export const WEAPON_HOLD: Record<string, WeaponHold> = {
   // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; chuôi + núm nằm sau tay áo / thân
   wp_sword: { img: '', w: 50, h: 50, gx: 10, gy: 40, anchor: 'fist', turn: 'r180', layer: 'back' },
   wp_blade: { img: '', w: 50, h: 50, gx: 10, gy: 40, anchor: 'fist', turn: 'r180', layer: 'back' },
-  // thương cầm chéo: đốc trước chân, mũi sau vai phải; đoạn qua lưng bị che
+  // thương cầm chéo: mũi chĩa xuống trước chân, đốc sau vai phải; đoạn qua lưng bị che
   wp_spear: { img: 'diag', w: 82, h: 82, gx: 25, gy: 56, anchor: 'fist', turn: 'none', layer: 'back' },
   // cung xoay chéo: bụng cung tại nắm tay, cánh trên vươn ra ngoài, cánh dưới chạy sau thân
   wp_bow: { img: 'diag', w: 64, h: 54, gx: 23, gy: 41, anchor: 'fist', turn: 'none', layer: 'back' },
   // quạt nhỏ che trước ngực (hình có sẵn bàn tay nắm cán)
   wp_fan: { img: 'held', w: 32, h: 24, gx: 16, gy: 20, anchor: 'chest', turn: 'none', layer: 'front', pose: 'fan' },
   // quyền sáo: đeo cả hai tay (vẽ riêng, xem FIST_GEAR)
-  wp_fist: { img: 'near', w: 9, h: 8, gx: 0, gy: 0, anchor: 'fist', turn: 'none', layer: 'front' },
+  wp_fist: { img: 'near', w: 13, h: 13, gx: 0, gy: 0, anchor: 'fist', turn: 'none', layer: 'front' },
 };
 /** Nắm tay PHẢI (tay phía xa, mép trái) và điểm trước ngực trên hero_full 58x106 đã lật */
 export const HERO_RIGHT_FIST = { x: 6, y: 57 };
 export const HERO_CHEST = { x: 22, y: 45 };
 /** Quyền sáo đeo hai tay: vị trí góc trên-trái của từng phiến giáp trên sprite nhân vật */
 export const FIST_GEAR = [
-  { img: 'near', x: 28, y: 53, w: 9, h: 8 },   // tay trái (tay gần, giữa thân)
-  { img: 'far', x: 3, y: 52, w: 6, h: 7 },     // tay phải (tay xa, mép trái)
+  { img: 'near', x: 26, y: 50, w: 13, h: 13 },   // tay trái (tay gần, giữa thân)
+  { img: 'far', x: 1, y: 50, w: 10, h: 12 },   // tay phải (tay xa, mép trái)
 ];
 
 /** Đường dẫn hình vũ khí khi cầm */
@@ -168,7 +168,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img: stri
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 4;
+export const GEAR_ART_V = 5;
 
 export interface BibaoDef {
   id: string;

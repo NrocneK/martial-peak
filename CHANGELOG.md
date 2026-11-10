@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.10.4 — Chỉnh thương và quyền sáo
+- **Thương**: đảo đầu — mũi thương chĩa xuống trước chân (lộ rõ), đốc cán ở sau vai phải.
+- **Quyền sáo**: vẽ lại thành găng giáp có khối và viền đen (ống cổ tay, phiến giáp mu bàn tay, gai đốt ngón nhô ra trước), to hơn nắm tay một chút để không còn trông như hình xăm.
+
 ## v0.10.3 — Mở chế độ TEST trên bản deploy
 - Nút **Chế độ TEST** (Cài Đặt) và API `window.__vls` hiện trên bản build khi `VITE_TEST_MODE=1` (`.env.production`). Đổi thành `0` để ẩn khi phát hành thật (vẫn mở được bằng `?debug`).
 

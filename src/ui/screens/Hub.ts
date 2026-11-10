@@ -531,7 +531,7 @@ export class Hub {
         kids.push(img(weaponHoldSrc(wpn, hd.img), `wpn ${hd.layer} turn-${hd.turn}`, at.x - gx, at.y - gy, hd.w, hd.h));
       }
     }
-    // bí bảo bay ở phía vai không vướng vũ khí (thương có mũi sau vai phải → bí bảo sang trái)
+    // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)
     if (bb) kids.push(h('img', { class: 'bb-float' + (wpn?.weaponId === 'wp_spear' ? ' bb-left' : ''), src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
     return h('div', { class: 'figure', style: `--s:${scale}` }, ...kids);
   }
