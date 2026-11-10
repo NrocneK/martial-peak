@@ -18,6 +18,7 @@ export class BootScene extends Phaser.Scene {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
     this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.7', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     for (const k of [TEX.VFX_QI, TEX.VFX_ARROW, TEX.VFX_FAN]) this.load.image(k, `/vfx/${k}.png?v=0.13.0`);
+    this.load.spritesheet(TEX.PLAYER_SLASH, '/ui/hero_b_slash.png?v=0.13.3', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     this.load.spritesheet(TEX.PLAYER_ATK, '/ui/hero_b_atk.png?v=0.13.2', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     this.load.spritesheet(TEX.PLAYER_FAN, '/ui/hero_bf_walk.png?v=0.12.7', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     // vũ khí cầm tay trong trận (dải 8 khung theo hướng) + găng quyền sáo, đủ 6 cấp
@@ -39,6 +40,7 @@ export class BootScene extends Phaser.Scene {
     this.textures.get(TEX.PLAYER).setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.textures.get(TEX.PLAYER_FAN).setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.textures.get(TEX.PLAYER_ATK).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get(TEX.PLAYER_SLASH).setFilter(Phaser.Textures.FilterMode.NEAREST);
     PLAYER_DIRS.forEach((d, r) => {
       const start = r * PLAYER_SHEET_COLS;
       for (const fan of [false, true]) {

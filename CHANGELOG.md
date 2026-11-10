@@ -1,5 +1,10 @@
 # Lịch sử phiên bản
 
+## v0.13.3 — Động tác CHÉM kiếm / đao theo mẫu vẽ tay
+- `tools/art/trace_attack.py` chuyển 2 sheet mẫu (`tools/art/ref/hero_battle_slash_windup.png` lấy đà, `hero_battle_slash_strike.png` chém) thành `public/ui/hero_b_slash.png` (8 hướng × 2 khung): lấy mẫu đúng lưới ảnh xuất, căn chân, đưa màu về bảng màu nhân vật, tách thanh kiếm trong mẫu → đo điểm cầm + góc lưỡi → xóa kiếm, vá thân, vẽ lại viền.
+- `src/config/heroSlash.ts` (tự sinh): điểm cầm, góc lưỡi, kiếm trước / sau thân cho từng hướng × tư thế. Ô kiếm bị thân che trong mẫu: ước điểm cầm, vũ khí vẽ sau thân.
+- Trong trận: kiếm / đao ra đòn = lấy đà (1/3 thời gian) → chém (2/3); kiếm / đao đúng loại + cấp gắn vào điểm cầm, xoay theo góc lưỡi của mẫu. Thay cho 6 khung vung tay vẽ tự động của v0.13.2 (cung vẫn giữ tạm, chờ mẫu).
+
 ## v0.13.2 — Ra đòn có CÁNH TAY cử động (kiếm, đao, cung)
 - `tools/art/attack_battle.py` vẽ sheet ra đòn `public/ui/hero_b_atk.png` (8 hướng × 10 khung): gỡ cánh tay đang buông khỏi hình (vá thân bằng màu áo phía trong, làm mịn) rồi VẼ LẠI cánh tay từ vai — tay áo phồng, cổ tay áo sẫm, nắm tay, đổ bóng, viền; hướng nhìn thẳng co phối cảnh; tay khuất vẽ sau thân.
   - Vung (kiếm / đao, 6 khung): giơ lên-ra-sau lấy đà → chém qua trước → xuống-trước chéo sang phía tay trái → thu về. Vũ khí nối dài cánh tay, xoay theo.

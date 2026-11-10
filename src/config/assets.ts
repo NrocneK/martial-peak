@@ -11,6 +11,8 @@ export const TEX = {
   PLAYER_FAN: 'player_fan',
   /** Ra đòn (tư thế thường): public/ui/hero_b_atk.png — 8 hàng hướng × 10 cột (6 khung vung + 4 khung kéo cung), xem heroAttack.ts */
   PLAYER_ATK: 'player_atk',
+  /** Chém kiếm / đao theo mẫu: public/ui/hero_b_slash.png — 8 hàng hướng × 2 cột (lấy đà, chém), xem heroSlash.ts */
+  PLAYER_SLASH: 'player_slash',
   /** Nền đất lặp vô hạn */
   GROUND: 'ground',
   /** Hình dạng quái (màu trắng, được nhuộm màu bằng setTint). Key = 'shape_' + tên hình. */

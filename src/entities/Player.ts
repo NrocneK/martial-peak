@@ -5,6 +5,7 @@ import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, 
 import { BATTLE_ANCHOR_OVERRIDE, BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, NO_HAND_COVER, WEAPON_ATTACK, WEAPON_REST_ANG, battleWeaponKey, fistKey, type AttackType } from '../config/heroBattle';
 import { HERO_HANDS, HERO_HANDS_FAN } from '../config/heroHands';
 import { ATTACK_COLS, HERO_ATTACK } from '../config/heroAttack';
+import { HERO_SLASH } from '../config/heroSlash';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
@@ -140,14 +141,15 @@ export class Player extends Phaser.GameObjects.Sprite {
     const atkData = HERO_ATTACK[this.face];
     let swingHand: number[] | null = null, drawData: number[] | null = null;
     if (sheet === 'swing') {
-      const c = Math.min(5, Math.floor(k * 6));
-      this.setTexture(TEX.PLAYER_ATK, row * ATTACK_COLS.total + ATTACK_COLS.swing + c);
-      swingHand = atkData.swing[c];
+      // chém theo mẫu: lấy đà (kiếm giơ cao) → chém ra → giữ thế chém rồi về dáng đứng
+      const c = k < 0.34 ? 0 : 1;
+      this.setTexture(TEX.PLAYER_SLASH, row * 2 + c);
+      swingHand = HERO_SLASH[this.face][c];
     } else if (sheet === 'draw') {
       const c = k < 0.18 ? 0 : k < 0.45 ? 1 : k < 0.62 ? 2 : 3;
       this.setTexture(TEX.PLAYER_ATK, row * ATTACK_COLS.total + ATTACK_COLS.draw + c);
       drawData = atkData.draw[c];
-    } else if (this.texture.key === TEX.PLAYER_ATK) {
+    } else if (this.texture.key === TEX.PLAYER_ATK || this.texture.key === TEX.PLAYER_SLASH) {
       this.setTexture(TEX.PLAYER, row * PLAYER_SHEET_COLS + PLAYER_WALK_FRAMES);
     }
     const left = this.x - this.originX * PLAYER_FRAME.w;
@@ -165,10 +167,10 @@ export class Player extends Phaser.GameObjects.Sprite {
       let rot = (rotDeg * Math.PI) / 180;
       let wx = left + ax + 0.5 + pdx, wy = top + ay + 0.5 + pdy, wFront = front || (atk && type !== 'throw');
       if (swingHand) {
-        // kiếm / đao nối dài cánh tay: lưỡi lệch 15° theo chiều vung
-        const [sx, sy, armDeg, f] = swingHand;
-        wx = left + sx; wy = top + sy;
-        rot = (Phaser.Math.Angle.WrapDegrees(armDeg + 15 - restDeg) * Math.PI) / 180;
+        // kiếm / đao đặt đúng điểm cầm + góc lưỡi đo từ mẫu (f = 0: kiếm khuất sau thân)
+        const [sx, sy, bladeDeg, f] = swingHand;
+        wx = left + sx + pdx; wy = top + sy + pdy;
+        rot = (Phaser.Math.Angle.WrapDegrees(bladeDeg - restDeg) * Math.PI) / 180;
         wFront = f === 1;
       }
       const thrown = type === 'throw' && k > 0.3;                             // quạt đã rời tay (đang bay)
