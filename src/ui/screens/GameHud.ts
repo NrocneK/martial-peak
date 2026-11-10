@@ -1,8 +1,12 @@
 import { bar, css, h } from '../dom';
+import { skillIconStyle } from '../../config/assets';
 import { fmt, fmtTime } from '../../utils/format';
 import type { GameScene } from '../../scenes/GameScene';
 import type { Card } from '../../systems/CardPicker';
 import { skillInfo } from '../skillInfo';
+
+/** Thẻ phụ (hồi máu, linh thạch) không có icon kỹ năng */
+const HAS_ICON = (id: string): boolean => /^(wp|ac|p)_/.test(id);
 
 /**
  * HUD trong màn chơi (máu, XP, đồng hồ, thanh boss, ô kỹ năng) + lớp phủ thẻ lên cấp + tạm dừng.
@@ -105,7 +109,7 @@ export class GameHud {
       list.append(
         h('div', { class: 'pick' + (c.kind === 'awaken' ? ' awaken' : ''), onclick: () => this.scene.pickCard(i) },
           h('div', { class: 'lv', text: c.tag + (c.level > 0 ? (c.isNew ? ' · Mới' : ` · Cấp ${c.level}`) : '') }),
-          h('div', { class: 'ico', style: { background: css(c.color) } }),
+          h('div', { class: 'ico' + (HAS_ICON(c.id) ? ' skico' : ''), style: HAS_ICON(c.id) ? skillIconStyle(c.id) : { background: css(c.color) } }),
           h('div', { class: 'nm', text: c.name }),
           h('div', { class: 'ds', text: c.desc }),
           ...(c.stats.length ? [h('div', { class: 'st' }, ...c.stats.map((t) => h('div', { text: t })))] : []),
@@ -145,8 +149,7 @@ export class GameHud {
       this.slots.replaceChildren(
         ...s.skills.map((k) => {
           const inf = skillInfo(k.id);
-          return h('div', { class: 'slot ' + k.kind + (k.awakened ? ' awk' : ''), style: { background: css(inf.color) }, title: inf.name },
-            [...inf.name].filter((c) => c !== ' ').slice(0, 1).join(''),
+          return h('div', { class: 'slot skico ' + k.kind + (k.awakened ? ' awk' : ''), style: skillIconStyle(k.id), title: inf.name },
             h('small', { text: String(k.level) }),
           );
         }),

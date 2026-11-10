@@ -1,4 +1,6 @@
-import { bar, css, h, heroAvatar, heroSprite, openModal } from '../dom';
+import { bar, h, heroAvatar, heroSprite, openModal } from '../dom';
+import { skillIconStyle } from '../../config/assets';
+import { RUN } from '../../config/balance';
 import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
 import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
@@ -433,7 +435,7 @@ export class Hub {
     const loadout = P.currentLoadout();
     const w = weaponById(P.computeMeta().weaponId);
     const head = h('div', { class: 'skill-head' },
-      h('div', { class: 'swatch', style: { background: css(w.color) } }),
+      h('div', { class: 'swatch skico', style: skillIconStyle(w.id) }),
       h('div', { class: 'grow' }, h('b', { text: `Vũ khí: ${w.name}` }), h('div', { class: 'dim', text: 'Tự động, không chiếm chỗ mang theo.' })),
       h('div', { class: 'gold', text: `Mang theo ${loadout.length}/3` }),
     );
@@ -441,7 +443,7 @@ export class Hub {
       const un = a.unlockTier <= s.tier;
       const on = loadout.includes(a.id);
       return h('button', { class: 'sk-tile' + (on ? ' on' : '') + (un ? '' : ' lock'), onclick: () => this.openActive(a.id) },
-        h('i', { class: 'swatch', style: { background: css(a.color) } }),
+        h('i', { class: 'swatch skico', style: skillIconStyle(a.id) }),
         h('span', { class: 'sk-name', text: a.name }),
         h('span', { class: 'sk-sub', text: on ? 'Đang mang' : un ? 'Chưa mang' : `🔒 ${tierName(a.unlockTier)}` }),
       );
@@ -455,7 +457,7 @@ export class Hub {
       const un = a.unlockTier <= P.getSave().tier;
       const on = P.currentLoadout().includes(a.id);
       return h('div', null,
-        h('p', { text: a.desc }),
+        h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(a.id) }), h('p', { text: a.desc })),
         h('div', { class: 'stat-list' },
           h('div', null, h('span', { class: 'dim', text: 'Thức tỉnh' }), h('b', { text: a.awaken?.name ?? '—' })),
           h('div', null, h('span', { class: 'dim', text: 'Bị động liên kết' }), h('b', { text: passiveById(a.linkedPassive).name })),
@@ -468,7 +470,7 @@ export class Hub {
 
   private vPassive(): HTMLElement {
     return h('div', null,
-      h('p', { class: 'dim note', text: 'Bị động tự xuất hiện dưới dạng thẻ khi lên cấp trong màn. Tối đa 6 kỹ năng mỗi màn (tính cả kỹ năng vũ khí).' }),
+      h('p', { class: 'dim note', text: `Bị động tự xuất hiện dưới dạng thẻ khi lên cấp trong màn. Tối đa ${RUN.maxSkills} kỹ năng mỗi màn (tính cả kỹ năng vũ khí).` }),
       this.paged(this.fit('passive', 66, 56 + 34, 230), PASSIVES, (p) => h('button', { class: 'sk-tile', onclick: () => {
         audio.play('click');
         const linked = [...WEAPONS, ...ACTIVES].filter((k) => k.linkedPassive === p.id).map((k) => k.name);
@@ -480,7 +482,7 @@ export class Hub {
             h('div', null, h('span', { class: 'dim', text: 'Thức tỉnh cho' }), h('b', { text: linked.length ? linked.join(', ') : '—' })),
           ),
         ));
-      } }, h('i', { class: 'swatch round', style: { background: css(p.color) } }), h('span', { class: 'sk-name', text: p.name }), h('span', { class: 'sk-sub', text: passiveValueText(p, 1) + ' / cấp' }))),
+      } }, h('i', { class: 'swatch skico', style: skillIconStyle(p.id) }), h('span', { class: 'sk-name', text: p.name }), h('span', { class: 'sk-sub', text: passiveValueText(p, 1) + ' / cấp' }))),
     );
   }
 

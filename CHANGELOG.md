@@ -1,5 +1,15 @@
 # Lịch sử phiên bản
 
+## v0.14.1 — Bộ icon kỹ năng
+- `tools/art/skills.px.js` vẽ 30 icon pixel art 32x32 → `public/skills/<id>.png`:
+  - 6 kỹ năng vũ khí: khung vuông viền thép (kiếm khí, đao bản to, thương tua đỏ, nắm đấm, cung tên, quạt xòe).
+  - 13 kỹ năng chủ động: khung vuông viền vàng (bùa lửa, vòng kiếm, bông tuyết, bùa sét, lốc xoáy, mầm xuân, chày kim cang, kim bạc, cánh gió + tia, hỏa cầu, mưa kiếm, vết nứt trời, thái cực).
+  - 11 kỹ năng bị động: khung tròn viền ngọc (tim, giày gió, nổ cương khí, đồng hồ cát, khiên, mắt linh thức, ấn đỏ, giọt hồi máu, sách ngộ đạo, bia ngắm, đồng tiền).
+  - Nền theo đúng màu kỹ năng trong config, tối dần ra mép; biểu tượng có viền tối tự động.
+- Icon thay cho ô màu trơn ở: thẻ lên cấp (64px), thanh kỹ năng trong trận (48px, số cấp ở góc), Tu Luyện → Kỹ Năng / Bị Động, ô vũ khí, bảng chi tiết kỹ năng (64px).
+- `skillIcon(id)` / `skillIconStyle(id)` trong `src/config/assets.ts` (đổi `SKILL_ICON_V` khi vẽ lại).
+- Sửa chữ cũ "Tối đa 6 kỹ năng mỗi màn" → lấy theo `RUN.maxSkills` (7).
+
 ## v0.14.0 — Tối ưu hệ thống kỹ năng
 **Sửa lỗi (mô tả nói một đằng, code làm một nẻo)**
 - Thức tỉnh Kiếm Khí Trảm giờ xuyên thêm 2 quái thật (`pierceAdd`); Vạn Châm Truy Hồn cũng xuyên thêm 2.

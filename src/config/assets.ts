@@ -51,3 +51,14 @@ export const PLAYER_SHEET_COLS = PLAYER_WALK_FRAMES + 1;
 export const PLAYER_FRAME = { w: 52, h: 68 };
 /** Khóa hoạt ảnh đi theo hướng, vd. 'hero-walk-se' */
 export const playerWalkAnim = (d: PlayerDir, fan = false): string => `hero-${fan ? 'fan' : 'walk'}-${d}`;
+
+/** Phiên bản bộ icon kỹ năng (đổi khi vẽ lại để trình duyệt tải ảnh mới) */
+export const SKILL_ICON_V = 1;
+/** Icon kỹ năng 32x32 (vẽ trong tools/art/skills.px.js): vũ khí wp_*, chủ động ac_*, bị động p_* */
+export function skillIcon(id: string): string {
+  return `/skills/${id}.png?v=${SKILL_ICON_V}`;
+}
+/** Kiểu nền CSS cho một ô hiển thị icon kỹ năng (khung + nền đã vẽ sẵn trong ảnh, phần ngoài khung trong suốt) */
+export function skillIconStyle(id: string): Record<string, string> {
+  return { background: `url('${skillIcon(id)}') center / 100% 100% no-repeat transparent` };
+}

@@ -326,6 +326,15 @@
 .slot small { position: absolute; right: 2px; bottom: 0; font-size: 11px; }
 .slot.awk { border-color: #ffd700; box-shadow: 0 0 10px #ffd700; }
 .slot.passive { border-radius: 50%; }
+/* icon kỹ năng pixel art: phóng nguyên điểm ảnh, khung đã vẽ sẵn trong ảnh */
+.skico { image-rendering: pixelated; border: none !important; border-radius: 0 !important; box-shadow: none; }
+.slot.skico { width: 48px; height: 48px; color: #fff; }
+.slot.skico small { right: 3px; bottom: 2px; font-size: 12px; font-weight: 800; text-shadow: 0 0 2px #000, 0 0 3px #000; }
+.slot.skico.awk { filter: drop-shadow(0 0 6px #ffd700); }
+.pick .ico.skico { width: 64px; height: 64px; }
+.sk-tile .swatch.skico, .skill-head .swatch.skico { width: 32px; height: 32px; }
+.swatch.skico.big { width: 64px; height: 64px; }
+.sk-detail-head { display: flex; align-items: center; gap: 12px; }
 
 /* ---------- Thẻ lên cấp / tạm dừng / kết quả ---------- */
 .overlay { background: rgba(6, 4, 12, 0.78); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; }
