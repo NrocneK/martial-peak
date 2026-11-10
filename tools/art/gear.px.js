@@ -950,28 +950,15 @@ const BATTLE_ANG = [126, 144, 160, 168, 32, 16, 40, 36]
 // Thương: N / NE theo đường mẫu (cán chạy chéo qua LƯNG lên vai trái — nhìn từ sau lưng nên cán nằm TRƯỚC, thấy được)
 const SPEAR_ANG = { n: 36, ne: 19 }
 const SPEAR_WHOLE_FRONT = new Set(['n', 'ne'])
-// Cung theo đường cong mẫu: đầu cánh trên, điểm giữa thân cung, đầu cánh dưới — tính từ BÀN TAY (điểm ảnh sprite nhân vật);
-// hide = đoạn thân cung (tham số 0..1 dọc đường cong) bị thân che → đưa ra sau thân.
-const BOW_FIT = {
-  w: { pts: [[-28.5, -30.3], [-10.7, -1.7], [15.5, 17.2]], hide: [0.38, 0.95] },
-  nw: { pts: [[-21.5, -37.3], [-4.8, -13.9], [23.5, -4.3]], hide: [0.36, 0.69] },
-  n: { pts: [[2.5, -38.8], [4.0, -13.3], [-2.0, 11.7]] },
-  ne: { pts: [[21.0, -36.8], [10.5, -4.8], [-17.0, 15.2]] },
-  e: { pts: [[22.5, -23.8], [6.8, 0.6], [-21.5, 7.7]] },
-  se: { pts: [[36.0, -17.8], [8.0, 2.0], [-26.0, 8.7]] },
-}
-/** Giữ (keep = true) hoặc xóa phần cung có tham số đường cong trong [s0, s1] (theo điểm gần nhất trên đường cong) */
-function bowPart(c, pts, s0, s1, keep) {
-  const [T1, G, T2] = pts, C = [2 * G[0] - (T1[0] + T2[0]) / 2, 2 * G[1] - (T1[1] + T2[1]) / 2]
-  const S = []
-  for (let i = 0; i <= 240; i++) { const s = i / 240; S.push([s, (1 - s) ** 2 * T1[0] + 2 * (1 - s) * s * C[0] + s * s * T2[0], (1 - s) ** 2 * T1[1] + 2 * (1 - s) * s * C[1] + s * s * T2[1]]) }
-  for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) {
-    if (!c.is(x, y, '*')) continue
-    let bs = 0, bd = 1e9
-    for (const [s, px, py] of S) { const d = (px - x - 0.5) ** 2 + (py - y - 0.5) ** 2; if (d < bd) { bd = d; bs = s } }
-    const inside = bs >= s0 && bs <= s1
-    if (inside !== keep) c.px(x, y, '_')
-  }
+// Cung: GIỮ ĐỘ DÀI + ĐỘ CONG như lobby (dây ~36 điểm ảnh, bụng cung lồi ~9), CHUÔI (giữa thân cung) nằm đúng bàn tay;
+// chỉ đổi hướng đặt theo tham khảo của người dùng: ang = hướng dây cung từ đầu cánh trên xuống đầu cánh dưới (độ),
+// side = phía bụng cung lồi ra (+1 / −1 so với pháp tuyến (−sin, cos) của hướng dây). s / sw giữ cách cũ (cung lobby xoay).
+const BOW_DIR = { w: { ang: 47, side: 1 }, nw: { ang: 36, side: 1 }, n: { ang: 111, side: -1 }, ne: { ang: 126, side: -1 }, e: { ang: 144, side: -1 }, se: { ang: 157, side: -1 } }
+const BOW_LEN = 36, BOW_BULGE = 9
+function bowPts(C, ang, side) {
+  const a = (ang * Math.PI) / 180, dx = Math.cos(a), dy = Math.sin(a), nx = -dy * side, ny = dx * side
+  const mx = C - nx * BOW_BULGE, my = C - ny * BOW_BULGE                    // giữa dây cung (chuôi ở C, lồi ra một đoạn)
+  return [[mx - dx * BOW_LEN / 2, my - dy * BOW_LEN / 2], [C, C], [mx + dx * BOW_LEN / 2, my + dy * BOW_LEN / 2]]
 }
 function drawFanClosed(c, t, ax) {
   const P = TIER[t], L = FAN_LEAF[t]
@@ -1014,13 +1001,12 @@ for (let t = 0; t < 6; t++) BATTLE_DIRS.forEach((d, i) => {
   }, ...GLOW(t))
   // cung 96x96 (bàn tay ở giữa khung): hướng có đường cong mẫu → vẽ đúng đường đó, đoạn bị thân che (hide) đưa ra sau;
   // s / sw: cung lobby xoay quanh chuôi theo góc − 135°, tách đôi tại chỗ cầm
-  const fit = BOW_FIT[d]
-  if (fit) {
-    const pts = fit.pts.map(([x, y]) => [48 + x, 48 + y])
+  const bd = BOW_DIR[d]
+  if (bd) {
+    const pts = bowPts(48, bd.ang, bd.side)
     for (const fr of [true, false]) sprite(`wp_bow_b${fr ? 'f' : 'k'}${d}_${t}`, { w: 96, h: 96 }, (c) => {
       drawBow(c, t, { pts, k: 0.45, ph: 0, held: true, noFx: true })
-      if (fit.hide) bowPart(c, pts, fit.hide[0], fit.hide[1], !fr)
-      else if (!fr) c.rect(0, 0, 96, 96, '_')
+      if (!fr) c.rect(0, 0, 96, 96, '_')                                     // cả cây ở một lớp (trước / sau theo bàn tay)
     }, ...GLOW(t))
   } else {
     const rot = ((deg - 135) * Math.PI) / 180, K = 0.6

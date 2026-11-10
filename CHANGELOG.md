@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.12.4 — Cung trong trận: đúng độ dài, nằm trong tay
+- Cung giữ độ dài + độ cong như ở lobby (dây ~36 điểm ảnh), chuôi (giữa thân cung) đặt đúng bàn tay ở mọi hướng; đường mẫu chỉ dùng để tham khảo HƯỚNG đặt cung (`BOW_DIR`: hướng dây + phía bụng cung).
+- W / NW: tay phải khuất → cả cây cung sau thân (không còn nằm trên đầu). N: đổi góc + độ cong theo mẫu mới. S / SW giữ nguyên.
+
 ## v0.12.3 — Chỉnh thương và cung trong trận theo mẫu
 - Thương hướng N / NE: cán chạy chéo qua LƯNG lên vai trái (nhìn từ sau lưng nên cán nằm trước, thấy được), góc theo đường mẫu (`SPEAR_ANG`).
 - Cung W, NW, N, NE, E, SE vẽ đúng theo đường cong mẫu (`BOW_FIT`: đầu cánh trên, giữa thân, đầu cánh dưới tính từ bàn tay); W / NW: đoạn bị thân che (phần tô trắng trong mẫu) tách ra sau thân. Khung cung 96x96.

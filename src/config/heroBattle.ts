@@ -19,10 +19,8 @@ export const BATTLE_WEAPON: Record<string, number> = {
  */
 export const BATTLE_SPLIT = new Set(['wp_spear', 'wp_bow']);
 
-/** Hướng mà vũ khí (nửa trước) vẽ TRƯỚC thân dù tay phải khuất — cung ở w / nw: đoạn bị che đã tách sang nửa sau */
-export const BATTLE_FRONT_OVERRIDE: Record<string, Partial<Record<string, boolean>>> = {
-  wp_bow: { w: true, nw: true },
-};
+/** Hướng mà vũ khí vẽ trước / sau thân khác với mặc định theo bàn tay (HERO_HANDS.front) — hiện chưa có ngoại lệ */
+export const BATTLE_FRONT_OVERRIDE: Record<string, Partial<Record<string, boolean>>> = {};
 
 export const battleWeaponKey = (weaponId: string, tier: number): string => `bw_${weaponId}_${tier}`;
 export const fistKey = (hand: 'near' | 'far', tier: number): string => `bf_${hand}_${tier}`;
