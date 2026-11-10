@@ -8,10 +8,10 @@
 // =====================================================================
 pal({ k: '#120e1c' })
 
-const W = 48, H = 64
+const W = 52, H = 66
 const SCALE = 1.0                            // đơn vị mô hình → điểm ảnh
 const PITCH = (35 * Math.PI) / 180          // góc camera so với mặt đất
-const GROUND = 59                            // hàng điểm ảnh của mặt đất (dưới chân)
+const GROUND = 61                            // hàng điểm ảnh của mặt đất (dưới chân)
 const LIGHT = norm([-0.55, 0.75, 0.45])      // ánh sáng từ trên-trái-trước (cố định trong thế giới)
 
 function norm(v) { const l = Math.hypot(...v); return v.map((x) => x / l) }
@@ -25,10 +25,10 @@ const len = (a) => Math.hypot(a[0], a[1], a[2])
 const MAT = {
   skin: ['#c99a80', '#f2cab0', '#ffe4d0'],
   hair: ['#12121b', '#2a2840', '#4a4670'],
-  robe: ['#8f96b4', '#c8cce0', '#f2f2f8'],
+  robe: ['#7a8cc0', '#c6cee8', '#f6f6fb'],
   blue: ['#2c3e72', '#4a68aa', '#7c9ad6'],
-  pants: ['#16182a', '#262c4c', '#3a4470'],
-  boot: ['#22180f', '#3e2c1e', '#5e4430'],
+  pants: ['#141830', '#262e58', '#3e4a80'],
+  boot: ['#1c1714', '#3a2e26', '#6a5040'],
   gold: ['#8a5e14', '#e0a838', '#fff0a8'],
   tie: ['#a8b0c8', '#e8ecf6', '#ffffff'],
   eye: ['#141024', '#141024', '#2a2448'],
@@ -65,39 +65,40 @@ function model(p, pose = {}) {
   // ---- ủng cao cổ + quần ống rộng
   for (const s of [-1, 1]) {
     take(ellipsoid(p, [s * 2.6, 1.3, 1.1], [1.7, 1.4, 2.8]), 'boot', 'boot')
-    take(capsule(p, [s * 2.6, 1.6, 0], [s * 2.6, 7.6, 0], 1.9), 'boot', 'boot')
-    take(capsule(p, [s * 2.6, 7.4, 0], [s * 2.2, 25, 0], 2.3, 2.7), 'pants', 'leg')
+    take(capsule(p, [s * 2.6, 1.6, 0], [s * 2.6, 7.0, 0], 2.0), 'boot', 'boot')
+    take(capsule(p, [s * 2.7, 7.2, 0], [s * 2.4, 25, 0], 2.7, 3.1), 'pants', 'leg')
   }
   // ---- vạt đạo bào: vỏ nón cụt, xẻ phía trước từ đai xuống (lộ quần), mặt trong là lót xanh
   {
-    const dc = cone(p, 27, 4.6, 13, 7.4, -0.4)
+    const dc = cone(p, 27, 4.9, 15.5, 7.6, -0.4)
     const ang = Math.atan2(p[0], p[2] + 0.4), rr = Math.hypot(p[0], p[2] + 0.4)
     let d = Math.abs(dc) - 0.45
     if (p[1] < 26.6) d = Math.max(d, -(Math.abs(ang) - 0.5 - (26.6 - p[1]) * 0.012) * rr)
     take(d, 'robe', 'skirt', dc < 0)
   }
-  take(cone(p, 28.8, 4.75, 26.8, 4.8, -0.2), 'belt', 'belt')                                // đai lưng
-  take(ellipsoid(p, [0, 32.6, 0], [4.6, 5.6, 3.2]), 'robe', 'torso')                       // thân
+  take(cone(p, 28.8, 5.1, 26.8, 5.15, -0.2), 'belt', 'belt')                                // đai lưng
+  take(ellipsoid(p, [0, 32.6, 0], [5.0, 5.7, 3.4]), 'robe', 'torso')                       // thân
   // ---- tay áo phồng vai, băng cổ tay sẫm, bàn tay
   for (const s of [-1, 1]) {
-    take(sphere(p, [s * 5.0, 36.6, -0.2], 2.4), 'robe', 'shoulder')
-    take(capsule(p, [s * 5.4, 36, -0.2], [s * 6.0, 30.5, 0.2], 2.0, 2.15), 'robe', 'arm')
-    take(capsule(p, [s * 6.0, 30.5, 0.2], [s * 6.3, 26.2, 0.8], 2.15, 1.9), 'robe', 'arm')
-    take(capsule(p, [s * 6.3, 26.6, 0.7], [s * 6.35, 24.9, 0.9], 1.95), 'belt', 'cuff')
-    take(sphere(p, [s * 6.4, 23.7, 1.1], 1.3), 'skin', 'hand')
+    take(sphere(p, [s * 5.6, 36.4, -0.2], 2.9), 'robe', 'shoulder')
+    take(capsule(p, [s * 6.0, 35.6, -0.2], [s * 6.8, 30.2, 0.2], 2.6, 2.8), 'robe', 'arm')
+    take(capsule(p, [s * 6.8, 30.2, 0.2], [s * 7.0, 26.4, 0.8], 2.8, 2.2), 'robe', 'arm')
+    take(capsule(p, [s * 7.0, 26.8, 0.7], [s * 7.05, 24.9, 0.9], 2.0), 'belt', 'cuff')
+    take(sphere(p, [s * 7.1, 23.6, 1.1], 1.4), 'skin', 'hand')
   }
   // ---- cổ + đầu
   take(capsule(p, [0, 38, 0.2], [0, 40.6, 0.4], 1.45), 'skin', 'neck')
   take(ellipsoid(p, [0, 44.4, 0.6], [3.9, 4.6, 4.0]), 'skin', 'face')
-  take(ellipsoid(p, [0, 46.0, -0.8], [4.6, 4.9, 4.6]), 'hair', 'hair')
+  take(ellipsoid(p, [0, 46.7, -1.2], [5.0, 5.0, 4.8]), 'hair', 'hair')
+  for (const [a, b, ra] of [[[-4.2, 47, -1], [-6.2, 44.6, -1.6], 1.3], [[4.2, 47, -1], [6.2, 44.4, -1.4], 1.3], [[-3.4, 49.6, -2], [-5.4, 50.8, -3.4], 1.2], [[3.0, 50, -2.2], [4.6, 51.6, -3.8], 1.2], [[0, 50.8, -1], [-0.8, 53, -2], 1.3]]) take(capsule(p, a, b, ra, 0.25), 'hair', 'spike')
   // mái lởm chởm rẽ ngôi + tóc mai dài tới cằm
   for (const [a, b, ra] of [[[-2.7, 48, 2.0], [-3.1, 43.2, 3.3], 1.2], [[-0.9, 48.6, 2.6], [-1.5, 43.5, 4.0], 1.25], [[0.9, 48.6, 2.6], [1.6, 43.3, 4.0], 1.25], [[2.8, 48, 2.0], [3.3, 43.4, 3.2], 1.1]]) take(capsule(p, a, b, ra, 0.3), 'hair', 'bang')
   for (const s of [-1, 1]) take(capsule(p, [s * 3.6, 46, 1.2], [s * 3.9, 40.4, 2.0], 1.15, 0.35), 'hair', 'lock')
-  for (const s of [-1, 1]) take(ellipsoid(p, [s * 1.45, 43.6, 4.05], [0.55, 0.85, 0.45]), 'eye', 'eye')
+  for (const s of [-1, 1]) take(ellipsoid(p, [s * 1.5, 43.7, 4.35], [0.6, 0.95, 0.5]), 'eye', 'eye')
   // đuôi ngựa buộc cao: vồng lên rồi rủ xuống lưng, đuôi tua tủa
-  take(sphere(p, [0, 48.2, -4.4], 1.2), 'tie', 'tie')
+  take(sphere(p, [0.3, 48.6, -4.6], 1.45), 'tie', 'tie')
   // đuôi vắt lệch về bên phải nhân vật (như ở lobby) để nhìn từ trước không dựng thẳng giữa đầu
-  strand([[0.3, 48.4, -5.0, 2.0], [1.6, 48.4, -8.0, 2.1], [3.4, 46.4, -10.2, 1.9], [4.8, 42.6, -11.0, 1.6], [5.2, 38.6, -10.8, 1.1], [4.8, 35.2, -10.0, 0.4]], 'hair', 'tail')
+  strand([[0.3, 48.8, -5.2, 2.5], [1.6, 49, -8.2, 2.7], [3.4, 46.8, -10.4, 2.5], [4.8, 42.8, -11.2, 2.1], [5.2, 38.6, -11.0, 1.4], [4.8, 35.0, -10.2, 0.4]], 'hair', 'tail')
   strand([[4.6, 44.4, -10.8, 0.95], [7.2, 41.2, -11.4, 0.2]], 'hair', 'tail')
   strand([[4.2, 42.6, -11.2, 0.85], [3.0, 38.6, -12.4, 0.2]], 'hair', 'tail')
   strand([[2.2, 48.0, -9.0, 0.9], [4.6, 48.8, -11.0, 0.2]], 'hair', 'tail')
@@ -112,7 +113,7 @@ function surface(mat, part, p, inside) {
   const ang = Math.atan2(p[0], p[2])                 // 0 = chính diện
   if (part === 'skirt') {
     if (inside) return 'blue'                                           // lót trong
-    if (Math.abs(ang) < 0.72 + (26.6 - p[1]) * 0.012 || p[1] < 14.6) return 'blue'              // viền vạt mở + gấu áo
+    if (Math.abs(ang) < 1.0 + (26.6 - p[1]) * 0.012 || p[1] < 17.0) return 'blue'              // viền vạt mở + gấu áo
   }
   if (part === 'torso' && p[2] > 0.5) {
     const v = (p[1] - 29.6) * 0.5                                       // cổ áo giao lĩnh chữ V
