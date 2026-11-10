@@ -34,7 +34,7 @@ export function openSettings(onChange: () => void, toMenu?: () => void): void {
         });
         inp.click();
       }),
-      // Nút test chỉ hiện ở chế độ gỡ lỗi (npm run dev hoặc ?debug), người chơi thật không thấy
+      // Nút test chỉ hiện ở chế độ gỡ lỗi (npm run dev, ?debug, hoặc build có VITE_TEST_MODE=1)
       ...(isDebugMode()
         ? [row('Chế độ TEST', 'mở khóa tất cả', () => {
             if (!window.confirm('Mở khóa tất cả để test: cảnh giới tối đa, vượt hết 60 màn, nhiều tài nguyên, trang bị mạnh và đủ bí bảo?\n(Cộng thêm vào save hiện tại. Nên bấm "Xuất save" trước nếu muốn giữ bản gốc.)')) return;

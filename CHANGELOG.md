@@ -1,5 +1,8 @@
 # Lịch sử phiên bản
 
+## v0.10.3 — Mở chế độ TEST trên bản deploy
+- Nút **Chế độ TEST** (Cài Đặt) và API `window.__vls` hiện trên bản build khi `VITE_TEST_MODE=1` (`.env.production`). Đổi thành `0` để ẩn khi phát hành thật (vẫn mở được bằng `?debug`).
+
 ## v0.10.2 — Tư thế cầm từng loại vũ khí
 - **Kiếm, đao**: nằm SAU nhân vật — chuôi + núm bị tay áo / thân che, chỉ lưỡi chĩa xuống chéo phía trước lộ ra.
 - **Thương**: cầm chéo (`wp_spear_diag_*`, 80x80): đốc cán trước chân, mũi sau vai phải, đoạn qua lưng bị che. Bí bảo chuyển sang vai trái khi cầm thương.
