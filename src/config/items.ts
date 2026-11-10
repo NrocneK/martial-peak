@@ -128,6 +128,9 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
  *   anchor : 'fist' = nắm tay phải (tay xa, mép trái) · 'chest' = trước ngực
  *   layer  : 'back' = SAU nhân vật (thân, tay áo che phần chuôi / phần đi qua sau lưng) · 'front' = trước nhân vật
  *   pose   : biến thể sprite nhân vật (vd. 'fan': bỏ nắm tay buông, cẳng tay gập lên cầm quạt trước ngực)
+ *   cover  : vẽ đè lại nắm tay (hero_fist.png) lên chuôi → ngón tay nắm quanh chuôi, đốc nhô trên, hộ thủ dưới
+ *   near   : (vũ khí nằm sau thân) bán kính quanh điểm cầm, tính bằng điểm ảnh hình, được đưa ra TRƯỚC thân —
+ *            đoạn cán / chuôi trong lòng bàn tay lộ ra rồi nắm tay (cover) đè lên, phần còn lại vẫn khuất sau lưng
  */
 export interface WeaponHold {
   w: number;
@@ -137,23 +140,27 @@ export interface WeaponHold {
   anchor: 'fist' | 'chest';
   layer: 'back' | 'front';
   pose?: 'fan';
+  cover?: boolean;
+  near?: number;
 }
 /** Số khung của hình cầm tay */
 export const HELD_FRAMES = 8;
 export const WEAPON_HOLD: Record<string, WeaponHold> = {
-  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; chuôi + đốc nằm sau tay áo / thân, tua rủ sau vai
-  wp_sword: { w: 48, h: 52, gx: 37, gy: 12, anchor: 'fist', layer: 'back' },
-  wp_blade: { w: 48, h: 52, gx: 37, gy: 12, anchor: 'fist', layer: 'back' },
+  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; nắm tay vẽ đè lên giữa chuôi (đốc nhô lên trên, hộ thủ dưới)
+  wp_sword: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'front', cover: true },
+  wp_blade: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'front', cover: true },
   // thương cầm chéo: mũi chĩa xuống trước chân, đốc sau vai phải; đoạn qua lưng bị che
-  wp_spear: { w: 82, h: 82, gx: 25, gy: 56, anchor: 'fist', layer: 'back' },
+  wp_spear: { w: 82, h: 82, gx: 40, gy: 41, anchor: 'fist', layer: 'back', near: 7, cover: true },
   // cung xoay chéo: bụng cung tại nắm tay, cánh trên vươn ra ngoài, cánh dưới chạy sau thân
-  wp_bow: { w: 64, h: 56, gx: 23, gy: 41, anchor: 'fist', layer: 'back' },
+  wp_bow: { w: 64, h: 56, gx: 24, gy: 41, anchor: 'fist', layer: 'back', near: 7, cover: true },
   // quạt nhỏ che trước ngực (hình có sẵn bàn tay nắm cán); điểm neo = trục quạt
   wp_fan: { w: 34, h: 26, gx: 17, gy: 21, anchor: 'chest', layer: 'front', pose: 'fan' },
 };
 /** Nắm tay PHẢI (tay phía xa, mép trái) và điểm trước ngực trên hero_full 58x106 đã lật */
-export const HERO_RIGHT_FIST = { x: 6, y: 57 };
+export const HERO_RIGHT_FIST = { x: 6, y: 56 };
 export const HERO_CHEST = { x: 22, y: 45 };
+/** Hình nắm tay riêng (public/ui/hero_fist.png, 6x7) đặt đè lên chuôi: góc trên-trái trên hero_full */
+export const FIST_COVER = { x: 3, y: 54, w: 6, h: 7 };
 /** Quyền sáo đeo hai tay: vị trí góc trên-trái của từng phiến giáp trên sprite nhân vật */
 export const FIST_GEAR = [
   { img: 'near', x: 26, y: 50, w: 13, h: 13 },   // tay trái (tay gần, giữa thân)
@@ -166,7 +173,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'he
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 6;
+export const GEAR_ART_V = 9;
 
 export interface BibaoDef {
   id: string;

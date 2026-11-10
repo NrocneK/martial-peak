@@ -6,7 +6,7 @@ import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, FIST_COVER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -526,11 +526,12 @@ export class Hub {
       } else {
         // hình cầm tay: dải HELD_FRAMES khung → div nền chạy hoạt ảnh (CSS .wpn.held), điểm cầm trùng điểm neo
         const at = hd.anchor === 'chest' ? HERO_CHEST : HERO_RIGHT_FIST;
-        kids.push(h('div', {
-          class: `wpn held ${hd.layer}`,
-          style: `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
-            `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`,
-        }));
+        const style = `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
+          `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
+        kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
+        // đoạn quanh điểm cầm đưa ra trước thân (bản sao cắt tròn), để nắm tay đè lên thấy rõ là đang nắm
+        if (hd.near) kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:circle(${hd.near * scale}px at ${(hd.gx + 0.5) * scale}px ${(hd.gy + 0.5) * scale}px)` }));
+        if (hd.cover) kids.push(img('/ui/hero_fist.png?v=0.11.1', 'wpn fist-cover', FIST_COVER.x, FIST_COVER.y, FIST_COVER.w, FIST_COVER.h));
       }
     }
     // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)

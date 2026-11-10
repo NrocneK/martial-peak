@@ -1,5 +1,12 @@
 # Lịch sử phiên bản
 
+## v0.11.1 — Tay nắm vũ khí
+- **Nắm tay đè lên chuôi** (`public/ui/hero_fist.png`, tạo bởi `tools/art/hero_poses.py`): kiếm / đao đưa ra trước, nắm tay vẽ đè giữa chuôi — đốc nhô lên trên, hộ thủ ngay dưới nắm tay.
+- Thương, cung (phần lớn nằm sau thân): đoạn cán / chuôi trong lòng bàn tay được đưa ra trước (bản sao cắt tròn, `near` trong `WEAPON_HOLD`), rồi nắm tay đè lên.
+- Thương cầm giữa cán (cách khâu mũi một đoạn), không còn nắm ngay chỗ hồng anh.
+- **Đao cầm tay lật lưỡi**: lưỡi sắc quay xuống, sống ở trên.
+- Căn lại điểm nắm tay (`HERO_RIGHT_FIST` = (6, 56)).
+
 ## v0.11.0 — Vẽ lại toàn bộ bộ trang bị
 - **66 hình ô đồ vẽ lại** (`tools/art/gear.px.js`): vũ khí 66x66, y phục / giày / trang sức / bí bảo 50x50. Vẽ theo trục chéo nên có khối và đổ bóng đều; mỗi cấp một **kiểu dáng riêng**, không chỉ đổi màu:
   - Kiếm: hộ thủ thanh sắt → mây cuộn → cánh vút → mặt trời gai → vầng nguyệt → đĩa thái cực; lưỡi khảm ngọc / phù văn / mép lửa / viền vàng / tinh không.

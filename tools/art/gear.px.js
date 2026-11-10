@@ -16,10 +16,11 @@ const TAU = Math.PI * 2
 /**
  * Trục chéo. (ox, oy) = gốc (đầu chuôi), k = số điểm ảnh / 1 đơn vị thiết kế,
  * s = 1: u hướng lên-phải · s = -1: xoay 180° (u hướng xuống-trái). v vuông góc u.
+ * mv = -1: lật ngang theo trục u (đổi bên v) — vd. đao cầm ngược mà lưỡi vẫn quay về phía trước.
  */
-function axis(ox, oy, k = 1, s = 1) {
-  const uv = (x, y) => { const dx = (x + 0.5 - ox) * s, dy = (y + 0.5 - oy) * s; return [(dx - dy) * SQ / k, (dx + dy) * SQ / k] }
-  const xy = (u, v) => [ox + s * (u + v) * SQ * k, oy + s * (-u + v) * SQ * k]
+function axis(ox, oy, k = 1, s = 1, mv = 1) {
+  const uv = (x, y) => { const dx = (x + 0.5 - ox) * s, dy = (y + 0.5 - oy) * s; return [(dx - dy) * SQ / k, mv * (dx + dy) * SQ / k] }
+  const xy = (u, v) => [ox + s * (u + mv * v) * SQ * k, oy + s * (-u + mv * v) * SQ * k]
   return { uv, xy, k, s }
 }
 /** Tô mọi điểm ảnh theo hàm f(u, v, x, y) → màu | null */
@@ -896,11 +897,13 @@ for (const [id, fn] of Object.entries(BB)) sprite(id, { w: 50, h: 50 }, (c) => {
 const HELD = { frames: 8, fps: 8 }
 const ph = (c) => (c.frame / HELD.frames) * TAU
 for (let t = 0; t < 6; t++) {
-  // kiếm / đao: cầm ngược (xoay 180°) — chuôi trên-phải trong tay, lưỡi chĩa xuống-trái; 48x52, điểm cầm (37,12)
+  // kiếm / đao: cầm ngược (xoay 180°) — chuôi trên-phải trong tay, lưỡi chĩa xuống-trái; 48x52.
+  // Điểm cầm ở phần TRÊN chuôi (u = 6.5 → (38,11)): dưới nắm tay còn lộ một đoạn chuôi rồi mới tới hộ thủ → nhìn ra là đang nắm.
+  // Đao lật bên (mv = -1): lưỡi sắc quay xuống-phải (phía trước-dưới), sống ở trên.
   anim(`wp_sword_held_${t}`, { w: 48, h: 52, ...HELD }, (c) => drawSword(c, t, { ax: axis(42, 8, 0.7, -1), ph: ph(c), held: true }), ...GLOW(t))
-  anim(`wp_blade_held_${t}`, { w: 48, h: 52, ...HELD }, (c) => drawBlade(c, t, { ax: axis(42, 8, 0.7, -1), ph: ph(c), held: true }), ...GLOW(t))
-  // thương: đốc trên-phải (sau vai), mũi dưới-trái; 82x82, điểm cầm (25,56)
-  anim(`wp_spear_held_${t}`, { w: 82, h: 82, ...HELD }, (c) => drawSpear(c, t, { ax: axis(79, 2, 1, -1), ph: ph(c), held: true, shaft: 80 - SPEAR[t].hl + 22 }), ...GLOW(t))
+  anim(`wp_blade_held_${t}`, { w: 48, h: 52, ...HELD }, (c) => drawBlade(c, t, { ax: axis(42, 8, 0.7, -1, -1), ph: ph(c), held: true }), ...GLOW(t))
+  // thương: đốc trên-phải (sau vai), mũi dưới-trái; 82x82. Cầm GIỮA CÁN, cách khâu mũi 24 đơn vị (u = 62 → điểm cầm (39,41))
+  anim(`wp_spear_held_${t}`, { w: 82, h: 82, ...HELD }, (c) => drawSpear(c, t, { ax: axis(79, 2, 0.9, -1), ph: ph(c), held: true, shaft: 86 }), ...GLOW(t))
   // cung xoay chéo: chuôi tại nắm tay; 64x56, điểm cầm (23,41)
   anim(`wp_bow_held_${t}`, { w: 64, h: 56, ...HELD }, (c) => drawBow(c, t, { pts: [[7, 7], [23, 41], [55, 47]], k: 0.72, ph: ph(c), held: true }), ...GLOW(t))
   // quạt nhỏ che ngực + bàn tay nắm cán; 34x26, trục quạt (17,21)
