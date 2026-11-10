@@ -122,36 +122,34 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
 }
 /**
  * CÁCH CẦM vũ khí trên nhân vật (Hành Trang). Sprite nhân vật là hero_full 58x106 (nhìn xéo sang trái).
- *   img    : tên hình trong public/gear — '{weaponId}_{tier}' (ô đồ), hoặc hậu tố riêng khi cầm: diag / held / near+far
- *   w, h   : cỡ hình (kể cả viền) · gx, gy: điểm neo trên hình GỐC (chưa xoay)
- *   anchor : điểm trên nhân vật trùng với (gx, gy): 'fist' = nắm tay phải (tay xa, mép trái) · 'chest' = trước ngực
- *   turn   : 'r180' xoay 180° · 'none'
+ * Hình cầm tay ({weaponId}_held_{tier}.png, vẽ trong tools/art/gear.px.js) là bản đơn giản của hình ô đồ,
+ * đã vẽ sẵn đúng hướng cầm, dạng DẢI `frames` khung ngang (linh khí chạy quanh thân, tua lay) — chạy 1 giây / vòng.
+ *   w, h   : cỡ MỘT khung · gx, gy: điểm cầm trên khung (trùng với điểm neo trên nhân vật)
+ *   anchor : 'fist' = nắm tay phải (tay xa, mép trái) · 'chest' = trước ngực
  *   layer  : 'back' = SAU nhân vật (thân, tay áo che phần chuôi / phần đi qua sau lưng) · 'front' = trước nhân vật
  *   pose   : biến thể sprite nhân vật (vd. 'fan': bỏ nắm tay buông, cẳng tay gập lên cầm quạt trước ngực)
  */
 export interface WeaponHold {
-  img: string;
   w: number;
   h: number;
   gx: number;
   gy: number;
   anchor: 'fist' | 'chest';
-  turn: 'r180' | 'none';
   layer: 'back' | 'front';
   pose?: 'fan';
 }
+/** Số khung của hình cầm tay */
+export const HELD_FRAMES = 8;
 export const WEAPON_HOLD: Record<string, WeaponHold> = {
-  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; chuôi + núm nằm sau tay áo / thân
-  wp_sword: { img: '', w: 50, h: 50, gx: 10, gy: 40, anchor: 'fist', turn: 'r180', layer: 'back' },
-  wp_blade: { img: '', w: 50, h: 50, gx: 10, gy: 40, anchor: 'fist', turn: 'r180', layer: 'back' },
+  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; chuôi + đốc nằm sau tay áo / thân, tua rủ sau vai
+  wp_sword: { w: 48, h: 52, gx: 37, gy: 12, anchor: 'fist', layer: 'back' },
+  wp_blade: { w: 48, h: 52, gx: 37, gy: 12, anchor: 'fist', layer: 'back' },
   // thương cầm chéo: mũi chĩa xuống trước chân, đốc sau vai phải; đoạn qua lưng bị che
-  wp_spear: { img: 'diag', w: 82, h: 82, gx: 25, gy: 56, anchor: 'fist', turn: 'none', layer: 'back' },
+  wp_spear: { w: 82, h: 82, gx: 25, gy: 56, anchor: 'fist', layer: 'back' },
   // cung xoay chéo: bụng cung tại nắm tay, cánh trên vươn ra ngoài, cánh dưới chạy sau thân
-  wp_bow: { img: 'diag', w: 64, h: 54, gx: 23, gy: 41, anchor: 'fist', turn: 'none', layer: 'back' },
-  // quạt nhỏ che trước ngực (hình có sẵn bàn tay nắm cán)
-  wp_fan: { img: 'held', w: 32, h: 24, gx: 16, gy: 20, anchor: 'chest', turn: 'none', layer: 'front', pose: 'fan' },
-  // quyền sáo: đeo cả hai tay (vẽ riêng, xem FIST_GEAR)
-  wp_fist: { img: 'near', w: 13, h: 13, gx: 0, gy: 0, anchor: 'fist', turn: 'none', layer: 'front' },
+  wp_bow: { w: 64, h: 56, gx: 23, gy: 41, anchor: 'fist', layer: 'back' },
+  // quạt nhỏ che trước ngực (hình có sẵn bàn tay nắm cán); điểm neo = trục quạt
+  wp_fan: { w: 34, h: 26, gx: 17, gy: 21, anchor: 'chest', layer: 'front', pose: 'fan' },
 };
 /** Nắm tay PHẢI (tay phía xa, mép trái) và điểm trước ngực trên hero_full 58x106 đã lật */
 export const HERO_RIGHT_FIST = { x: 6, y: 57 };
@@ -162,13 +160,13 @@ export const FIST_GEAR = [
   { img: 'far', x: 1, y: 50, w: 10, h: 12 },   // tay phải (tay xa, mép trái)
 ];
 
-/** Đường dẫn hình vũ khí khi cầm */
-export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img: string): string {
-  return `/gear/${it.weaponId}${img ? '_' + img : ''}_${it.tier}.png?v=${GEAR_ART_V}`;
+/** Đường dẫn hình vũ khí khi cầm: mặc định dải khung 'held'; quyền sáo dùng 'near' / 'far' (tĩnh) */
+export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'held'): string {
+  return `/gear/${it.weaponId}_${img}_${it.tier}.png?v=${GEAR_ART_V}`;
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 5;
+export const GEAR_ART_V = 6;
 
 export interface BibaoDef {
   id: string;

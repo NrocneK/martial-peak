@@ -1,5 +1,19 @@
 # Lịch sử phiên bản
 
+## v0.11.0 — Vẽ lại toàn bộ bộ trang bị
+- **66 hình ô đồ vẽ lại** (`tools/art/gear.px.js`): vũ khí 66x66, y phục / giày / trang sức / bí bảo 50x50. Vẽ theo trục chéo nên có khối và đổ bóng đều; mỗi cấp một **kiểu dáng riêng**, không chỉ đổi màu:
+  - Kiếm: hộ thủ thanh sắt → mây cuộn → cánh vút → mặt trời gai → vầng nguyệt → đĩa thái cực; lưỡi khảm ngọc / phù văn / mép lửa / viền vàng / tinh không.
+  - Đao: bản rộng một lưỡi, sống dày, cong nhẹ, đốc vòng; vân mây, răng cưa sống lửa…
+  - Thương: hồng anh rủ xuống, mũi lá / móc cánh / xà mâu lửa / trăng khuyết; cán gỗ, trúc, sơn mài, dây vàng xoắn.
+  - Quyền sáo: găng giáp có ống tay, phiến mu, khối ngón; đinh → vuốt → gai lửa → cánh vàng.
+  - Cung: cánh cong ngược ở hai đầu, đầu cánh lông vũ / lửa / cánh vàng / trăng thất thải.
+  - Quạt: tranh trên mặt quạt theo cấp (trúc mực, núi xanh, mây, lửa, mặt trời, ngân hà).
+  - Y phục (đạo bào giao lĩnh, phi bạch), giày (mũi hếch, đế dày), trang sức (thẻ gỗ, ngọc bích, mây như ý, ấn vàng, nhật quang, châu hỗn độn), 12 bí bảo vẽ mới.
+  - Cấp Thần trở lên có linh khí quấn quanh; Thánh / Đạo thêm sao lấp lánh.
+- **Hình cầm tay** (`wp_*_held_*`): bản đơn giản giữ đặc trưng, vẽ sẵn đúng hướng cầm, **có hoạt ảnh 8 khung** — linh khí chạy dọc thân vũ khí, tua kiếm / hồng anh lay nhẹ. Găng quyền sáo theo màu cấp mới.
+- Kho đồ trên PC: ô to hơn (ảnh 64px) để thấy rõ chi tiết; điện thoại giữ cỡ cũ.
+- Bỏ đốc kiếm Đạo có hai thanh nhô; bỏ cơ chế xoay 180° bằng CSS (`turn`) và các hình `diag` cũ.
+
 ## v0.10.5 — Nhịp thở cả người
 - Hoạt ảnh đứng (`hero_full`): khi thở CẢ NGƯỜI hạ 1px (trước đây chỉ thân trên, nửa dưới đứng im); chỉ đôi ủng giữ nguyên trên mặt đất.
 - Hai tà áo ngoài phất nhẹ ngược nhịp với dải đai; khi phất ra ngoài không để lộ khe hở.

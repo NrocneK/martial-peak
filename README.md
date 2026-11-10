@@ -132,7 +132,7 @@ Mọi hình pixel art nằm dưới dạng **code** trong `tools/art/` (công c�
 | `hero.px.js` | Cố Trường Ca: dáng đứng (thở), đi bộ trong trận, ngồi thiền (Tu Luyện). Khung gốc lấy từ ảnh concept qua `trace_hero.py` → `hero_trace.px.js` | `out/anims/hero_full.png`, `hero_walk.png`, `hero_meditate.png` |
 | `sect_bg.px.js` | Ảnh nền Vân Hạc Tông: bản dọc 9:16 (điện thoại) + bản ngang 16:9 (PC) | `out/scenes/sect_tall.png`, `sect_wide.png` |
 | `icons.px.js` | Icon, con dấu, khung viền vàng 9 mảnh (`frame_panel`, `frame_on`) | `out/sprites/*.png` |
-| `gear.px.js` | 66 trang bị: 6 vũ khí + y phục, giày, trang sức × 6 cấp, 12 bí bảo | `out/sprites/{wp_*,clothes_*,shoes_*,accessory_*,bb_*}.png` → `public/gear/` (tăng `GEAR_ART_V` trong `src/config/items.ts` khi vẽ lại) |
+| `gear.px.js` | 66 hình ô đồ (6 vũ khí 66x66; y phục, giày, trang sức 50x50 × 6 cấp; 12 bí bảo 50x50) + hình cầm tay `wp_*_held_*` (dải 8 khung có hoạt ảnh) và găng quyền sáo `wp_fist_near/far_*` | `out/sprites/*.png` + `out/anims/*.png` → `public/gear/` (tăng `GEAR_ART_V` trong `src/config/items.ts` khi vẽ lại; điểm cầm ở `WEAPON_HOLD`) |
 
 Đổi ảnh concept nhân vật: thay `tools/art/ref/hero_concept.png` rồi chạy `python3 -I tools/art/trace_hero.py` (cần Python + Pillow + numpy) trước khi build.
 

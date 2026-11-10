@@ -6,7 +6,7 @@ import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { BIBAOS, DAO_TIER, FIST_GEAR, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -524,11 +524,13 @@ export class Hub {
         // quyền sáo: phiến giáp đeo trùm lên cả hai nắm tay
         for (const g of FIST_GEAR) kids.push(img(weaponHoldSrc(wpn, g.img), 'wpn front', g.x, g.y, g.w, g.h));
       } else {
+        // hình cầm tay: dải HELD_FRAMES khung → div nền chạy hoạt ảnh (CSS .wpn.held), điểm cầm trùng điểm neo
         const at = hd.anchor === 'chest' ? HERO_CHEST : HERO_RIGHT_FIST;
-        // điểm neo SAU khi xoay (tọa độ liên tục: +0.5 là tâm điểm ảnh)
-        const gx = hd.turn === 'r180' ? hd.w - hd.gx - 0.5 : hd.gx + 0.5;
-        const gy = hd.turn === 'r180' ? hd.h - hd.gy - 0.5 : hd.gy + 0.5;
-        kids.push(img(weaponHoldSrc(wpn, hd.img), `wpn ${hd.layer} turn-${hd.turn}`, at.x - gx, at.y - gy, hd.w, hd.h));
+        kids.push(h('div', {
+          class: `wpn held ${hd.layer}`,
+          style: `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
+            `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`,
+        }));
       }
     }
     // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)
@@ -588,7 +590,7 @@ export class Hub {
         h('span', { class: 'dim grow', style: 'text-align:right', text: `Túi ${s.items.length}/120` }),
       ),
       inv.length
-        ? this.paged(this.fit('inv', 96, 56 + 46, 96), inv, (it) => h('button', { class: 'it-tile ' + qClass(it), style: `--rc:${itemColor(it)}`, title: `${itemName(it)} · ${itemRankLabel(it)}`, onclick: () => this.openItem(it.uid) },
+        ? this.paged(window.innerWidth > 760 ? this.fit('inv', 118, 56 + 46, 108) : this.fit('inv', 96, 56 + 46, 96), inv, (it) => h('button', { class: 'it-tile ' + qClass(it), style: `--rc:${itemColor(it)}`, title: `${itemName(it)} · ${itemRankLabel(it)}`, onclick: () => this.openItem(it.uid) },
             gearImg(it), h('span', { class: 'it-name', text: itemName(it) }), h('span', { class: 'it-lv', text: `+${it.level}` }), it.locked ? h('span', { class: 'it-lock', text: '🔒' }) : null))
         : h('div', { class: 'empty-note', text: 'Không có món nào.' }),
     );

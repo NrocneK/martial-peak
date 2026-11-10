@@ -408,10 +408,10 @@
 .mats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mat { justify-content: space-between; }
 .inv-bar { margin-bottom: 10px; }
-.it-tile { position: relative; height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0 2px; font: inherit; color: #e6eeff; cursor: pointer;
+.it-tile { position: relative; height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 2px; font: inherit; color: #e6eeff; cursor: pointer;
   background: none; border: 12px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 12px / 0 stretch; image-rendering: pixelated; }
 .it-tile .ic { width: 32px; height: 32px; filter: drop-shadow(0 0 6px var(--rc)); }
-.it-name { max-width: 100%; font-size: 11px; line-height: 1.2; color: var(--rc); font-weight: 600; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.it-name { max-width: 100%; font-size: 11px; line-height: 1.15; color: var(--rc); font-weight: 600; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .it-lv { position: absolute; top: -4px; right: 0; font-size: 10.5px; color: #fff3c4; }
 .it-lock { position: absolute; top: -5px; left: -2px; font-size: 10px; }
 .it-tile:hover, .it-tile:focus-visible { border-image-source: url('/ui/frame_on.png'); outline: none; }
@@ -524,8 +524,9 @@
 .dao-text, .q-dao .it-name, .q-dao .eq-name { color: transparent !important; background: linear-gradient(90deg, #ff5a7a, #ffb84a, #ffe865, #5ff0a0, #5ab8ff, #a87aff, #ff7ae0, #ff5a7a) 0 0 / 200% 100%;
   -webkit-background-clip: text; background-clip: text; animation: dao-text 4s linear infinite; }
 @keyframes dao-text { to { background-position: 200% 0; } }
-.it-tile .gi { max-height: 46px; }
-.eq-slot .gi { max-height: 44px; }
+.it-tile .gi { height: 64px; width: auto; max-height: none; flex-shrink: 0; }
+@media (min-width: 761px) { .it-tile { height: 118px; } }
+.eq-slot .gi { height: 38px; width: auto; max-height: none; flex-shrink: 0; }
 .eq-slot .eq-name { max-width: 100%; font-size: 10.5px; line-height: 1.15; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: var(--rc, #9aa6c8); }
 .it-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px; }
 .big-frame { position: relative; flex-shrink: 0; width: 76px; height: 76px; display: grid; place-items: center; background: radial-gradient(circle, rgba(143, 228, 248, 0.12), rgba(10, 16, 48, 0.6)); border-radius: 4px; }
@@ -542,19 +543,21 @@
 /* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
 .figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
 .figure .wpn.front { z-index: 3; }
-/* vũ khí cầm tay nhún cùng nhịp thở với hero_full (1s, 4 khung; khung 1-2 cả người hạ 1px ảnh).
-   Dùng thuộc tính `translate` riêng để không đè `transform: rotate` của .turn-r180. */
+/* vũ khí cầm tay nhún cùng nhịp thở với hero_full (1s, 4 khung; khung 1-2 cả người hạ 1px ảnh) */
 .figure .wpn { animation: wpn-breath 1s steps(1, end) infinite; }
 @keyframes wpn-breath { 0%, 75%, 100% { translate: 0 0; } 25%, 50% { translate: 0 calc(1px * var(--s)); } }
-.figure .wpn.turn-r180 { transform: rotate(180deg); }
+/* hình cầm tay dạng dải 8 khung: linh khí chạy quanh thân + tua lay (1 vòng / giây) */
+.figure .wpn.held { background-repeat: no-repeat; background-position: 0 0;
+  animation: wpn-breath 1s steps(1, end) infinite, wpn-frames 1s steps(8) infinite; }
+@keyframes wpn-frames { to { background-position: calc(-8 * var(--fw)) 0; } }
 .figure .hero-sprite.pose-fan { background-image: url('/ui/hero_full_fan.png?v=0.10.5'); }
 .figure .bb-float { position: absolute; z-index: 5; right: -8%; top: 4%; image-rendering: pixelated; pointer-events: none;
   filter: drop-shadow(0 0 6px rgba(143, 228, 248, 0.85)); animation: bb-bob 2.6s ease-in-out infinite; }
 .figure .bb-float.bb-left { right: auto; left: -10%; }
 @keyframes bb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @media (max-width: 760px) {
-  .eq-slot .gi { max-height: 30px; }
+  .eq-slot .gi { height: 26px; }
   .eq-slot .eq-name { font-size: 9.5px; }
-  .it-tile .gi { max-height: 40px; }
+  .it-tile .gi { height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .figure .wpn, .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
