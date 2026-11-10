@@ -16,17 +16,17 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
-    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.4', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
+    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.5', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     // vũ khí cầm tay trong trận (dải 8 khung theo hướng) + găng quyền sáo, đủ 6 cấp
     for (let t = 0; t < 6; t++) {
       for (const [id, size] of Object.entries(BATTLE_WEAPON)) {
         const fs = { frameWidth: size, frameHeight: size };
         if (BATTLE_SPLIT.has(id)) {
-          this.load.spritesheet(battleWeaponKey(id, t) + '_f', `/gear/${id}_bf_${t}.png?v=0.12.4`, fs);
-          this.load.spritesheet(battleWeaponKey(id, t) + '_k', `/gear/${id}_bk_${t}.png?v=0.12.4`, fs);
-        } else this.load.spritesheet(battleWeaponKey(id, t), `/gear/${id}_b_${t}.png?v=0.12.4`, fs);
+          this.load.spritesheet(battleWeaponKey(id, t) + '_f', `/gear/${id}_bf_${t}.png?v=0.12.5`, fs);
+          this.load.spritesheet(battleWeaponKey(id, t) + '_k', `/gear/${id}_bk_${t}.png?v=0.12.5`, fs);
+        } else this.load.spritesheet(battleWeaponKey(id, t), `/gear/${id}_b_${t}.png?v=0.12.5`, fs);
       }
-      for (const hand of ['near', 'far'] as const) this.load.image(fistKey(hand, t), `/gear/wp_fist_${hand}_${t}.png?v=0.12.4`);
+      for (const hand of ['near', 'far'] as const) this.load.image(fistKey(hand, t), `/gear/wp_fist_${hand}_${t}.png?v=0.12.5`);
     }
   }
 

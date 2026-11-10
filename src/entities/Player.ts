@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/game';
 import { RUN } from '../config/balance';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
-import { BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
+import { BATTLE_ANCHOR_OVERRIDE, BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, NO_HAND_COVER, battleWeaponKey, fistKey } from '../config/heroBattle';
 import { HERO_HANDS } from '../config/heroHands';
 
 /**
@@ -37,6 +37,8 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** nửa sau (phía đốc) của vũ khí dài — luôn vẽ sau thân */
   private weaponBack: Phaser.GameObjects.Image | null = null;
   private weaponId = '';
+  /** Nắm tay phải cắt từ chính khung nhân vật, vẽ ĐÈ lên chuôi vũ khí → nhìn ra tay đang nắm */
+  private handCover: Phaser.GameObjects.Image | null = null;
   private fists: Phaser.GameObjects.Image[] = [];
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -60,6 +62,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.weaponImg = this.scene.add.image(this.x, this.y, key + '_f', 0);
       this.weaponBack = this.scene.add.image(this.x, this.y, key + '_k', 0);
     } else if (this.scene.textures.exists(key)) this.weaponImg = this.scene.add.image(this.x, this.y, key, 0);
+    if (this.weaponImg) this.handCover = this.scene.add.image(this.x, this.y, TEX.PLAYER, PLAYER_WALK_FRAMES);
   }
 
   /** Đặt vũ khí / găng vào đúng bàn tay theo hướng và khung bước hiện tại (gọi mỗi khung hình) */
@@ -73,9 +76,23 @@ export class Player extends Phaser.GameObjects.Sprite {
       // khung = hướng (cùng thứ tự PLAYER_DIRS); điểm cầm ở giữa khung → gốc 0.5, 0.5 đặt vào bàn tay
       const [hx, hy] = hands.R[col];
       const fi = PLAYER_DIRS.indexOf(this.face);
+      // điểm đặt: bàn tay, hoặc điểm riêng (tay khuất) + độ lệch nhún / vung của tay ở khung này
+      const anc = BATTLE_ANCHOR_OVERRIDE[this.weaponId]?.[this.face];
+      const rest = hands.R[PLAYER_WALK_FRAMES];
+      const ax = anc ? anc[0] + hx - rest[0] : hx, ay = anc ? anc[1] + hy - rest[1] : hy;
+      const front = BATTLE_FRONT_OVERRIDE[this.weaponId]?.[this.face] ?? hands.front;
       this.weaponImg.setFrame(fi).setOrigin(0.5, 0.5)
-        .setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth + ((BATTLE_FRONT_OVERRIDE[this.weaponId]?.[this.face] ?? hands.front) ? 1 : -1)).setAlpha(alpha);
-      this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth - 1).setAlpha(alpha);
+        .setPosition(left + ax + 0.5, top + ay + 0.5).setDepth(this.depth + (front ? 1 : -1)).setAlpha(alpha);
+      this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setPosition(left + ax + 0.5, top + ay + 0.5).setDepth(this.depth - 1).setAlpha(alpha);
+      // nắm tay đè lên chuôi (chỉ khi vũ khí ở trước thân và đặt đúng bàn tay)
+      if (this.handCover) {
+        const show = front && !anc && !NO_HAND_COVER.has(this.weaponId);
+        this.handCover.setVisible(show);
+        if (show) {
+          this.handCover.setFrame(this.frame.name).setOrigin(this.originX, this.originY).setPosition(this.x, this.y)
+            .setCrop(hx - 3, hy - 3, 7, 7).setDepth(this.depth + 2).setAlpha(alpha);
+        }
+      }
     }
     if (this.fists.length) {
       // tay phải luôn đeo (khuất sau thân khi ở phía xa); tay trái ẩn khi khuất hẳn
@@ -94,6 +111,8 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.weaponImg = null;
     this.weaponBack?.destroy();
     this.weaponBack = null;
+    this.handCover?.destroy();
+    this.handCover = null;
     for (const f of this.fists) f.destroy();
     this.fists = [];
     super.destroy(fromScene);

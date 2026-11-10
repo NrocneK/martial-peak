@@ -22,5 +22,15 @@ export const BATTLE_SPLIT = new Set(['wp_spear', 'wp_bow']);
 /** Hướng mà vũ khí vẽ trước / sau thân khác với mặc định theo bàn tay (HERO_HANDS.front) — hiện chưa có ngoại lệ */
 export const BATTLE_FRONT_OVERRIDE: Record<string, Partial<Record<string, boolean>>> = {};
 
+/**
+ * Điểm đặt vũ khí khác bàn tay (điểm ảnh trên khung đứng 52x68), cho hướng mà tay phải KHUẤT sau lưng: vũ khí nằm sau thân,
+ * đặt sao cho phần lộ ra đúng mẫu (cung w / nw: cánh trên ló ra phía trên-trái). Vẫn nhún / vung theo tay qua từng khung.
+ */
+export const BATTLE_ANCHOR_OVERRIDE: Record<string, Partial<Record<string, [number, number]>>> = {
+  wp_bow: { w: [23, 28], nw: [15, 31] },
+};
+/** Vũ khí KHÔNG vẽ nắm tay đè lên (quyền sáo đã là găng) */
+export const NO_HAND_COVER = new Set(['wp_fist']);
+
 export const battleWeaponKey = (weaponId: string, tier: number): string => `bw_${weaponId}_${tier}`;
 export const fistKey = (hand: 'near' | 'far', tier: number): string => `bf_${hand}_${tier}`;

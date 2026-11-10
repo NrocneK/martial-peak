@@ -953,7 +953,7 @@ const SPEAR_WHOLE_FRONT = new Set(['n', 'ne'])
 // Cung: GIỮ ĐỘ DÀI + ĐỘ CONG như lobby (dây ~36 điểm ảnh, bụng cung lồi ~9), CHUÔI (giữa thân cung) nằm đúng bàn tay;
 // chỉ đổi hướng đặt theo tham khảo của người dùng: ang = hướng dây cung từ đầu cánh trên xuống đầu cánh dưới (độ),
 // side = phía bụng cung lồi ra (+1 / −1 so với pháp tuyến (−sin, cos) của hướng dây). s / sw giữ cách cũ (cung lobby xoay).
-const BOW_DIR = { w: { ang: 47, side: 1 }, nw: { ang: 36, side: 1 }, n: { ang: 111, side: -1 }, ne: { ang: 126, side: -1 }, e: { ang: 144, side: -1 }, se: { ang: 157, side: -1 } }
+const BOW_DIR = { w: { ang: 27, side: 1 }, nw: { ang: 65, side: 1 }, n: { ang: 133, side: -1 }, ne: { ang: 126, side: -1 }, e: { ang: 144, side: -1 }, se: { ang: 157, side: -1 } }
 const BOW_LEN = 36, BOW_BULGE = 9
 function bowPts(C, ang, side) {
   const a = (ang * Math.PI) / 180, dx = Math.cos(a), dy = Math.sin(a), nx = -dy * side, ny = dx * side

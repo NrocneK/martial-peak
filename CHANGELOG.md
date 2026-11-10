@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.12.5 — Tay nắm cung / vũ khí trong trận
+- Nắm tay phải (cắt từ chính khung nhân vật) vẽ ĐÈ lên chuôi vũ khí khi vũ khí ở trước thân → thấy rõ tay đang nắm (trước đây cung che mất bàn tay nên trông lơ lửng).
+- Cung N: chéo qua lưng theo mẫu mới. W / NW (tay phải khuất): cung đặt sau lưng ở điểm riêng (`BATTLE_ANCHOR_OVERRIDE`) để cánh trên ló ra phía trên-trái như mẫu.
+
 ## v0.12.4 — Cung trong trận: đúng độ dài, nằm trong tay
 - Cung giữ độ dài + độ cong như ở lobby (dây ~36 điểm ảnh), chuôi (giữa thân cung) đặt đúng bàn tay ở mọi hướng; đường mẫu chỉ dùng để tham khảo HƯỚNG đặt cung (`BOW_DIR`: hướng dây + phía bụng cung).
 - W / NW: tay phải khuất → cả cây cung sau thân (không còn nằm trên đầu). N: đổi góc + độ cong theo mẫu mới. S / SW giữ nguyên.
