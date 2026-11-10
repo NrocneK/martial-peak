@@ -1,5 +1,11 @@
 # Lịch sử phiên bản
 
+## v0.13.2 — Ra đòn có CÁNH TAY cử động (kiếm, đao, cung)
+- `tools/art/attack_battle.py` vẽ sheet ra đòn `public/ui/hero_b_atk.png` (8 hướng × 10 khung): gỡ cánh tay đang buông khỏi hình (vá thân bằng màu áo phía trong, làm mịn) rồi VẼ LẠI cánh tay từ vai — tay áo phồng, cổ tay áo sẫm, nắm tay, đổ bóng, viền; hướng nhìn thẳng co phối cảnh; tay khuất vẽ sau thân.
+  - Vung (kiếm / đao, 6 khung): giơ lên-ra-sau lấy đà → chém qua trước → xuống-trước chéo sang phía tay trái → thu về. Vũ khí nối dài cánh tay, xoay theo.
+  - Kéo cung (4 khung): tay trái duỗi đẩy cung về hướng mục tiêu, tay phải kéo dây về vai → giữ → buông. Cung vẽ riêng tư thế bắn (`wp_bow_ba_*`: dây vuông góc hướng bắn, bụng cung lồi về phía trước), dây cung + mũi tên vẽ lúc chạy, căng tới tay đang kéo — không còn xoay lật cung.
+- `src/config/heroAttack.ts` (tự sinh): vị trí bàn tay / góc cánh tay từng khung.
+
 ## v0.13.1 — Hoạt ảnh ra đòn của nhân vật
 - Khi vũ khí ra đòn, nhân vật QUAY MẶT về phía mục tiêu và có động tác riêng theo vũ khí (`WEAPON_ATTACK` trong `src/config/heroBattle.ts`):
   - Kiếm / đao: lấy đà ra sau rồi chém một vòng qua hướng mục tiêu, thu về.

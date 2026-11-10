@@ -4,6 +4,7 @@ import { RUN } from '../config/balance';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
 import { BATTLE_ANCHOR_OVERRIDE, BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, NO_HAND_COVER, WEAPON_ATTACK, WEAPON_REST_ANG, battleWeaponKey, fistKey, type AttackType } from '../config/heroBattle';
 import { HERO_HANDS, HERO_HANDS_FAN } from '../config/heroHands';
+import { ATTACK_COLS, HERO_ATTACK } from '../config/heroAttack';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
@@ -45,6 +46,10 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** Hoạt ảnh ra đòn đang chạy: thời gian đã qua / thời lượng / góc đòn (radian) / kiểu */
   private atk: { t: number; dur: number; ang: number; type: AttackType | '' } = { t: 0, dur: 0, ang: 0, type: '' };
   private static readonly ORIGIN = { x: 0.5, y: 0.62 };
+  /** Cung lúc kéo dây (quay đúng hướng bắn) + dây cung / mũi tên vẽ lúc chạy */
+  private bowAim: Phaser.GameObjects.Image | null = null;
+  private bowString: Phaser.GameObjects.Graphics | null = null;
+  private stringColor = 0xe8e2d0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEX.PLAYER, PLAYER_WALK_FRAMES);
@@ -69,6 +74,11 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.weaponImg = this.scene.add.image(this.x, this.y, key + '_f', 0);
       this.weaponBack = this.scene.add.image(this.x, this.y, key + '_k', 0);
     } else if (this.scene.textures.exists(key)) this.weaponImg = this.scene.add.image(this.x, this.y, key, 0);
+    if (weaponId === 'wp_bow' && this.scene.textures.exists(key + '_aim')) {
+      this.bowAim = this.scene.add.image(this.x, this.y, key + '_aim', 0).setVisible(false);
+      this.bowString = this.scene.add.graphics();
+      this.stringColor = [0xd8cfb8, 0xd8f0e0, 0xf0f6ff, 0xffb04a, 0xfff3b0, 0xc8b0ff][tier] ?? 0xe8e2d0;
+    }
     if (this.weaponImg) this.handCover = this.scene.add.image(this.x, this.y, this.fanPose ? TEX.PLAYER_FAN : TEX.PLAYER, PLAYER_WALK_FRAMES);
   }
 
@@ -81,6 +91,12 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   private get attacking(): boolean {
     return this.atk.type !== '' && this.atk.t < this.atk.dur;
+  }
+
+  /** Ra đòn dùng sheet tư thế riêng (cánh tay vẽ lại): vung kiếm / đao, kéo cung — không áp cho tư thế cầm quạt */
+  private get sheetAttack(): 'swing' | 'draw' | null {
+    if (!this.attacking || this.fanPose) return null;
+    return this.atk.type === 'swing' ? 'swing' : this.atk.type === 'draw' ? 'draw' : null;
   }
 
   /** Góc màn hình → 1 trong 8 hướng */
@@ -118,6 +134,22 @@ export class Player extends Phaser.GameObjects.Sprite {
       rotDeg = -50 * Math.sin(Math.PI * Math.min(1, k / 0.35));             // hất tay
     }
     const pdx = ca * push, pdy = sa * push;
+    // ---- ra đòn bằng sheet: đổi khung nhân vật sang hero_b_atk, vũ khí bám tay mới
+    const sheet = this.sheetAttack;
+    const row = PLAYER_DIRS.indexOf(this.face);
+    const atkData = HERO_ATTACK[this.face];
+    let swingHand: number[] | null = null, drawData: number[] | null = null;
+    if (sheet === 'swing') {
+      const c = Math.min(5, Math.floor(k * 6));
+      this.setTexture(TEX.PLAYER_ATK, row * ATTACK_COLS.total + ATTACK_COLS.swing + c);
+      swingHand = atkData.swing[c];
+    } else if (sheet === 'draw') {
+      const c = k < 0.18 ? 0 : k < 0.45 ? 1 : k < 0.62 ? 2 : 3;
+      this.setTexture(TEX.PLAYER_ATK, row * ATTACK_COLS.total + ATTACK_COLS.draw + c);
+      drawData = atkData.draw[c];
+    } else if (this.texture.key === TEX.PLAYER_ATK) {
+      this.setTexture(TEX.PLAYER, row * PLAYER_SHEET_COLS + PLAYER_WALK_FRAMES);
+    }
     const left = this.x - this.originX * PLAYER_FRAME.w;
     const top = this.y - this.originY * PLAYER_FRAME.h;
     const alpha = this.dead ? 0 : this.alpha;
@@ -130,18 +162,51 @@ export class Player extends Phaser.GameObjects.Sprite {
       const rest = hands.R[PLAYER_WALK_FRAMES];
       const ax = anc ? anc[0] + hx - rest[0] : hx, ay = anc ? anc[1] + hy - rest[1] : hy;
       const front = BATTLE_FRONT_OVERRIDE[this.weaponId]?.[this.face] ?? hands.front;
-      const rot = (rotDeg * Math.PI) / 180;
+      let rot = (rotDeg * Math.PI) / 180;
+      let wx = left + ax + 0.5 + pdx, wy = top + ay + 0.5 + pdy, wFront = front || (atk && type !== 'throw');
+      if (swingHand) {
+        // kiếm / đao nối dài cánh tay: lưỡi lệch 15° theo chiều vung
+        const [sx, sy, armDeg, f] = swingHand;
+        wx = left + sx; wy = top + sy;
+        rot = (Phaser.Math.Angle.WrapDegrees(armDeg + 15 - restDeg) * Math.PI) / 180;
+        wFront = f === 1;
+      }
       const thrown = type === 'throw' && k > 0.3;                             // quạt đã rời tay (đang bay)
-      this.weaponImg.setFrame(fi).setOrigin(0.5, 0.5).setRotation(rot).setVisible(!thrown)
-        .setPosition(left + ax + 0.5 + pdx, top + ay + 0.5 + pdy).setDepth(this.depth + (front || (atk && type !== 'throw') ? 1 : -1)).setAlpha(alpha);
-      this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setRotation(rot).setPosition(left + ax + 0.5 + pdx, top + ay + 0.5 + pdy).setDepth(this.depth - 1).setAlpha(alpha);
+      this.weaponImg.setFrame(fi).setOrigin(0.5, 0.5).setRotation(rot).setVisible(!thrown && !drawData)
+        .setPosition(wx, wy).setDepth(this.depth + (wFront ? 1 : -1)).setAlpha(alpha);
+      this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setRotation(rot).setVisible(!drawData).setPosition(wx, wy).setDepth(this.depth - 1).setAlpha(alpha);
+      // ---- kéo cung: cung quay đúng hướng bắn ở tay trái, dây căng từ hai đầu cánh tới tay phải + mũi tên đặt trên dây
+      if (this.bowAim && this.bowString) {
+        this.bowString.clear();
+        this.bowAim.setVisible(!!drawData);
+        if (drawData) {
+          const [lx, ly, rx, ry, lf] = drawData;
+          const gx = left + lx, gy = top + ly;
+          this.bowAim.setFrame(row).setPosition(gx, gy).setRotation(0).setDepth(this.depth + (lf ? 1 : -1)).setAlpha(alpha);
+          const a = (({ s: 90, sw: 135, w: 180, nw: 225, n: 270, ne: 315, e: 0, se: 45 } as Record<string, number>)[this.face] * Math.PI) / 180;
+          const ax2 = Math.cos(a), ay2 = Math.sin(a), dx = -ay2, dy = ax2;   // hướng bắn / hướng dây
+          const t1x = gx - ax2 * 9 + dx * 18, t1y = gy - ay2 * 9 + dy * 18, t2x = gx - ax2 * 9 - dx * 18, t2y = gy - ay2 * 9 - dy * 18;
+          const px = left + rx, py = top + ry;
+          const g = this.bowString.setDepth(this.depth + 2).setAlpha(alpha);
+          g.lineStyle(1, this.stringColor, 1);
+          g.lineBetween(t1x, t1y, px, py);
+          g.lineBetween(t2x, t2y, px, py);
+          if (k < 0.62) {                                                    // mũi tên trên dây (bay đi khi buông)
+            g.lineStyle(1.5, 0xb88050, 1);
+            g.lineBetween(px, py, px + ax2 * 22, py + ay2 * 22);
+            g.fillStyle(0xe0e8f0, 1);
+            g.fillTriangle(px + ax2 * 25, py + ay2 * 25, px + ax2 * 21 - dx * 2, py + ay2 * 21 - dy * 2, px + ax2 * 21 + dx * 2, py + ay2 * 21 + dy * 2);
+          }
+        }
+      }
       // nắm tay đè lên chuôi (chỉ khi vũ khí ở trước thân và đặt đúng bàn tay)
       if (this.handCover) {
-        const show = front && !anc && !NO_HAND_COVER.has(this.weaponId);
+        const show = !drawData && (swingHand ? swingHand[3] === 1 : front && !anc) && !NO_HAND_COVER.has(this.weaponId);
         this.handCover.setVisible(show);
         if (show) {
-          this.handCover.setFrame(this.frame.name).setOrigin(this.originX, this.originY).setPosition(this.x + pdx, this.y + pdy)
-            .setCrop(hx - 3, hy - 3, 7, 7).setDepth(this.depth + 2).setAlpha(alpha);
+          const [cx, cy] = swingHand ? [Math.round(swingHand[0] - 0.5), Math.round(swingHand[1] - 0.5)] : [hx, hy];
+          this.handCover.setTexture(this.texture.key, this.frame.name).setOrigin(this.originX, this.originY).setPosition(this.x + pdx, this.y + pdy)
+            .setCrop(cx - 3, cy - 3, 7, 7).setDepth(this.depth + 2).setAlpha(alpha);
         }
       }
     }
@@ -165,6 +230,10 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.weaponBack = null;
     this.handCover?.destroy();
     this.handCover = null;
+    this.bowAim?.destroy();
+    this.bowAim = null;
+    this.bowString?.destroy();
+    this.bowString = null;
     for (const f of this.fists) f.destroy();
     this.fists = [];
     super.destroy(fromScene);
@@ -187,8 +256,11 @@ export class Player extends Phaser.GameObjects.Sprite {
     if (moving) this.heading = Phaser.Math.Angle.RotateTo(this.heading, dir.angle(), 0.3);
     // đang ra đòn: quay mặt về hướng đòn; còn lại quay theo đường đi (góc màn hình: 0 = phải, y hướng xuống)
     const face = this.attacking ? Player.faceOf(this.atk.ang) : moving ? Player.faceOf(dir.angle()) : this.face;
-    if (moving) {
-      if (face !== this.face || !this.anims.isPlaying) {
+    if (this.sheetAttack) {
+      this.face = face;                                                      // khung do syncWeapon đặt (sheet ra đòn)
+      if (this.anims.isPlaying) this.stop();
+    } else if (moving) {
+      if (face !== this.face || !this.anims.isPlaying || this.texture.key === TEX.PLAYER_ATK) {
         this.face = face;
         this.play(playerWalkAnim(face, this.fanPose), true);
       }

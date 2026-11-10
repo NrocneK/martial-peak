@@ -18,6 +18,7 @@ export class BootScene extends Phaser.Scene {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
     this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.7', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     for (const k of [TEX.VFX_QI, TEX.VFX_ARROW, TEX.VFX_FAN]) this.load.image(k, `/vfx/${k}.png?v=0.13.0`);
+    this.load.spritesheet(TEX.PLAYER_ATK, '/ui/hero_b_atk.png?v=0.13.2', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     this.load.spritesheet(TEX.PLAYER_FAN, '/ui/hero_bf_walk.png?v=0.12.7', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
     // vũ khí cầm tay trong trận (dải 8 khung theo hướng) + găng quyền sáo, đủ 6 cấp
     for (let t = 0; t < 6; t++) {
@@ -27,6 +28,7 @@ export class BootScene extends Phaser.Scene {
           this.load.spritesheet(battleWeaponKey(id, t) + '_f', `/gear/${id}_bf_${t}.png?v=0.12.7`, fs);
           this.load.spritesheet(battleWeaponKey(id, t) + '_k', `/gear/${id}_bk_${t}.png?v=0.12.7`, fs);
         } else this.load.spritesheet(battleWeaponKey(id, t), `/gear/${id}_b_${t}.png?v=0.12.7`, fs);
+        if (id === 'wp_bow') this.load.spritesheet(battleWeaponKey(id, t) + '_aim', `/gear/wp_bow_ba_${t}.png?v=0.13.2`, fs);
       }
       for (const hand of ['near', 'far'] as const) this.load.image(fistKey(hand, t), `/gear/wp_fist_${hand}_${t}.png?v=0.12.7`);
     }
@@ -36,6 +38,7 @@ export class BootScene extends Phaser.Scene {
     // Pixel art: phóng to giữ nét (không làm mờ)
     this.textures.get(TEX.PLAYER).setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.textures.get(TEX.PLAYER_FAN).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get(TEX.PLAYER_ATK).setFilter(Phaser.Textures.FilterMode.NEAREST);
     PLAYER_DIRS.forEach((d, r) => {
       const start = r * PLAYER_SHEET_COLS;
       for (const fan of [false, true]) {

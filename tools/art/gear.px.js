@@ -441,7 +441,7 @@ function drawBow(c, t, o) {
   const outSign = (() => { const p = at(0.5), tg = tan(0.5), n = [-tg[1], tg[0]]; return (p[0] - mid[0]) * n[0] + (p[1] - mid[1]) * n[1] > 0 ? 1 : -1 })()
   // dây cung (vẽ trước để cánh đè lên)
   const N = Math.ceil(Math.hypot(T2[0] - T1[0], T2[1] - T1[1]) * 2)
-  for (let i = 0; i <= N; i++) {
+  if (!o.noString) for (let i = 0; i <= N; i++) {
     const s = i / N, x = Math.round(T1[0] + (T2[0] - T1[0]) * s), y = Math.round(T1[1] + (T2[1] - T1[1]) * s)
     c.px(x, y, STRING[t] ?? RAINBOW[Math.floor(s * 7) % 7])
   }
@@ -1015,6 +1015,10 @@ for (let t = 0; t < 6; t++) BATTLE_DIRS.forEach((d, i) => {
     const pts = [[7, 7], [23, 41], [55, 47]].map(([x, y]) => { const dx = (x - 23) * K, dy = (y - 41) * K; return [48 + dx * Math.cos(rot) - dy * Math.sin(rot), 48 + dx * Math.sin(rot) + dy * Math.cos(rot)] })
     for (const fr of [true, false]) sprite(`wp_bow_b${fr ? 'f' : 'k'}${d}_${t}`, { w: 96, h: 96 }, (c) => { drawBow(c, t, { pts, k: 0.45, ph: 0, held: true, noFx: true }); half(c, 48, deg, fr) }, ...GLOW(t))
   }
+  // cung lúc KÉO DÂY (hoạt ảnh ra đòn): dây vuông góc hướng bắn, bụng cung lồi về phía mục tiêu, chuôi ở giữa khung 96x96
+  // (dây cung vẽ lúc chạy trong game, từ hai đầu cánh tới tay đang kéo — xem Player)
+  const AIMDEG = { s: 90, sw: 135, w: 180, nw: 225, n: 270, ne: 315, e: 0, se: 45 }[d]
+  sprite(`wp_bow_ba${d}_${t}`, { w: 96, h: 96 }, (c) => drawBow(c, t, { pts: bowPts(48, AIMDEG + 90, -1), k: 0.45, ph: 0, held: true, noFx: true, noString: true }), ...GLOW(t))
   // quạt: nhân vật đổi sang tư thế CẦM QUẠT (tay phải trước ngực, hero_bf_walk.png) → quạt MỞ nhỏ che ngực, trục ở bàn tay
   // (giữa khung 32x32); nhìn nghiêng thì co ngang (FAN_SX). n / ne / nw: khuất sau người (HERO_HANDS_FAN.front = false).
   sprite(`wp_fan_b${d}_${t}`, { w: 32, h: 32 }, (c) => drawFan(c, t, { pivot: [16, 16.5], r0: 3, r1: 10.5, k: 0.4, folds: 9, ph: 0, held: true, noFx: true, tassel: false, sx: FAN_SX[d] }), ...GLOW(t))
