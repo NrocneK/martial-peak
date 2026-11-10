@@ -1,5 +1,11 @@
 # Lịch sử phiên bản
 
+## v0.14.2 — Icon kỹ năng vẽ lại 64x64 (bản 32px không được duyệt)
+- `tools/art/skills.px.js` viết lại: icon 64x64 cùng phong cách khung sảnh — nền xanh đậm ánh màu kỹ năng ở giữa, khung kim loại 2 nét + nút góc (thép = vũ khí, vàng = chủ động, ngọc + nút hình thoi = bị động).
+- Bộ tô khối tự động: mỗi chi tiết là mặt nạ hình + dải 5 tông; mép hướng sáng (trên-trái) sáng lên, mép khuất tối đi, chuyển tông trong lòng hòa ô cờ, viền ngoài lấy tông tối của chính chi tiết; quầng sáng 3 nấc cho lửa / sét / kiếm khí / băng...
+- Chi tiết hơn: kiếm có chuôi quấn vải + sống sáng + khâu vàng, quạt có tranh núi trên mặt, lá bùa có chữ đỏ, hỏa cầu nhiều lớp lửa, thái cực có vòng hào quang...
+- Ô kỹ năng trong trận 56px (điện thoại 44px), ô kỹ năng ở Tu Luyện 40px.
+
 ## v0.14.1 — Bộ icon kỹ năng
 - `tools/art/skills.px.js` vẽ 30 icon pixel art 32x32 → `public/skills/<id>.png`:
   - 6 kỹ năng vũ khí: khung vuông viền thép (kiếm khí, đao bản to, thương tua đỏ, nắm đấm, cung tên, quạt xòe).

@@ -53,8 +53,8 @@ export const PLAYER_FRAME = { w: 52, h: 68 };
 export const playerWalkAnim = (d: PlayerDir, fan = false): string => `hero-${fan ? 'fan' : 'walk'}-${d}`;
 
 /** Phiên bản bộ icon kỹ năng (đổi khi vẽ lại để trình duyệt tải ảnh mới) */
-export const SKILL_ICON_V = 1;
-/** Icon kỹ năng 32x32 (vẽ trong tools/art/skills.px.js): vũ khí wp_*, chủ động ac_*, bị động p_* */
+export const SKILL_ICON_V = 2;
+/** Icon kỹ năng 64x64 (vẽ trong tools/art/skills.px.js): vũ khí wp_*, chủ động ac_*, bị động p_* */
 export function skillIcon(id: string): string {
   return `/skills/${id}.png?v=${SKILL_ICON_V}`;
 }

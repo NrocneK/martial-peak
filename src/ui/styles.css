@@ -328,11 +328,12 @@
 .slot.passive { border-radius: 50%; }
 /* icon kỹ năng pixel art: phóng nguyên điểm ảnh, khung đã vẽ sẵn trong ảnh */
 .skico { image-rendering: pixelated; border: none !important; border-radius: 0 !important; box-shadow: none; }
-.slot.skico { width: 48px; height: 48px; color: #fff; }
+.slot.skico { width: 56px; height: 56px; color: #fff; image-rendering: auto; }
+@media (max-width: 700px) { .slot.skico { width: 44px; height: 44px; } }
 .slot.skico small { right: 3px; bottom: 2px; font-size: 12px; font-weight: 800; text-shadow: 0 0 2px #000, 0 0 3px #000; }
 .slot.skico.awk { filter: drop-shadow(0 0 6px #ffd700); }
 .pick .ico.skico { width: 64px; height: 64px; }
-.sk-tile .swatch.skico, .skill-head .swatch.skico { width: 32px; height: 32px; }
+.sk-tile .swatch.skico, .skill-head .swatch.skico { width: 40px; height: 40px; image-rendering: auto; }
 .swatch.skico.big { width: 64px; height: 64px; }
 .sk-detail-head { display: flex; align-items: center; gap: 12px; }
 
@@ -400,9 +401,9 @@
 .realm-info p { margin: 0; font-size: 14px; line-height: 1.5; }
 .pack { margin-top: 6px; padding: 10px 12px; border-radius: 6px; background: rgba(10, 16, 48, 0.55); border: 1px solid #34406f; display: flex; flex-direction: column; gap: 6px; }
 .skill-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; background: rgba(10, 16, 48, 0.55); border: 1px solid #34406f; font-size: 13.5px; }
-.sk-tile { min-height: 64px; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 0 4px; font: inherit; color: #e6eeff; text-align: left; cursor: pointer;
+.sk-tile { min-height: 64px; display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 0 4px; font: inherit; color: #e6eeff; text-align: left; cursor: pointer;
   background: none; border: 12px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 12px / 0 stretch; image-rendering: pixelated; }
-.sk-tile .swatch { grid-row: 1 / span 2; width: 30px; height: 30px; }
+.sk-tile .swatch { grid-row: 1 / span 2; width: 40px; height: 40px; }
 .swatch.round { border-radius: 50%; }
 .sk-name { font-weight: 700; font-size: 14px; }
 .sk-sub { font-size: 12px; color: #bcd0ff; }
