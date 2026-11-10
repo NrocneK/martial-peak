@@ -5,7 +5,7 @@
 // =====================================================================
 
 export const TEX = {
-  /** Nhân vật chính (Cố Trường Ca): spritesheet 4 khung đi bộ, public/ui/hero_walk.png */
+  /** Nhân vật chính (Cố Trường Ca) trong trận: public/ui/hero_b_walk.png — 8 hàng hướng × (6 khung đi + 1 khung đứng) */
   PLAYER: 'player',
   /** Nền đất lặp vô hạn */
   GROUND: 'ground',
@@ -34,4 +34,12 @@ export const SCENES = {
 } as const;
 
 /** Hoạt ảnh đi bộ của nhân vật chính (tạo trong BootScene) */
-export const PLAYER_WALK_ANIM = 'hero-walk';
+/** Hướng của nhân vật trong trận, theo thứ tự hàng của hero_b_walk.png */
+export const PLAYER_DIRS = ['s', 'sw', 'w', 'nw', 'n', 'ne', 'e', 'se'] as const;
+export type PlayerDir = (typeof PLAYER_DIRS)[number];
+/** Khung đi bộ mỗi hướng (cột 0..5); cột 6 = đứng yên */
+export const PLAYER_WALK_FRAMES = 6;
+export const PLAYER_SHEET_COLS = PLAYER_WALK_FRAMES + 1;
+export const PLAYER_FRAME = { w: 52, h: 68 };
+/** Khóa hoạt ảnh đi theo hướng, vd. 'hero-walk-se' */
+export const playerWalkAnim = (d: PlayerDir): string => `hero-walk-${d}`;

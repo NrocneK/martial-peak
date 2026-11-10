@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/game';
 import { RUN } from '../config/balance';
-import { PLAYER_WALK_ANIM, TEX } from '../config/assets';
+import { PLAYER_DIRS, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
@@ -27,14 +27,17 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** Gọi mỗi khi thật sự nhận sát thương (cho bí bảo) */
   onHit: (() => void) | null = null;
 
+  /** Hướng sprite đang quay (8 hướng) */
+  private face: PlayerDir = 's';
+
   /** Hình vũ khí đang cầm (chỉ là ngoại hình, không ảnh hưởng chỉ số) */
   private weaponImg: Phaser.GameObjects.Image | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEX.PLAYER, 0);
+    super(scene, x, y, TEX.PLAYER, PLAYER_WALK_FRAMES);
     scene.add.existing(this);
-    // Sprite 21x38 phóng 2 lần; gốc hơi thấp để thân (vùng va chạm) nằm giữa, chân chạm "đất"
-    this.setDepth(10).setScale(2).setOrigin(0.5, 0.6);
+    // Sprite 52x68 vẽ 1:1 (chân ở hàng 64); gốc hơi thấp để thân (vùng va chạm) nằm giữa, chân chạm "đất"
+    this.setDepth(10).setOrigin(0.5, 0.62);
   }
 
   /** Đặt ngoại hình vũ khí theo loại vũ khí và màu phẩm chất */
@@ -70,15 +73,19 @@ export class Player extends Phaser.GameObjects.Sprite {
     const sp = this.stats.moveSpeed;
     this.x += dir.x * sp * dt;
     this.y += dir.y * sp * dt;
-    // Đi thì chạy hoạt ảnh bước chân và quay mặt theo hướng ngang; đứng yên thì về khung đứng
+    // Đi: quay về 1 trong 8 hướng theo đường đi và chạy hoạt ảnh bước của hướng đó; đứng yên: khung đứng của hướng cuối
     if (dir.lengthSq() > 0.0001) {
       this.heading = Phaser.Math.Angle.RotateTo(this.heading, dir.angle(), 0.3);
-      // sprite gốc nhìn xéo sang TRÁI → đi sang phải thì lật lại cho mặt hướng theo đường đi
-      if (Math.abs(dir.x) > 0.05) this.setFlipX(dir.x > 0);
-      if (!this.anims.isPlaying) this.play(PLAYER_WALK_ANIM);
+      // góc màn hình: 0 = phải (E), tăng theo chiều kim đồng hồ (y hướng xuống)
+      const sector = (Math.round(dir.angle() / (Math.PI / 4)) + 8) % 8;
+      const face = (['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'] as const)[sector];
+      if (face !== this.face || !this.anims.isPlaying) {
+        this.face = face;
+        this.play(playerWalkAnim(face), true);
+      }
     } else if (this.anims.isPlaying) {
       this.stop();
-      this.setFrame(0);
+      this.setFrame(PLAYER_DIRS.indexOf(this.face) * PLAYER_SHEET_COLS + PLAYER_WALK_FRAMES);
     }
   }
 

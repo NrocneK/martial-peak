@@ -1,5 +1,11 @@
 # Lịch sử phiên bản
 
+## v0.12.0 — Nhân vật trong trận: 8 hướng + đi bộ
+- Sprite mới góc nhìn top-down nghiêng, chuyển từ ảnh mẫu 8 hướng (`tools/art/ref/hero_battle_ref.webp`) bằng `tools/art/trace_battle.py`: tách nền + bóng, căn chân, bảng 40 màu chung cho 8 hướng, thu nhỏ 1/6 giữ nét tối.
+- Sheet di chuyển `public/ui/hero_b_walk.png` (`tools/art/walk_battle.py`): 8 hàng hướng (s, sw, w, nw, n, ne, e, se) × 6 khung đi + 1 khung đứng, khung 52x68. Chân tách đôi, sải theo hướng đi + nhấc chân, thân nhún 1 điểm ảnh giữa bước.
+- Trong trận: nhân vật quay 1 trong 8 hướng theo đường đi (10 khung/giây), dừng thì đứng yên đúng hướng cuối; vẽ 1:1 (bỏ phóng 2 lần và lật ngang của sprite cũ).
+- Vũ khí trong trận vẫn là hình bay cạnh người như cũ (sẽ làm sau).
+
 ## v0.11.4 — Đường nối thẳng cho thương và cung
 - Thương, cung dùng chung cách nối như kiếm / đao: đường cắt THẲNG vuông góc với thân vũ khí tại chỗ cầm, qua giữa lòng bàn tay (`gripCut()` trong `src/config/items.ts`). Thương cắt vuông góc với cán; cung cắt vuông góc với cánh cung tại chuôi (góc khác), chỉ lộ đoạn ngay quanh bàn tay.
 - Bỏ cách cũ: vùng tròn quanh tay + nắm tay vẽ đè (`hero_fist.png`, `near`, `cover`).

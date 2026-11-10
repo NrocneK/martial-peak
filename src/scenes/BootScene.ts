@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { PLAYER_WALK_ANIM, SCENES, TEX } from '../config/assets';
+import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, SCENES, TEX, playerWalkAnim } from '../config/assets';
 
 /**
  * BootScene: chạy đầu tiên, chuẩn bị tài nguyên rồi báo cho GameFlow hiện menu.
  *
- * Nhân vật chính dùng sprite pixel art thật (public/ui/hero_walk.png, vẽ bằng tools/art/hero.px.js).
+ * Nhân vật chính dùng sprite pixel art 8 hướng (public/ui/hero_b_walk.png, dựng bằng tools/art/trace_battle.py + walk_battle.py).
  * Các hình còn lại (quái, đạn, nền...) vẫn là hình tạm TỰ VẼ bằng code; khi có sprite thật chỉ cần
  * nạp ảnh với cùng key (xem config/assets.ts) trong preload().
  */
@@ -15,13 +15,16 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
-    this.load.spritesheet(TEX.PLAYER, '/ui/hero_walk.png?v=0.9.5', { frameWidth: 21, frameHeight: 38 });
+    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.0', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
   }
 
   create(): void {
     // Pixel art: phóng to giữ nét (không làm mờ)
     this.textures.get(TEX.PLAYER).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.anims.create({ key: PLAYER_WALK_ANIM, frames: this.anims.generateFrameNumbers(TEX.PLAYER, { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
+    PLAYER_DIRS.forEach((d, r) => {
+      const start = r * PLAYER_SHEET_COLS;
+      this.anims.create({ key: playerWalkAnim(d), frames: this.anims.generateFrameNumbers(TEX.PLAYER, { start, end: start + PLAYER_WALK_FRAMES - 1 }), frameRate: 10, repeat: -1 });
+    });
     this.makeGroundTexture();
     this.makeShapeTextures();
     this.makeMiscTextures();

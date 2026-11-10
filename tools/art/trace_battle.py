@@ -3,6 +3,7 @@ Chuyển ảnh mẫu 8 hướng của nhân vật trong trận (tools/art/ref/he
 thành sprite pixel art cùng cỡ, cùng mặt đất, cùng bảng màu.
 
   python3 -I tools/art/trace_battle.py   → public/ui/hero_b_{s,se,e,ne,n,nw,w,sw}.png + tools/art/out/hero_b_preview.png
+                                           + tools/art/out/hero_b_base_*.png (chưa viền, đầu vào của walk_battle.py)
 
 Thứ tự ô trong ảnh mẫu: hàng 1 = S, SE, E, NE · hàng 2 = N, NW, W, SW.
 Các bước: tách nền xanh + bóng dưới chân (loang từ mép ô, viền tối của nhân vật chặn vùng loang)
@@ -141,6 +142,7 @@ for k, name in enumerate(names):
     img = np.zeros((H, W, 4), np.uint8)
     img[a, :3] = rgb[a]
     img[a, 3] = 255
+    Image.fromarray(img, 'RGBA').save(os.path.join(HERE, 'out', f'hero_b_base_{name}.png'))   # chưa viền: walk_battle.py cắt ghép
     # viền ngoài 1px
     edge = np.zeros_like(a)
     for y in range(H):
