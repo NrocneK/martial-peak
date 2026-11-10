@@ -539,13 +539,14 @@
 /* Nhân vật + ngoại trang (Hành Trang) */
 .figure { position: relative; width: calc(58px * var(--s)); height: calc(106px * var(--s)); flex-shrink: 0; }
 .figure .hero-sprite { position: relative; z-index: 2; }
-/* lớp: nhân vật (2) → vũ khí (3) → bàn tay phải (4) → bí bảo (5) */
-.figure .wpn { position: absolute; z-index: 3; image-rendering: pixelated; pointer-events: none; max-height: none; }
+/* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
+.figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
+.figure .wpn.front { z-index: 3; }
 .figure .wpn.turn-r180 { transform: rotate(180deg); }
-.figure .wpn.turn-flipx { transform: scaleX(-1); }
-.figure .rhand { position: absolute; left: 0; top: 0; z-index: 4; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; }
+.figure .hero-sprite.pose-fan { background-image: url('/ui/hero_full_fan.png?v=0.10.2'); }
 .figure .bb-float { position: absolute; z-index: 5; right: -8%; top: 4%; image-rendering: pixelated; pointer-events: none;
   filter: drop-shadow(0 0 6px rgba(143, 228, 248, 0.85)); animation: bb-bob 2.6s ease-in-out infinite; }
+.figure .bb-float.bb-left { right: auto; left: -10%; }
 @keyframes bb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @media (max-width: 760px) {
   .eq-slot .gi { max-height: 30px; }

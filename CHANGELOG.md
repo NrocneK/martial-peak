@@ -1,5 +1,13 @@
 # Lịch sử phiên bản
 
+## v0.10.2 — Tư thế cầm từng loại vũ khí
+- **Kiếm, đao**: nằm SAU nhân vật — chuôi + núm bị tay áo / thân che, chỉ lưỡi chĩa xuống chéo phía trước lộ ra.
+- **Thương**: cầm chéo (`wp_spear_diag_*`, 80x80): đốc cán trước chân, mũi sau vai phải, đoạn qua lưng bị che. Bí bảo chuyển sang vai trái khi cầm thương.
+- **Cung**: xoay chéo (`wp_bow_diag_*`): bụng cung ở nắm tay, cánh trên vươn ra ngoài, cánh dưới + dây chạy sau thân.
+- **Quạt**: nhỏ lại, che trước ngực (`wp_fan_held_*`, có bàn tay nắm cán); sprite nhân vật đổi sang biến thể `hero_full_fan.png` (bỏ nắm tay phải đang buông, tô tối miệng tay áo) do `tools/art/hero_poses.py` tạo.
+- **Quyền sáo**: đeo CẢ HAI TAY, gọn trong phạm vi nắm tay (`wp_fist_near_*`, `wp_fist_far_*`): phiến giáp mu bàn tay, đinh đốt ngón, vòng cổ tay.
+- Bỏ lớp bàn tay riêng (`hero_rhand.png`) và hình cầm cũ; quy tắc cầm gom trong `WEAPON_HOLD` (`src/config/items.ts`).
+
 ## v0.10.1 — Nhân vật CẦM vũ khí (không còn "dán" vào tay)
 - Thứ tự lớp ở Hành Trang: nhân vật → vũ khí → **bàn tay phải** (`public/ui/hero_rhand.png`, cắt từ sprite bằng `tools/art/cut_hand.py`). Chuôi chui vào trong nắm tay: núm chuôi ló trên, lưỡi ra dưới, ngón tay phủ lên chuôi.
 - Hướng cầm theo dáng tay buông (`WEAPON_HOLD` trong `src/config/items.ts`): kiếm, đao xoay 180° (lưỡi chĩa xuống chéo phía trước); thương dùng hình **dựng đứng** riêng (`wp_spear_held_*`), mũi trên đầu; cung dựng đứng; quạt xòe ra ngoài; quyền sáo dùng hình **đeo tay** cỡ vừa nắm tay (`wp_fist_worn_*`) trùm lên bàn tay.

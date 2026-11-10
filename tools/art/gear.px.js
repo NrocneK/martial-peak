@@ -227,29 +227,78 @@ const BB = {
 }
 for (const [id, fn] of Object.entries(BB)) sprite(id, { w: 32, h: 32, outline: 'k' }, fn)
 
-// ================================================================ HÌNH "KHI CẦM" (chỉ để hiển thị trên tay nhân vật, không phải ô đồ)
-// Thương dựng đứng 14x100: cán thẳng đứng ở x = 7, mũi ở trên; điểm cầm (chỗ nắm tay) ở y = 58.
-function spearHeld(c, t) {
-  const P = T[t], M = P.m, A = P.a
-  c.rect(6, 22, 3, 78, P.h[0]); c.vline(7, 22, 78, P.h[1])
-  for (const y of [34, 50, 70, 86]) c.hline(6, y, 3, A[1])
-  c.rect(5, 97, 5, 3, M[1])                                       // đế cán
-  c.poly([5, 20, 4, 26, 7, 24, 10, 26, 9, 20], A[1]); c.px(7, 22, A[2])   // tua dưới mũi
-  c.poly([7, 1, 10, 8, 10, 16, 7, 21, 4, 16, 4, 8], M[1]); c.poly([7, 2, 9, 8, 9, 15, 7, 19], M[2]); c.vline(7, 3, 15, M[3])
-  if (t >= 2) { c.poly([3, 15, 0, 12, 4, 18], A[2]); c.poly([11, 15, 14, 12, 10, 18], A[2]) }   // ngạnh mây
-  if (P.g) c.px(7, 19, P.g)
-  if (t === 5) for (let i = 0; i < 6; i++) c.px(7, 30 + i * 11, RAINBOW[i])
-  sparkles(c, t, [[11, 6], [3, 40]])
-}
-for (let t = 0; t < 6; t++) sprite(`wp_spear_held_${t}`, { w: 14, h: 100, outline: 'k' }, (c) => spearHeld(c, t))
+// ================================================================ HÌNH "KHI CẦM" (chỉ hiển thị trên tay nhân vật, không phải ô đồ)
+// Tọa độ khớp nắm tay trên sprite nhân vật (xem WEAPON_HOLD trong src/config/items.ts).
 
-// Quyền sáo đeo tay 10x11: bao tay kim loại trùm lên nắm tay đang buông (đốt ngón hướng về phía trước = trái màn hình sau khi lật)
-function fistWorn(c, t) {
+// --- Thương cầm CHÉO 80x80: đốc cán dưới-trái (trước chân), mũi trên-phải (sau vai). Điểm cầm (24,55).
+function spearDiag(c, t) {
   const P = T[t], M = P.m, A = P.a
-  c.rect(1, 0, 8, 3, P.h[0]); c.hline(1, 0, 8, A[1])                // bao cổ tay
-  c.rect(0, 3, 10, 7, M[1]); c.rect(1, 4, 8, 5, M[2]); c.hline(1, 4, 7, M[3])   // bao nắm tay
-  for (let i = 0; i < 4; i++) c.px(1 + i * 2, 10, t >= 3 ? A[2] : M[3])          // gai đốt ngón
-  if (P.g) c.px(5, 6, P.g)
-  if (t === 5) { c.px(2, 7, RAINBOW[0]); c.px(4, 7, RAINBOW[2]); c.px(6, 7, RAINBOW[4]); c.px(8, 7, RAINBOW[5]) }
+  c.line(3, 76, 66, 13, P.h[0], 3); c.line(4, 75, 65, 14, P.h[1], 1)            // cán
+  for (const d of [14, 34, 48]) c.line(3 + d, 76 - d, 4 + d, 75 - d, A[1], 3)   // vòng đai cán
+  c.line(1, 78, 4, 75, M[1], 3)                                                   // đế cán bịt kim loại
+  c.poly([62, 15, 60, 23, 64, 20, 67, 24, 69, 17], A[1]); c.px(64, 18, A[2])     // tua dưới mũi
+  c.poly([65, 14, 70, 5, 78, 1, 75, 9, 67, 16], M[1]); c.poly([66, 14, 71, 6, 77, 2, 69, 13], M[2]); c.line(67, 13, 77, 2, M[3], 1)   // mũi lá
+  if (t >= 2) { c.poly([64, 11, 68, 13, 66, 9], A[2]); c.poly([68, 17, 70, 13, 72, 15], A[2]) }   // ngạnh mây
+  if (P.g) c.px(66, 15, P.g)
+  if (t === 5) for (let i = 0; i < 6; i++) c.px(10 + i * 9, 69 - i * 9, RAINBOW[i])
+  sparkles(c, t, [[74, 10], [40, 40]])
 }
-for (let t = 0; t < 6; t++) sprite(`wp_fist_worn_${t}`, { w: 10, h: 11, outline: 'k' }, (c) => fistWorn(c, t))
+for (let t = 0; t < 6; t++) sprite(`wp_spear_diag_${t}`, { w: 80, h: 80, outline: 'k' }, (c) => spearDiag(c, t))
+
+// --- Cung xoay CHÉO 62x52: bụng cung (chuôi) ở (22,40) = nắm tay; cánh trên tới (3,4), cánh dưới tới (57,48); dây thẳng giữa 2 đầu.
+function bowDiag(c, t) {
+  const P = T[t], M = P.m, A = P.a
+  const T1 = [3, 4], G = [22, 40], T2 = [57, 48]
+  const C = [2 * G[0] - (T1[0] + T2[0]) / 2, 2 * G[1] - (T1[1] + T2[1]) / 2]   // điểm điều khiển để đường cong đi qua chuôi
+  const at = (u) => [(1 - u) ** 2 * T1[0] + 2 * (1 - u) * u * C[0] + u * u * T2[0], (1 - u) ** 2 * T1[1] + 2 * (1 - u) * u * C[1] + u * u * T2[1]]
+  c.line(T1[0], T1[1], T2[0], T2[1], '#e8e2d0', 1)                               // dây cung
+  for (let i = 0; i <= 120; i++) { const [x, y] = at(i / 120); c.rect(Math.round(x) - 1, Math.round(y) - 1, 3, 3, P.h[0]) }
+  for (let i = 0; i <= 120; i++) { const [x, y] = at(i / 120); c.px(Math.round(x), Math.round(y) - 1, P.h[1]) }
+  c.circ(T1[0], T1[1], 2, M[2]); c.circ(T2[0], T2[1], 2, M[2])                  // đầu cánh bịt kim loại
+  c.rect(G[0] - 3, G[1] - 3, 6, 6, A[1]); c.rect(G[0] - 2, G[1] - 2, 4, 4, A[2]) // chuôi quấn
+  if (P.g) { c.px(G[0], G[1], P.g); c.px(G[0] - 1, G[1], P.g) }
+  if (t >= 2) for (const u of [0.18, 0.82]) { const [x, y] = at(u); c.ring(Math.round(x), Math.round(y), 2, A[2]) }   // vân mây cánh
+  if (t >= 3) for (const u of [0.3, 0.7]) { const [x, y] = at(u); c.px(Math.round(x) - 1, Math.round(y) + 1, A[1]) }
+  if (t === 5) for (let i = 0; i < 7; i++) { const [x, y] = at(0.08 + i * 0.14); c.px(Math.round(x), Math.round(y), RAINBOW[i]) }
+  sparkles(c, t, [[8, 14], [46, 46]])
+}
+for (let t = 0; t < 6; t++) sprite(`wp_bow_diag_${t}`, { w: 62, h: 52, outline: 'k' }, (c) => bowDiag(c, t))
+
+// --- Quạt nhỏ CHE TRƯỚC NGỰC 30x22: quạt xòe nửa vòng hướng lên, trục ở (15,19), có bàn tay nắm cán + cổ tay áo.
+function fanHeld(c, t) {
+  const P = T[t], M = P.m, A = P.a
+  const cx = 15, cy = 19, R = 14
+  for (let a = -168; a <= -12; a++) {
+    const r = (a * Math.PI) / 180
+    for (let d = 5; d <= R; d++) {
+      const x = Math.round(cx + Math.cos(r) * d), y = Math.round(cy + Math.sin(r) * d)
+      const band = Math.floor((a + 168) / 20) % 2
+      c.px(x, y, d >= R - 1 ? A[0] : band ? P.c[1] : P.c[2])
+    }
+  }
+  for (let a = -168; a <= -12; a += 20) { const r = (a * Math.PI) / 180; c.line(cx, cy, Math.round(cx + Math.cos(r) * R), Math.round(cy + Math.sin(r) * R), M[1], 1) }
+  if (t >= 1) { c.circ(15, 10, 2, A[1]); c.px(15, 10, P.g ?? A[2]) }
+  if (t >= 2) for (const x of [8, 22]) c.px(x, 11, A[2])
+  if (t === 5) for (let i = 0; i < 7; i++) { const r = ((-160 + i * 23) * Math.PI) / 180; c.px(Math.round(cx + Math.cos(r) * 11), Math.round(cy + Math.sin(r) * 11), RAINBOW[i]) }
+  // bàn tay nắm cán quạt + cổ tay áo (tay phải đi từ phía sau thân ra)
+  c.rect(5, 18, 6, 3, '#262838'); c.hline(5, 18, 6, '#3a3c50')
+  c.rect(11, 17, 6, 4, '#f2cab0'); c.hline(11, 20, 6, '#c99a80'); c.px(16, 17, '#c99a80'); c.vline(13, 18, 2, '#c99a80')
+  c.circ(15, 19, 1, M[2])
+  sparkles(c, t, [[4, 8], [26, 8]])
+}
+for (let t = 0; t < 6; t++) sprite(`wp_fan_held_${t}`, { w: 30, h: 22, outline: 'k' }, (c) => fanHeld(c, t))
+
+// --- Quyền sáo đeo CẢ HAI TAY (gọn): phiến giáp mu bàn tay + hàng đinh đốt ngón (phía trước = trái) + vòng cổ tay.
+// near = tay gần (giữa thân, to hơn), far = tay xa (mép trái, nhỏ hơn). Không viền ngoài để khớp viền sẵn của nắm tay.
+function knuckle(c, t, w, h) {
+  const P = T[t], M = P.m, A = P.a
+  c.rect(1, 0, w - 2, 2, M[1]); c.hline(1, 0, w - 2, M[3])                       // vòng cổ tay
+  c.rect(2, 3, w - 3, h - 4, M[1]); c.rect(2, 3, w - 3, 1, M[3]); c.rect(3, 4, w - 5, h - 6, M[2])   // phiến mu bàn tay
+  for (let y = 3; y < h - 1; y += 2) c.px(1, y, t >= 3 ? A[2] : M[3])             // đinh đốt ngón
+  if (P.g) c.px(Math.floor(w / 2), Math.floor(h / 2) + 1, P.g)
+  if (t === 5) { c.px(3, h - 3, RAINBOW[0]); c.px(5, h - 3, RAINBOW[3]) }
+}
+for (let t = 0; t < 6; t++) {
+  sprite(`wp_fist_near_${t}`, { w: 9, h: 8 }, (c) => knuckle(c, t, 9, 8))
+  sprite(`wp_fist_far_${t}`, { w: 6, h: 7 }, (c) => knuckle(c, t, 6, 7))
+}
