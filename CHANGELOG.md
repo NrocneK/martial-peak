@@ -1,5 +1,12 @@
 # Lịch sử phiên bản
 
+## v0.9.3 — Làm sạch sprite nhân vật
+- **Đốm trắng ở rìa**: ảnh concept nhòe nên giữa viền đen và nền giấy có dải điểm xám / trắng mờ. `trace_hero.py` giờ bào dải này (3 lượt, chỉ điểm sáng ít màu nằm sát nền) và bỏ các điểm chỉ phủ một phần khi thu nhỏ.
+- **Mảng trắng giữa tay phải và thân**: là giấy nền bị tay + thân bao kín nên loang từ mép không tới. Giờ xóa mọi mảng "giấy" (sáng, ngả ấm: đỏ − lam ≥ 11; áo trắng của nhân vật ngả lạnh) từ 40 điểm trở lên; tròng trắng mắt (~11–16 điểm) được giữ.
+- Bỏ hẳn vệt bóng xám dưới đế ủng.
+- Đặt lại các mốc hoạt ảnh theo lưới mới (đai lưng, dải đai, đuôi tóc).
+- **Ngồi thiền** dựng lại: giữ nguyên thân trên, hai cánh tay và nắm tay từ concept (nắm tay đặt trên gối), chân xếp bằng phía sau, vạt áo trắng có bóng + nếp gấp + gấu hoa văn lam.
+
 ## v0.9.2 — Sửa lỗi Tu Luyện / Hành Trang vẫn hiện nhân vật cũ
 - Nguyên nhân: `vercel.json` cho trình duyệt giữ ảnh `/ui/*` 1 giờ mà không hỏi lại máy chủ; ảnh nhân vật đổi nội dung nhưng giữ tên file nên trình duyệt dùng bản cũ.
 - Sửa: ảnh `/ui/*` dùng `Cache-Control: public, max-age=0, must-revalidate` (luôn hỏi lại máy chủ, ảnh không đổi thì trả về rất nhanh); thêm `?v=0.9.2` vào đường dẫn ảnh nhân vật để trình duyệt bỏ ngay bản đã lưu.

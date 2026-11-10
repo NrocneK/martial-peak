@@ -23,9 +23,11 @@ function shift(c, x0, y0, x1, y1, dx, dy) {
 }
 
 // Mốc trên lưới 56x104 (xem số hàng trong hero_trace.px.js)
-const BELT = 47                   // hàng trên cùng của đai lưng
-const RIBBON = [0, 51, 17, 70]    // dải đai bay (x0, y0, x1, y1)
-const TAIL = [10, 21, 21, 35]     // đuôi tóc rủ bên trái
+// Chạy lại trace_hero.py thì kiểm tra lại các mốc này (in lưới ra xem hàng / cột).
+const BELT = 41                   // hàng trên cùng của đai lưng
+const BODY_X = 36                 // cột giữa thân (khóa đai)
+const RIBBON = [0, 48, 19, 66]    // dải đai bay (x0, y0, x1, y1)
+const TAIL = [10, 13, 25, 28]     // đuôi tóc rủ bên trái
 /** Khóa màu của concept gần nhất với một màu cho trước (lấy đúng chất liệu: quần, áo, da...) */
 const nearest = (hex) => {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -51,49 +53,55 @@ anim('hero_full', { w: 56, h: 104, frames: 4, fps: 4, outline: 'k' }, (c) => {
 })
 
 // ---------------------------------------------------------------- Đi bộ trong trận (21x38 sau viền)
-// Lưới nhỏ 19x36: ủng trái ~ cột 5-9, ủng phải ~ cột 11-17, hàng 31-35.
+// Lưới nhỏ 19x36: ủng trái ~ cột 7-9, ủng phải ~ cột 13-18, hàng 30-35.
 sprite('_hero_s', G.HERO_S_GRID)
 anim('hero_walk', { w: 19, h: 36, frames: 4, fps: 8, outline: 'k' }, (c) => {
   c.stamp('_hero_s', 0, 0)
   const f = c.frame
   if (f === 1 || f === 3) shift(c, 0, 0, 19, 30, 0, -1) // nhún lên khi hai chân chụm
-  if (f === 0) shift(c, 4, 30, 10, 36, 0, -1) // nhấc chân trái
-  if (f === 2) shift(c, 10, 30, 19, 36, 0, -1) // nhấc chân phải
+  if (f === 0) shift(c, 5, 30, 12, 36, 0, -1) // nhấc chân trái
+  if (f === 2) shift(c, 12, 30, 19, 36, 0, -1) // nhấc chân phải
 })
 
 // ---------------------------------------------------------------- Ngồi thiền (72x72)
-// Thân trên lấy từ concept (cắt ở đai lưng), vẽ thêm chân xếp bằng + tay đặt trên đùi + bồ đoàn + hào quang.
-const MX = 8, MY = 6 // vị trí thân trên trong khung 72x72
-sprite('_med_upper', { w: 56, h: BELT + 4 }, (c) => c.stamp('_hero_base', 0, 0))
+// Giữ NGUYÊN thân trên + hai cánh tay + nắm tay từ concept: nắm tay đặt lên đầu gối (tư thế thiền).
+// Xóa phần dưới đai (tạp dề, quần, dải đai), vẽ chân xếp bằng phía sau + vạt áo trắng rủ giữa lòng + bồ đoàn.
+const FIST_Y = 59                 // hàng dưới cùng của nắm tay
+const MX = 0, MY = 2
+sprite('_med_upper', { w: 56, h: FIST_Y + 1 }, (c) => {
+  c.stamp('_hero_base', 0, 0)
+  c.rect(0, BELT + 5, 20, FIST_Y, '_')            // dải đai bay
+  c.rect(28, BELT + 7, 21, FIST_Y, '_')           // tạp dề + quần giữa hai tay
+})
 anim('_med_body', { w: 72, h: 72, frames: 8, fps: 6, outline: 'k' }, (c) => {
   const ph = c.phase * Math.PI * 2
   const B = Math.sin(ph) > 0.3 ? -1 : 0
-  const cx = MX + 31, base = MY + BELT + 3
+  const cx = MX + BODY_X, knee = MY + FIST_Y + 1
   // bồ đoàn
-  c.ellipse(cx, base + 15, 27, 5, '5'); c.ellipse(cx, base + 14, 26, 4, '4'); c.hline(cx - 23, base + 12, 46, '1')
-  // đầu gối quần lam sẫm phồng hai bên + đế ủng
-  c.ellipse(cx - 15, base + 8, 12, 6, C.pant); c.ellipse(cx + 15, base + 8, 12, 6, C.pant)
-  c.ellipse(cx - 16, base + 6, 8, 3, C.pantHi); c.ellipse(cx + 14, base + 6, 8, 3, C.pantHi)
-  c.rect(cx - 6, base + 9, 12, 4, C.boot); c.hline(cx - 5, base + 9, 10, C.cuff)
-  // vạt áo trắng rủ giữa lòng, viền lam
-  c.poly([cx - 10, base - 3, cx + 10, base - 3, cx + 8, base + 11, cx - 8, base + 11], C.robe)
-  c.poly([cx - 10, base - 3, cx - 5, base - 3, cx - 5, base + 11, cx - 8, base + 11], C.robeSh)
-  c.line(cx - 8, base + 11, cx - 10, base - 3, C.blue); c.line(cx + 8, base + 11, cx + 10, base - 3, C.blue); c.hline(cx - 8, base + 11, 17, C.blue)
-  // thân trên (thở)
+  c.ellipse(cx, knee + 7, 30, 4, '5'); c.ellipse(cx, knee + 6, 29, 3, '4'); c.hline(cx - 26, knee + 5, 52, '1')
+  // chân xếp bằng: quần lam sẫm phồng, hai đầu gối nhô ra dưới nắm tay, đế ủng bắt chéo ở giữa
+  c.ellipse(cx, knee, 31, 6, C.pant)
+  c.ellipse(cx - 20, knee - 2, 11, 5, C.pant); c.ellipse(cx + 18, knee - 2, 11, 5, C.pant)
+  c.ellipse(cx - 21, knee - 4, 7, 2, C.pantHi); c.ellipse(cx + 17, knee - 4, 7, 2, C.pantHi)
+  c.rect(cx - 7, knee + 1, 14, 3, C.boot); c.hline(cx - 6, knee + 1, 12, C.cuff)
+  // thân trên + tay từ concept (thở)
   c.stamp('_med_upper', MX, MY + B)
-  // cẳng tay: ống tay trắng + bao cổ tay sẫm khép từ khuỷu vào giữa, hai tay kết ấn trên đùi
-  for (const sd of [-1, 1]) {
-    const ex = cx + sd * 17, ey = base - 7 + B
-    c.poly([ex - 4, ey, ex + 4, ey, cx + sd * 9, base + 2, cx + sd * 3, base + 2], C.robe)
-    c.line(ex - sd * 4, ey + 1, cx + sd * 3, base + 2, C.robeSh)
-    c.poly([cx + sd * 9, base + 1, cx + sd * 5, base + 1, cx + sd * 4, base + 4, cx + sd * 8, base + 4], C.cuff)
-  }
-  c.rect(cx - 4, base + 2, 9, 4, C.skin); c.hline(cx - 4, base + 5, 9, C.skinSh); c.px(cx, base + 1, C.skin); c.px(cx + 1, base + 1, C.skin)
+  // vạt áo trắng rủ giữa lòng (như tạp dề concept), viền lam
+  const top = MY + BELT + 7 + B
+  c.poly([cx - 7, top, cx + 7, top, cx + 11, knee + 2, cx - 11, knee + 2], C.robe)
+  // bóng: mặt phải khuất sáng + vùng sát đai tối hơn; nếp gấp dọc theo vạt
+  c.poly([cx + 3, top, cx + 7, top, cx + 11, knee + 2, cx + 5, knee + 2], C.robeSh)
+  c.hline(cx - 6, top, 13, C.robeSh)
+  c.line(cx - 2, top + 2, cx - 4, knee, C.robeSh); c.line(cx + 2, top + 3, cx + 2, knee - 1, C.robeSh)
+  // viền lam hai mép + gấu áo có hoa văn bậc thang (giống tạp dề concept)
+  c.line(cx - 7, top, cx - 11, knee + 2, C.blue); c.line(cx + 7, top, cx + 11, knee + 2, C.blue)
+  c.hline(cx - 11, knee + 2, 23, C.blueDk); c.hline(cx - 10, knee, 21, C.blue)
+  for (let x = cx - 9; x <= cx + 8; x += 4) { c.px(x, knee - 1, C.blue); c.px(x + 1, knee - 1, C.blue); c.px(x + 1, knee - 2, C.blue) }
 })
 anim('hero_meditate', { w: 72, h: 72, frames: 8, fps: 6 },
   (c) => {
     const ph = c.phase * Math.PI * 2
-    const cx = MX + 31, cy = MY + 30
+    const cx = MX + BODY_X, cy = MY + 28
     for (let i = 0; i < 3; i++) c.ring(cx, cy, 24 + i * 6 + Math.round(Math.sin(ph + i * 1.3) * 1.5), i === 1 ? '2' : '1')
     for (let i = 0; i < 8; i++) { const a = ph + (i * Math.PI) / 4; c.px(Math.round(cx + Math.cos(a) * 32), Math.round(cy + Math.sin(a) * 24), i % 2 ? '3' : '6') }
   },

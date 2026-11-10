@@ -19,6 +19,7 @@ TARGET_H = 104
 N_COLORS = 40
 SMALL_H = 36        # sprite đi bộ trong trận
 SMALL_COLORS = 24
+MIN_GAP = 40        # mảng giấy kín nhỏ hơn mức này được giữ (tròng trắng mắt ~11-16 điểm)
 CROP = (62, 352, 14, 186)          # y0, y1, x0, x1: bỏ tiêu đề, khung và mép ảnh
 BG = np.array([240, 230, 222])     # màu giấy nền
 KEYS = 'abcdefghijlmnopqrstuvwxyzABCDEFGHIJLMNOPQRSTUVWXYZ0123456789'  # bỏ 'k' (viền) và các ký tự đặc biệt
@@ -42,7 +43,7 @@ while q:
 # --- 2. bóng dưới chân: màu xám nhạt, ít bão hòa, nằm ở 1/8 dưới cùng → coi là nền
 sat = a.max(2) - a.min(2)
 bright = a.mean(2)
-shadow = (sat < 40) & (bright > 150) & (np.arange(h)[:, None] > h * 0.86)
+shadow = (sat < 45) & (bright > 120) & (np.arange(h)[:, None] > h * 0.84)
 bgm |= shadow
 # loang lần 2 từ mọi điểm nền (kể cả bóng): bắt các mảng giấy bị kẹt giữa hai chân
 q = deque(zip(*np.where(bgm)))
@@ -54,6 +55,37 @@ while q:
             seen[yy, xx] = True
             q.append((yy, xx))
 bgm = seen
+
+# --- 2b. mảng giấy bị bao kín (vd. khe giữa tay phải và thân, loang từ mép không tới được):
+#     giấy ngả ẤM (đỏ > lam ~16-24) còn áo trắng ngả LẠNH (đỏ - lam <= 5) → xóa mọi mảng giấy >= 8 điểm
+paper = (a.mean(2) > 200) & (a[..., 0] - a[..., 2] >= 11) & (np.abs(a - BG).sum(2) < 48) & ~bgm
+seen = np.zeros_like(paper)
+for sy, sx in zip(*np.where(paper)):
+    if seen[sy, sx]:
+        continue
+    comp, q = [], deque([(sy, sx)])
+    seen[sy, sx] = True
+    while q:
+        y, x = q.popleft()
+        comp.append((y, x))
+        for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+            if 0 <= yy < h and 0 <= xx < w and paper[yy, xx] and not seen[yy, xx]:
+                seen[yy, xx] = True
+                q.append((yy, xx))
+    if len(comp) >= 8:
+        ys_, xs_ = zip(*comp)
+        print(f'  mảng giấy kín: {len(comp):4d} điểm, x {min(xs_)}-{max(xs_)}, y {min(ys_)}-{max(ys_)}')
+        if len(comp) >= MIN_GAP:
+            for y, x in comp:
+                bgm[y, x] = True
+
+# --- 2c. bào lớp điểm sáng ở rìa (ảnh gốc nhòe: giữa viền đen và nền có dải xám / trắng mờ).
+#     Áo trắng luôn có viền đen ngăn với nền nên không bị bào.
+for _ in range(3):
+    near = np.zeros_like(bgm)
+    near[1:] |= bgm[:-1]; near[:-1] |= bgm[1:]; near[:, 1:] |= bgm[:, :-1]; near[:, :-1] |= bgm[:, 1:]
+    halo = near & ~bgm & (a.mean(2) > 150) & (a.max(2) - a.min(2) < 50)
+    bgm |= halo
 
 ys, xs = np.where(~bgm)
 by0, by1, bx0, bx1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
@@ -67,7 +99,7 @@ def trace(target_h, n_colors):
     pm = rgba.copy(); pm[..., :3] *= pm[..., 3:4] / 255
     small = np.array(Image.fromarray(pm.astype(np.uint8), 'RGBA').resize((tw, target_h), Image.BOX)).astype(float)
     al = small[..., 3]
-    solid = al > 120
+    solid = al > 140   # bỏ điểm chỉ phủ một phần (dễ thành đốm mờ ở rìa)
     rgb = np.where(solid[..., None], small[..., :3] * 255 / np.maximum(al[..., None], 1), 0)
 
     # --- 4. gom màu: k-means trên các pixel đặc
