@@ -1,7 +1,7 @@
 // Trang bị: tạo đồ, luyện khí, cường hóa, bán, mặc / tháo, khóa, so sánh, phân giải, tái luyện, hòm thưởng.
 
 import { econScale } from '../../config/balance';
-import { AFFIX_COUNT, MAX_ITEM_LEVEL, rarityWeights, rollAffix, type ItemInst, type RolledAffix } from '../../config/items';
+import { MAX_ITEM_LEVEL, affixCount, itemRank, rollAffix, rollTierQuality, type ItemInst, type RolledAffix } from '../../config/items';
 import { type SlotId } from '../../config/types';
 import { WEAPONS } from '../../config/weapons';
 import { data, fail, MAX_ITEMS, ok, save, type Result } from './save';
@@ -13,22 +13,15 @@ function findItem(uid: number): ItemInst | undefined {
   return data.items.find((i) => i.uid === uid);
 }
 
-function rollRarity(grade: number): number {
-  const w = rarityWeights(grade);
-  const total = w.reduce((a, b) => a + b, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < w.length; i++) {
-    r -= w[i];
-    if (r <= 0) return i;
-  }
-  return 0;
-}
-
-export function makeItem(slot: SlotId, grade: number, rarity = rollRarity(grade), weaponId?: string): ItemInst {
-  const it: ItemInst = { uid: data.nextUid++, slot, rarity, level: 0, grade };
+/**
+ * Tạo một món đồ. `world` (1..6) quyết định cấp + phẩm ngẫu nhiên (DROP_TIERS); có thể ép cấp / phẩm (công cụ test).
+ */
+export function makeItem(slot: SlotId, world: number, weaponId?: string, force?: { tier: number; quality: number }): ItemInst {
+  const { tier, quality } = force ?? rollTierQuality(world);
+  const it: ItemInst = { uid: data.nextUid++, slot, tier, quality, level: 0 };
   if (slot === 'weapon') it.weaponId = weaponId ?? WEAPONS[Math.floor(Math.random() * WEAPONS.length)].id;
   const aff: RolledAffix[] = [];
-  for (let i = 0; i < AFFIX_COUNT[rarity]; i++) {
+  for (let i = 0; i < affixCount(it); i++) {
     const a = rollAffix(slot, aff.map((x) => x.id));
     if (a) aff.push(a);
   }
@@ -58,7 +51,7 @@ export function forge(slot: SlotId, weaponId?: string): Result & { item?: ItemIn
   if (data.items.length >= MAX_ITEMS) return fail('Túi đồ đã đầy, hãy bán bớt trang bị.');
   data.mats.ore -= c.ore;
   data.linh -= c.linh;
-  const item = makeItem(slot, highestWorld(), undefined, slot === 'weapon' ? weaponId : undefined);
+  const item = makeItem(slot, highestWorld(), slot === 'weapon' ? weaponId : undefined);
   addItem(item);
   track('forge');
   save();
@@ -85,7 +78,7 @@ export function upgradeItem(uid: number): Result {
 }
 
 export function sellValue(it: ItemInst): number {
-  return Math.ceil(5 * econScale(data.tier) * (it.rarity + 1) * (1 + it.level * 0.5));
+  return Math.ceil(5 * econScale(data.tier) * (1 + itemRank(it) * 0.6) * (1 + it.level * 0.5));
 }
 
 export function sellItem(uid: number): Result {
@@ -146,7 +139,8 @@ export function compareItem(uid: number): Partial<Record<CompareKey, number>> {
 // Phân giải & tái luyện
 // ---------------------------------------------------------------------
 export function dismantleValue(it: ItemInst): { ore: number; essence: number } {
-  return { ore: 1 + it.rarity + Math.floor(it.grade / 2), essence: it.rarity >= 3 ? it.rarity - 2 : 0 };
+  // tinh hoa từ Thần cấp trở lên, hoặc phẩm Cực / Thượng Cổ
+  return { ore: 1 + it.tier + it.quality, essence: Math.max(it.tier - 2, it.quality >= 3 ? it.quality - 2 : 0) };
 }
 
 export function dismantleItem(uid: number): Result {
@@ -164,7 +158,7 @@ export function dismantleItem(uid: number): Result {
 }
 
 function reforgeCost(it: ItemInst): { ore: number; essence: number; linh: number } {
-  return { ore: 3, essence: 1, linh: Math.ceil(10 * econScale(data.tier) * (1 + it.rarity)) };
+  return { ore: 3, essence: 1, linh: Math.ceil(10 * econScale(data.tier) * (1 + itemRank(it) * 0.3)) };
 }
 
 export interface ReforgeOffer {

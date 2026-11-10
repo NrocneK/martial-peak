@@ -1,7 +1,7 @@
 import { h } from '../dom';
 import { fmt, fmtTime } from '../../utils/format';
 import type { RewardSummary } from '../../systems/progression';
-import { itemName, RARITIES } from '../../config/items';
+import { itemColor, itemName, itemRankLabel } from '../../config/items';
 import { getSave } from '../../systems/progression';
 import { MAX_TIER } from '../../config/realms';
 import type { StageDef } from '../../config/worlds';
@@ -22,7 +22,7 @@ export function buildResult(r: RewardSummary, stage: StageDef, onAgain: () => vo
     if (r.ore) list.append(row('Khoáng thạch', '+' + r.ore));
   }
   const items = r.items.map((it) =>
-    h('div', { class: 'card item', style: { borderLeftColor: RARITIES[it.rarity].color } }, h('span', { class: 'gold', text: 'Nhận được: ' }), itemName(it)),
+    h('div', { class: 'card item', style: { borderLeftColor: itemColor(it) } }, h('span', { class: 'gold', text: 'Nhận được: ' }), h('span', { style: { color: itemColor(it) }, text: `${itemName(it)} (${itemRankLabel(it)})` })),
   );
   return h('div', { class: 'screen overlay result' },
     h('h2', { text: r.victory ? 'Chiến thắng!' : 'Bại trận' }),

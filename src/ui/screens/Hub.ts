@@ -6,7 +6,7 @@ import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { BIBAOS, MAX_ITEM_LEVEL, PILLS, RARITIES, WEAPON_ITEM_NAMES, affixText, itemName, itemPower, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_GRIP, WEAPON_ITEM_NAMES, WEAPON_PX, affixText, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -15,6 +15,10 @@ import { openSettings } from './Settings';
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
 const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
 const slotIcon = (slot: SlotId): string => (slot === 'weapon' ? 'forge' : slot === 'bibao' ? 'essence' : 'gear');
+/** Lớp viền theo phẩm: q-0..q-4 (Hạ..Thượng Cổ), q-dao (thất thải), q-bb (bí bảo) */
+const qClass = (it: ItemInst): string => (it.slot === 'bibao' ? 'q-bb' : it.tier >= DAO_TIER ? 'q-dao' : 'q-' + it.quality);
+/** Hình món đồ (public/gear) */
+const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => h('img', { src: itemIcon(it), alt: '', class: cls, draggable: 'false' });
 
 /**
  * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình). Tâm + bán kính của
@@ -317,7 +321,7 @@ export class Hub {
         h('p', { class: 'dim', text: 'Khi túi đồ đầy, phần thưởng được gửi vào Hòm Thư (tối đa 20 món, bí bảo không bao giờ mất). Hãy bán hoặc phân giải bớt đồ rồi nhận.' }),
         ...(s.inbox.length
           ? s.inbox.map((it) => h('div', { class: 'inbox-row' },
-              h('span', { style: { color: RARITIES[it.rarity].color }, text: itemName(it) }),
+              h('span', { class: 'inbox-it' }, h('i', { class: 'mini-frame ' + qClass(it) }, gearImg(it)), h('span', { style: { color: itemColor(it) }, text: itemName(it) })),
               h('button', { class: 'btn small primary', text: 'Nhận', onclick: () => this.act(P.claimInbox(it.uid)) }),
             ))
           : [h('div', { class: 'empty-note', text: 'Hòm thư trống.' })]),
@@ -484,14 +488,14 @@ export class Hub {
   private slotBox(slot: SlotId): HTMLElement {
     const it = P.equippedItem(slot);
     return h('button', {
-      class: 'eq-slot eq-' + slot + (it ? '' : ' empty'),
-      style: it ? `--rc:${RARITIES[it.rarity].color}` : undefined,
+      class: 'eq-slot eq-' + slot + (it ? ' ' + qClass(it) : ' empty'),
+      style: it ? `--rc:${itemColor(it)}` : undefined,
       title: it ? itemName(it) : `${SLOT_NAMES[slot]}: trống`,
       onclick: () => {
         if (it) this.openItem(it.uid);
         else { audio.play('click'); this.filterSlot = slot; this.bagMode = 'inv'; this.render(); }
       },
-    }, ic(slotIcon(slot)), h('span', { class: 'eq-name', text: SLOT_NAMES[slot] }), it ? h('span', { class: 'eq-lv', text: `+${it.level}` }) : null);
+    }, it ? gearImg(it) : ic(slotIcon(slot)), h('span', { class: 'eq-name', text: it ? itemName(it) : SLOT_NAMES[slot] }), it ? h('span', { class: 'eq-lv', text: `+${it.level}` }) : null);
   }
 
   private vBag(): HTMLElement {
@@ -503,13 +507,35 @@ export class Hub {
     );
   }
 
+  /**
+   * Nhân vật kèm ngoại trang: vũ khí cầm tay phải (nằm sau thân, nắm tay che chuôi; quyền sáo đeo đè lên tay),
+   * bí bảo bay lơ lửng cạnh vai. Y phục / giày / trang sức không đổi ngoại hình.
+   */
+  private figure(scale: number): HTMLElement {
+    const wpn = P.equippedItem('weapon');
+    const bb = P.equippedItem('bibao');
+    const kids: HTMLElement[] = [];
+    if (wpn?.weaponId) {
+      const g = WEAPON_GRIP[wpn.weaponId] ?? WEAPON_GRIP.wp_sword;
+      // găng quyền sáo nhỏ hơn một bậc cho cân với nắm tay; hình lật ngang nên điểm cầm x = WEAPON_PX - g.x
+      const ws = wpn.weaponId === 'wp_fist' ? Math.max(1, scale - 1) : scale;
+      const left = HERO_RIGHT_FIST.x * scale - (g.noFlip ? g.x : WEAPON_PX - g.x) * ws;
+      const top = HERO_RIGHT_FIST.y * scale - g.y * ws;
+      kids.push(h('img', { class: 'wpn' + (g.front ? ' front' : '') + (g.noFlip ? ' no-flip' : ''), src: itemIcon(wpn), alt: '', draggable: 'false',
+        style: `left:${left}px;top:${top}px;width:${WEAPON_PX * ws}px` }));
+    }
+    kids.push(heroSprite(scale));
+    if (bb) kids.push(h('img', { class: 'bb-float', src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
+    return h('div', { class: 'figure', style: `--s:${scale}` }, ...kids);
+  }
+
   private vDoll(): HTMLElement {
     const narrow = window.matchMedia('(max-width: 760px)').matches;
     return h('div', { class: 'doll-wrap' },
       h('div', { class: 'doll' },
         this.slotBox('weapon'), this.slotBox('clothes'), this.slotBox('bibao'),
         // tên + cảnh giới đã có ở thanh trên → chỉ để nhân vật cho gọn
-        h('div', { class: 'doll-hero' }, heroSprite(narrow ? 2 : 3)),
+        h('div', { class: 'doll-hero' }, this.figure(narrow ? 2 : 3)),
         this.slotBox('shoes'), this.slotBox('accessory'),
         narrow ? h('button', { class: 'eq-slot eq-stats', onclick: () => { audio.play('click'); this.detail('Chỉ số & Nguyên liệu', () => this.statsBox()); } }, ic('hero'), h('span', { class: 'eq-name', text: 'Chỉ số' })) : null,
       ),
@@ -541,7 +567,7 @@ export class Hub {
     const s = P.getSave();
     let inv = s.items.filter((i) => s.equipped[i.slot] !== i.uid && (this.filterSlot === 'all' || i.slot === this.filterSlot));
     if (this.sortBy === 'power') inv = inv.slice().sort((a, b) => itemPower(b) - itemPower(a));
-    else if (this.sortBy === 'rarity') inv = inv.slice().sort((a, b) => b.rarity - a.rarity || b.grade - a.grade);
+    else if (this.sortBy === 'rarity') inv = inv.slice().sort((a, b) => itemRank(b) - itemRank(a));
     else inv = inv.slice().sort((a, b) => b.uid - a.uid);
     const sel = (opts: [string, string][], cur: string, on: (v: string) => void): HTMLElement => {
       const el = h('select', { class: 'btn small sel' }, ...opts.map(([v, t]) => h('option', { value: v, text: t, selected: v === cur ? 'selected' : null })));
@@ -555,8 +581,8 @@ export class Hub {
         h('span', { class: 'dim grow', style: 'text-align:right', text: `Túi ${s.items.length}/120` }),
       ),
       inv.length
-        ? this.paged(this.fit('inv', 96, 56 + 46, 96), inv, (it) => h('button', { class: 'it-tile', style: `--rc:${RARITIES[it.rarity].color}`, title: itemName(it), onclick: () => this.openItem(it.uid) },
-            ic(slotIcon(it.slot)), h('span', { class: 'it-name', text: itemName(it) }), h('span', { class: 'it-lv', text: `+${it.level}` }), it.locked ? h('span', { class: 'it-lock', text: '🔒' }) : null))
+        ? this.paged(this.fit('inv', 96, 56 + 46, 96), inv, (it) => h('button', { class: 'it-tile ' + qClass(it), style: `--rc:${itemColor(it)}`, title: `${itemName(it)} · ${itemRankLabel(it)}`, onclick: () => this.openItem(it.uid) },
+            gearImg(it), h('span', { class: 'it-name', text: itemName(it) }), h('span', { class: 'it-lv', text: `+${it.level}` }), it.locked ? h('span', { class: 'it-lock', text: '🔒' }) : null))
         : h('div', { class: 'empty-note', text: 'Không có món nào.' }),
     );
   }
@@ -576,10 +602,11 @@ export class Hub {
 
   private itemCard(it: ItemInst, equipped: boolean): HTMLElement {
     const upg = P.upgradeCost(it);
-    const color = RARITIES[it.rarity].color;
+    const color = itemColor(it);
     const card = h('div', { class: 'item-detail', style: { borderLeftColor: color } },
-      h('div', { class: 'nm', style: { color }, text: (it.locked ? '🔒 ' : '') + itemName(it) }),
-      h('div', { class: 'dim', style: 'font-size:12.5px', text: `${SLOT_NAMES[it.slot]} · ${RARITIES[it.rarity].name} · +${it.level}${equipped ? ' · đang mặc' : ''}` }),
+      h('div', { class: 'nm' + (it.slot !== 'bibao' && it.tier >= DAO_TIER ? ' dao-text' : ''), style: { color }, text: (it.locked ? '🔒 ' : '') + itemName(it) }),
+      h('div', { class: 'it-head' }, h('i', { class: 'big-frame ' + qClass(it), style: `--rc:${color}` }, gearImg(it)),
+        h('div', null, h('div', { class: 'it-rank', style: { color }, text: itemRankLabel(it) }), h('div', { class: 'dim', style: 'font-size:12.5px', text: `${SLOT_NAMES[it.slot]} · cường hóa +${it.level}${equipped ? ' · đang mặc' : ''}` }))),
       ...itemStatLines(it).map((l) => h('div', { text: l })),
       ...(it.affixes ?? []).map((a, i) =>
         h('div', { class: 'row aff' },
@@ -615,7 +642,7 @@ export class Hub {
 
   /** Đồ phẩm chất Thánh trở lên: hỏi lại trước khi bán / phân giải */
   private confirmAct(it: ItemInst, fn: () => P.Result): void {
-    if (it.rarity >= 3 && !window.confirm(`Bạn chắc chắn muốn xử lý "${itemName(it)}" (${RARITIES[it.rarity].name})?`)) return;
+    if ((it.tier >= 3 || it.quality >= 3) && !window.confirm(`Bạn chắc chắn muốn xử lý "${itemName(it)}" (${itemRankLabel(it)})?`)) return;
     this.act(fn());
   }
 
@@ -675,7 +702,7 @@ export class Hub {
       );
       const forge = (wid?: string): void => {
         const r = P.forge(slot, wid);
-        this.act(r.ok && r.item ? { ok: true, msg: `Chế tạo được: ${itemName(r.item)} (${RARITIES[r.item.rarity].name})` } : r);
+        this.act(r.ok && r.item ? { ok: true, msg: `Chế tạo được: ${itemName(r.item)} (${itemRankLabel(r.item)})` } : r);
       };
       if (slot === 'weapon') {
         // Chọn loại vũ khí muốn chế tạo (hoặc ngẫu nhiên)

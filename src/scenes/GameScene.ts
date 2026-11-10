@@ -15,7 +15,6 @@ import { RunState } from '../systems/RunState';
 import { SkillSystem } from '../systems/SkillSystem';
 import { Spawner } from '../systems/Spawner';
 import { generateCards, type Card } from '../systems/CardPicker';
-import { RARITIES } from '../config/items';
 import { computeMeta, currentLoadout, equippedItem, type StageResult } from '../systems/progression';
 import { WORLD_FIRST_TIER } from '../config/realms';
 import { econScale } from '../config/balance';
@@ -111,7 +110,8 @@ export class GameScene extends Phaser.Scene {
 
     // Ngoại hình vũ khí đang cầm (màu theo phẩm chất)
     const wItem = equippedItem('weapon');
-    if (wItem?.weaponId) this.player.setWeaponLook(wItem.weaponId, parseInt(RARITIES[wItem.rarity].color.slice(1), 16));
+    // trong trận vẫn là hình vũ khí tạm (sprite góc nhìn trận sẽ làm sau), không nhuộm màu theo phẩm
+    if (wItem?.weaponId) this.player.setWeaponLook(wItem.weaponId, 0xffffff);
     // Hiệu ứng riêng của bí bảo đang trang bị
     this.artifact = new ArtifactSystem(equippedItem('bibao')?.bibaoId ?? null, this.player, this.enemies, this.pickups, this.fx, this.run);
     this.enemies.onKillHook = (e) => this.artifact.onKill(e);

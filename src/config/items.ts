@@ -7,31 +7,54 @@
 
 import type { ItemStats, SlotId } from './types';
 
-export interface Rarity {
+// ---------------------------------------------------------------------
+// CẤP + PHẨM (hệ trang bị v1.0)
+//   6 Cấp: Phàm (3 phẩm) · Linh (4) · Tiên (5) · Thần (5) · Thánh (5) · Đạo (không phân phẩm)
+//   Phẩm: Hạ (trắng) · Trung (xanh lá) · Thượng (xanh dương) · Cực (tím) · Thượng Cổ (cam); Đạo cấp: thất thải hào quang.
+//   Màu phẩm CHỈ hiện ở viền ảnh + tên, không đổi màu món đồ. Hình ảnh đổi theo Cấp (chất liệu).
+// ---------------------------------------------------------------------
+export interface GearTier {
   name: string;
-  color: string;
+  /** Số phẩm của cấp (Đạo = 1: không phân phẩm) */
+  grades: number;
+  /** Hệ số sức mạnh gốc */
   mul: number;
 }
-
-export const RARITIES: Rarity[] = [
-  { name: 'Phàm', color: '#9aa0a6', mul: 1 },
-  { name: 'Linh', color: '#4caf50', mul: 1.5 },
-  { name: 'Bảo', color: '#3f8cff', mul: 2.2 },
-  { name: 'Thánh', color: '#b45cff', mul: 3.2 },
-  { name: 'Thần', color: '#ffc83d', mul: 4.6 },
+export const GEAR_TIERS: GearTier[] = [
+  { name: 'Phàm', grades: 3, mul: 1 },
+  { name: 'Linh', grades: 4, mul: 1.8 },
+  { name: 'Tiên', grades: 5, mul: 3.2 },
+  { name: 'Thần', grades: 5, mul: 5.6 },
+  { name: 'Thánh', grades: 5, mul: 9.5 },
+  { name: 'Đạo', grades: 1, mul: 17 },
 ];
+export const DAO_TIER = 5;
+export const QUALITIES = [
+  { name: 'Hạ', color: '#eef0f4' },
+  { name: 'Trung', color: '#4fd06a' },
+  { name: 'Thượng', color: '#3f8cff' },
+  { name: 'Cực', color: '#b45cff' },
+  { name: 'Thượng Cổ', color: '#ff9a2e' },
+];
+/** Màu "thất thải" của Đạo cấp (dùng khi cần một màu đơn, vd. tên trong danh sách) — viền dùng gradient cầu vồng ở CSS */
+export const DAO_COLOR = '#ffd765';
+/** Bí bảo: bộ riêng, không cấp không phẩm */
+export const BIBAO_COLOR = '#8fe4f8';
+/** Mỗi phẩm cao hơn tăng thêm bao nhiêu sức mạnh trong cùng cấp */
+export const QUALITY_STEP = 0.15;
 
 export interface ItemInst {
   uid: number;
   slot: SlotId;
-  rarity: number;
+  /** Cấp 0..5 (Phàm..Đạo). Bí bảo: theo thế giới nhận được (chỉ để tính sức mạnh, không hiển thị) */
+  tier: number;
+  /** Phẩm 0..4 (Hạ..Thượng Cổ); Đạo cấp luôn 0 */
+  quality: number;
   /** Cấp cường hóa 0..10 */
   level: number;
-  /** Thế giới nơi chế tạo / nhận được (1..6): quyết định "phẩm cấp" cơ bản */
-  grade: number;
   weaponId?: string;
   bibaoId?: string;
-  /** Thuộc tính phụ đã roll (lưu giá trị cụ thể, không roll lại khi tải game). Save cũ không có = rỗng. */
+  /** Thuộc tính phụ đã roll (lưu giá trị cụ thể, không roll lại khi tải game) */
   affixes?: RolledAffix[];
   /** Đã khóa: không bán / phân giải được */
   locked?: boolean;
@@ -53,11 +76,71 @@ export const WEAPON_ITEM_NAMES: Record<string, string> = {
   wp_fan: 'Phiến',
 };
 
-const SLOT_BASE_NAMES: Record<Exclude<SlotId, 'weapon' | 'bibao'>, string> = {
-  clothes: 'Y Phục',
-  shoes: 'Hài',
-  accessory: 'Ngọc Bội',
+/** Tên riêng của từng món theo Cấp (6 loại vũ khí + y phục, giày, trang sức = 9 × 6 = 54 món) */
+export const GEAR_NAMES: Record<string, string[]> = {
+  wp_sword: ['Thiết Kiếm', 'Bích Ngọc Kiếm', 'Lưu Vân Kiếm', 'Liệt Dương Kiếm', 'Thánh Quang Kiếm', 'Hỗn Độn Đạo Kiếm'],
+  wp_blade: ['Thiết Đao', 'Bích Ngọc Đao', 'Lưu Vân Đao', 'Liệt Dương Đao', 'Thánh Quang Đao', 'Hỗn Độn Đạo Đao'],
+  wp_spear: ['Thiết Thương', 'Bích Ngọc Thương', 'Lưu Vân Thương', 'Liệt Dương Thương', 'Thánh Quang Thương', 'Hỗn Độn Đạo Thương'],
+  wp_fist: ['Thiết Quyền Sáo', 'Bích Ngọc Quyền Sáo', 'Lưu Vân Quyền Sáo', 'Liệt Dương Quyền Sáo', 'Thánh Quang Quyền Sáo', 'Hỗn Độn Đạo Quyền'],
+  wp_bow: ['Mộc Cung', 'Bích Ngọc Cung', 'Lưu Vân Cung', 'Liệt Dương Cung', 'Thánh Quang Cung', 'Hỗn Độn Đạo Cung'],
+  wp_fan: ['Trúc Phiến', 'Bích Ngọc Phiến', 'Lưu Vân Phiến', 'Liệt Dương Phiến', 'Thánh Quang Phiến', 'Hỗn Độn Đạo Phiến'],
+  clothes: ['Thô Bố Y', 'Bích Ngọc Pháp Bào', 'Lưu Vân Tiên Y', 'Liệt Dương Thần Bào', 'Thánh Quang Đạo Bào', 'Hỗn Độn Đạo Y'],
+  shoes: ['Thảo Hài', 'Bích Ngọc Ngoa', 'Lưu Vân Hài', 'Liệt Dương Chiến Ngoa', 'Thánh Quang Bộ Vân Hài', 'Hỗn Độn Đạo Hài'],
+  accessory: ['Mộc Bội', 'Bích Ngọc Bội', 'Lưu Vân Bội', 'Liệt Dương Ấn', 'Thánh Quang Bội', 'Hỗn Độn Đạo Châu'],
 };
+
+/** Khóa tên / hình của món đồ: vũ khí theo loại, còn lại theo ô */
+export function gearKey(it: Pick<ItemInst, 'slot' | 'weaponId'>): string {
+  return it.slot === 'weapon' ? (it.weaponId ?? 'wp_sword') : it.slot;
+}
+
+/** Màu phẩm (viền + tên) */
+export function itemColor(it: ItemInst): string {
+  if (it.slot === 'bibao') return BIBAO_COLOR;
+  if (it.tier >= DAO_TIER) return DAO_COLOR;
+  return QUALITIES[it.quality]?.color ?? QUALITIES[0].color;
+}
+
+/** "Tiên cấp · Thượng phẩm" / "Đạo cấp" / "Bí bảo" */
+export function itemRankLabel(it: ItemInst): string {
+  if (it.slot === 'bibao') return 'Bí bảo';
+  if (it.tier >= DAO_TIER) return 'Đạo cấp';
+  return `${GEAR_TIERS[it.tier].name} cấp · ${QUALITIES[it.quality].name} phẩm`;
+}
+
+/** Thứ hạng tổng (0..22) để sắp xếp: cấp trước, phẩm sau */
+export function itemRank(it: ItemInst): number {
+  let r = 0;
+  for (let t = 0; t < it.tier; t++) r += GEAR_TIERS[t].grades;
+  return r + it.quality;
+}
+
+/** Đường dẫn hình món đồ (public/gear, vẽ bằng tools/art/gear.px.js) */
+export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 'tier'>): string {
+  if (it.slot === 'bibao') return `/gear/${it.bibaoId}.png?v=${GEAR_ART_V}`;
+  return `/gear/${gearKey(it)}_${it.tier}.png?v=${GEAR_ART_V}`;
+}
+/**
+ * Điểm cầm (pixel trên hình vũ khí 50x50) — trùng với tâm nắm tay phải của nhân vật khi hiển thị.
+ * Khi cầm, hình được LẬT NGANG: lưỡi vươn lên-trái, ra phía ngoài thân (không đè lên người).
+ * `front`: vẽ ĐÈ lên nhân vật (quyền sáo đeo trên tay); còn lại nằm SAU, nắm tay che chuôi.
+ */
+export const WEAPON_GRIP: Record<string, { x: number; y: number; front?: boolean; noFlip?: boolean }> = {
+  wp_sword: { x: 10, y: 40 },
+  wp_blade: { x: 10, y: 40 },
+  wp_spear: { x: 13, y: 37 },
+  wp_fist: { x: 22, y: 30, front: true },
+  // cung: không lật (dây hướng vào người); đặt TRƯỚC lớp nhân vật vì cung nằm cùng độ sâu với nắm tay, nếu đặt sau sẽ bị tay áo + vạt áo che hết
+  wp_bow: { x: 11, y: 25, noFlip: true, front: true },
+  wp_fan: { x: 9, y: 41 },
+};
+/** Tâm nắm tay PHẢI (tay phía xa, bên trái màn hình) trên sprite hero_full 58x106 đã lật */
+export const HERO_RIGHT_FIST = { x: 7.5, y: 56.5 };
+/** Cỡ hình vũ khí (50x50 kể cả viền) */
+export const WEAPON_PX = 50;
+
+/** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
+export const GEAR_ART_V = 2;
 
 export interface BibaoDef {
   id: string;
@@ -90,16 +173,19 @@ export function bibaoById(id: string): BibaoDef {
 }
 
 export function itemName(it: ItemInst): string {
-  const r = RARITIES[it.rarity].name;
   if (it.slot === 'bibao') return bibaoById(it.bibaoId!).name;
-  if (it.slot === 'weapon') return `${r} Phẩm ${WEAPON_ITEM_NAMES[it.weaponId!] ?? 'Vũ Khí'}`;
-  return `${r} Phẩm ${SLOT_BASE_NAMES[it.slot]}`;
+  return GEAR_NAMES[gearKey(it)]?.[it.tier] ?? 'Trang bị';
 }
 
 /** Hệ số sức mạnh tổng của một trang bị */
 export function itemPower(it: ItemInst): number {
-  const gradeMul = 1 + 0.5 * (it.grade - 1);
-  return RARITIES[it.rarity].mul * (1 + 0.1 * it.level) * gradeMul;
+  const lv = 1 + 0.1 * it.level;
+  if (it.slot === 'bibao') {
+    // bí bảo: mạnh theo thế giới nhận được, màn 10 mạnh hơn màn 5
+    const b = bibaoById(it.bibaoId!);
+    return GEAR_TIERS[Math.min(DAO_TIER, b.world - 1)].mul * (b.stageNo === 10 ? 1.4 : 1.15) * lv;
+  }
+  return GEAR_TIERS[it.tier].mul * (1 + QUALITY_STEP * it.quality) * lv;
 }
 
 /** Chỉ số do trang bị mang lại (tính theo công thức, không lưu) */
@@ -157,8 +243,12 @@ export const AFFIXES: AffixDef[] = [
   { id: 'a_linh', name: 'Tụ Tài', stat: 'linhGain', min: 0.03, max: 0.08, slots: ['accessory'] },
 ];
 
-/** Số dòng thuộc tính phụ theo phẩm chất: Phàm 0, Linh 1, Bảo 1, Thánh 2, Thần 2 (bí bảo không có) */
-export const AFFIX_COUNT = [0, 1, 1, 2, 2];
+/** Số dòng thuộc tính phụ theo phẩm: Hạ 0, Trung 1, Thượng 1, Cực 2, Thượng Cổ 3. Đạo cấp: 3. Bí bảo: không có. */
+export const AFFIX_COUNT = [0, 1, 1, 2, 3];
+export function affixCount(it: Pick<ItemInst, 'tier' | 'quality' | 'slot'>): number {
+  if (it.slot === 'bibao') return 0;
+  return it.tier >= DAO_TIER ? 3 : AFFIX_COUNT[it.quality];
+}
 
 export function affixText(a: RolledAffix): string {
   const d = AFFIXES.find((x) => x.id === a.id);
@@ -195,10 +285,37 @@ export function itemStatLines(it: ItemInst): string[] {
   return out;
 }
 
-/** Tỉ lệ ra phẩm chất khi luyện khí, dịch chuyển theo thế giới cao nhất đã mở (grade 1..6) */
-export function rarityWeights(grade: number): number[] {
-  const g = grade - 1;
-  return [Math.max(10, 60 - g * 8), 28 + g * 1, 9 + g * 3, 2.5 + g * 1.6, 0.5 + g * 0.6];
+/**
+ * NGUỒN RƠI: mỗi thế giới ra 2 cấp — cấp chính và (ít hơn) cấp kế tiếp. Đạo cấp rất hiếm, chỉ từ thế giới 5-6.
+ * [cấp, tỉ trọng] theo thế giới 1..6 (dùng cho cả rơi đồ sau màn và luyện khí, theo thế giới cao nhất đã mở).
+ */
+export const DROP_TIERS: Record<number, [number, number][]> = {
+  1: [[0, 85], [1, 15]],
+  2: [[1, 85], [2, 15]],
+  3: [[2, 85], [3, 15]],
+  4: [[3, 85], [4, 15]],
+  5: [[4, 95], [5, 5]],
+  6: [[4, 75], [5, 25]],
+};
+/** Tỉ trọng phẩm Hạ..Thượng Cổ (cắt theo số phẩm của cấp) */
+export const QUALITY_WEIGHTS = [50, 28, 14, 6, 2];
+
+function pick(weights: number[]): number {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return i;
+  }
+  return 0;
+}
+
+/** Roll cấp + phẩm cho đồ rơi / luyện khí ở thế giới `world` (1..6) */
+export function rollTierQuality(world: number): { tier: number; quality: number } {
+  const opts = DROP_TIERS[Math.max(1, Math.min(6, world))];
+  const tier = opts[pick(opts.map((o) => o[1]))][0];
+  const quality = pick(QUALITY_WEIGHTS.slice(0, GEAR_TIERS[tier].grades));
+  return { tier, quality };
 }
 
 // ---------------------------------------------------------------------

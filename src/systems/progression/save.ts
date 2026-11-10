@@ -3,7 +3,7 @@
 // `data` là trạng thái vĩnh viễn duy nhất; các module khác trong thư mục này đọc / sửa nó rồi gọi save().
 // =====================================================================
 
-import { MAX_ITEM_LEVEL, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, GEAR_TIERS, MAX_ITEM_LEVEL, type ItemInst } from '../../config/items';
 import { MAX_TIER, TIERS, legacyCumTuVi } from '../../config/realms';
 import { SLOT_IDS, type MatId, type SlotId } from '../../config/types';
 
@@ -22,7 +22,7 @@ const defaultQuests = (): QuestState => ({ day: '', daily: {}, dailyClaimed: [],
 
 // Giữ nguyên tên khóa cũ: đổi tên sẽ làm người chơi mất save. Đổi cấu trúc thì tăng SAVE_VERSION và thêm bước trong migrate().
 const SAVE_KEY = 'vo-luyen-survival-save';
-const SAVE_VERSION = 4;
+const SAVE_VERSION = 5;
 export const MAX_ITEMS = 120;
 /** Hòm thưởng: nơi chứa đồ khi túi đầy, nhận lại khi có chỗ */
 export const MAX_INBOX = 20;
@@ -54,7 +54,7 @@ export const ok = (msg: string): Result => ({ ok: true, msg });
 export const fail = (msg: string): Result => ({ ok: false, msg });
 
 function defaultSave(): SaveData {
-  const sword: ItemInst = { uid: 1, slot: 'weapon', rarity: 0, level: 0, grade: 1, weaponId: 'wp_sword' };
+  const sword: ItemInst = { uid: 1, slot: 'weapon', tier: 0, quality: 0, level: 0, weaponId: 'wp_sword' };
   return {
     v: SAVE_VERSION,
     linh: 0,
@@ -75,11 +75,29 @@ function defaultSave(): SaveData {
 }
 
 /**
+ * Save < v5 dùng hệ phẩm chất cũ: xóa toàn bộ trang bị, phát lại thanh kiếm khởi đầu (Phàm cấp Hạ phẩm).
+ * Bí bảo của các màn cố định ĐÃ vượt được trả lại (chỉ nhận một lần, xóa đi thì không bao giờ lấy lại được).
+ */
+function resetGear(d: SaveData): void {
+  d.items = [{ uid: 1, slot: 'weapon', tier: 0, quality: 0, level: 0, weaponId: 'wp_sword' }];
+  d.inbox = [];
+  d.equipped = { weapon: 1, clothes: null, shoes: null, accessory: null, bibao: null };
+  d.nextUid = 2;
+  for (const b of BIBAOS) {
+    if ((d.cleared?.[`w${b.world}s${b.stageNo}`] ?? 0) > 0) {
+      d.items.push({ uid: d.nextUid++, slot: 'bibao', tier: b.world - 1, quality: 0, level: 0, bibaoId: b.id });
+      if (d.equipped.bibao == null) d.equipped.bibao = d.nextUid - 1;
+    }
+  }
+}
+
+/**
  * Nâng cấp save cũ:
  *  v1: 37 bậc → quy đổi sang 49 bậc.  v2: Đạo Tổ chia 3 kỳ (51 bậc) → kẹp về 49 bậc.
  *  v3: chưa có bình cảnh → giữ nguyên bậc, quy đổi tu vi để thanh tu vi trong bậc hiện tại giữ đúng tỉ lệ %.
  */
 function migrate(d: SaveData, from: number): void {
+  if (from < 5) resetGear(d);
   if (from >= 4) return;
   if (from < 2) {
     d.tier = Math.round((Math.max(0, d.tier || 0) * 48) / 36);
@@ -108,7 +126,8 @@ function isInt(n: unknown, lo: number, hi: number): n is number {
 /** Kiểm tra / vá dữ liệu lưu: bỏ item hỏng, sửa ô trang bị trỏ vào item không tồn tại, đảm bảo luôn có vũ khí. */
 function sanitize(d: SaveData): SaveData {
   const okItem = (i: ItemInst): boolean =>
-    !!i && isInt(i.uid, 1, 1e9) && SLOT_IDS.includes(i.slot) && isInt(i.rarity, 0, 4) && isInt(i.level, 0, MAX_ITEM_LEVEL) && isInt(i.grade, 1, 6);
+    !!i && isInt(i.uid, 1, 1e9) && SLOT_IDS.includes(i.slot) && isInt(i.tier, 0, DAO_TIER) && isInt(i.level, 0, MAX_ITEM_LEVEL) &&
+    isInt(i.quality, 0, Math.max(0, GEAR_TIERS[i.tier].grades - 1));
   const seen = new Set<number>();
   const clean = (arr: ItemInst[]): ItemInst[] =>
     (Array.isArray(arr) ? arr : []).filter((i) => {
@@ -129,7 +148,7 @@ function sanitize(d: SaveData): SaveData {
   if (d.equipped.weapon == null) {
     let w = d.items.find((i) => i.slot === 'weapon');
     if (!w) {
-      w = { uid: d.nextUid++, slot: 'weapon', rarity: 0, level: 0, grade: 1, weaponId: 'wp_sword' };
+      w = { uid: d.nextUid++, slot: 'weapon', tier: 0, quality: 0, level: 0, weaponId: 'wp_sword' };
       d.items.push(w);
     }
     d.equipped.weapon = w.uid;

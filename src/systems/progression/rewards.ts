@@ -76,9 +76,9 @@ export function finishStage(res: StageResult): RewardSummary {
       const bb: ItemInst = {
         uid: data.nextUid++,
         slot: 'bibao',
-        rarity: stage.index === 9 ? 4 : 3,
+        tier: stage.world - 1,
+        quality: 0,
         level: 0,
-        grade: stage.world,
         bibaoId: stage.bibaoId,
       };
       summary.items.push(bb);

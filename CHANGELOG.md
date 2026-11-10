@@ -1,5 +1,16 @@
 # Lịch sử phiên bản
 
+## v0.10.0 — Bộ sưu tập trang bị mới (Cấp × Phẩm)
+- **6 Cấp**: Phàm (3 phẩm) · Linh (4) · Tiên (5) · Thần (5) · Thánh (5) · Đạo (không phân phẩm). **Phẩm** Hạ / Trung / Thượng / Cực / Thượng Cổ = trắng / xanh lá / xanh dương / tím / cam; Đạo cấp: viền **thất thải** chuyển màu + tên chữ cầu vồng. Màu phẩm chỉ ở viền ảnh và tên, không đổi màu món đồ.
+- **66 hình pixel art** (`tools/art/gear.px.js`): 6 vũ khí (kiếm, đao, thương, quyền sáo, cung, quạt) + y phục, giày, trang sức × 6 cấp, và 12 bí bảo riêng. Hình đổi theo chất liệu cấp: Phàm sắt-gỗ, Linh đồng-ngọc, Tiên bạc-mây, Thần vàng-đỏ, Thánh bạch kim hào quang, Đạo hắc thạch tinh quang.
+- Mỗi món có tên riêng theo cấp (vd. Thiết Kiếm → Bích Ngọc Kiếm → Lưu Vân Kiếm → Liệt Dương Kiếm → Thánh Quang Kiếm → Hỗn Độn Đạo Kiếm).
+- **Nguồn rơi**: mỗi thế giới ra 2 cấp (cấp chính 85% + cấp kế 15%); Đạo cấp chỉ ở thế giới 5 (5%) và 6 (25%). Phẩm ngẫu nhiên (Hạ 50 · Trung 28 · Thượng 14 · Cực 6 · Thượng Cổ 2). Chỉnh trong `DROP_TIERS`, `QUALITY_WEIGHTS` (`src/config/items.ts`).
+- Sức mạnh: hệ số cấp 1 / 1.8 / 3.2 / 5.6 / 9.5 / 17, mỗi phẩm +15%. Dòng thuộc tính phụ: Hạ 0, Trung 1, Thượng 1, Cực 2, Thượng Cổ 3, Đạo 3.
+- **Hành Trang**: vũ khí hiện trên tay phải nhân vật (lưỡi vươn ra ngoài thân; quyền sáo và cung cầm phía trước), bí bảo bay lơ lửng cạnh vai. Y phục, giày, trang sức không đổi ngoại hình. Ô trang bị, kho đồ, hòm thư, bảng chi tiết dùng hình mới + viền phẩm.
+- Trong trận chưa đổi (sẽ làm cùng bộ sprite góc nhìn trận).
+- **Save v5**: trang bị cũ bị xóa, phát lại Thiết Kiếm (Phàm cấp Hạ phẩm); bí bảo của các màn cố định đã vượt được trả lại (chỉ nhận một lần nên không thể để mất).
+- Chế độ TEST tặng đủ bộ sưu tập (54 món phẩm cao nhất mỗi cấp + 12 bí bảo) để xem hết hình.
+
 ## v0.9.5 — Nhân vật nhìn xéo sang trái
 - Mọi sprite nhân vật (dáng đứng, đi bộ, ngồi thiền) được lật ngang (`flip: 'x'` trong `hero.px.js`) để nhìn xéo sang **trái**, chừa phía bên phải cho lớp vũ khí sẽ vẽ sau (vũ khí không đè lên thân).
 - Trong trận: đi sang phải thì lật lại cho mặt hướng theo đường đi. Avatar cắt lại theo vị trí mặt mới.
