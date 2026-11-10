@@ -6,7 +6,7 @@ import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { ACTIVES } from '../../config/activeSkills';
 import { WEAPONS, weaponById } from '../../config/weapons';
 import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
-import { BIBAOS, DAO_TIER, FIST_COVER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -529,17 +529,12 @@ export class Hub {
         const style = `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
           `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
         kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
-        // đoạn quanh điểm cầm đưa ra trước thân (bản sao cắt tròn), để nắm tay đè lên thấy rõ là đang nắm
+        // phần quanh chỗ cầm đưa ra trước thân (bản sao cắt theo đa giác front): chuôi / cán lộ tới giữa bàn tay
         if (hd.front) {
           const pts: string[] = [];
           for (let i = 0; i < hd.front.length; i += 2) pts.push(`${hd.front[i] * scale}px ${hd.front[i + 1] * scale}px`);
           kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:polygon(${pts.join(',')})` }));
         }
-        if (hd.near) {
-          const [nx, ny] = hd.nearAt ?? [hd.gx + 0.5, hd.gy + 0.5];
-          kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:circle(${hd.near * scale}px at ${nx * scale}px ${ny * scale}px)` }));
-        }
-        if (hd.cover) kids.push(img('/ui/hero_fist.png?v=0.11.1', 'wpn fist-cover', FIST_COVER.x, FIST_COVER.y, FIST_COVER.w, FIST_COVER.h));
       }
     }
     // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)

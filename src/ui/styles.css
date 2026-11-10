@@ -543,7 +543,6 @@
 /* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
 .figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
 .figure .wpn.front { z-index: 3; }
-.figure .wpn.fist-cover { z-index: 4; }   /* nắm tay vẽ đè lên chuôi vũ khí */
 /* vũ khí cầm tay nhún cùng nhịp thở với hero_full (1s, 4 khung; khung 1-2 cả người hạ 1px ảnh) */
 .figure .wpn { animation: wpn-breath 1s steps(1, end) infinite; }
 @keyframes wpn-breath { 0%, 75%, 100% { translate: 0 0; } 25%, 50% { translate: 0 calc(1px * var(--s)); } }

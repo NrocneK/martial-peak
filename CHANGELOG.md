@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.11.4 — Đường nối thẳng cho thương và cung
+- Thương, cung dùng chung cách nối như kiếm / đao: đường cắt THẲNG vuông góc với thân vũ khí tại chỗ cầm, qua giữa lòng bàn tay (`gripCut()` trong `src/config/items.ts`). Thương cắt vuông góc với cán; cung cắt vuông góc với cánh cung tại chuôi (góc khác), chỉ lộ đoạn ngay quanh bàn tay.
+- Bỏ cách cũ: vùng tròn quanh tay + nắm tay vẽ đè (`hero_fist.png`, `near`, `cover`).
+
 ## v0.11.3 — Chỗ nắm chuôi kiếm, đao
 - Kiếm / đao dịch xuống 1 điểm ảnh: chuôi đi qua giữa bàn tay.
 - Đường nối tự nhiên hơn: thay vùng tròn bằng đường cắt THẲNG vuông góc với chuôi đi qua giữa lòng bàn tay (`front` trong `WEAPON_HOLD`): nửa chuôi phía hộ thủ đè lên tay, nửa trên khuất sau ngón.
