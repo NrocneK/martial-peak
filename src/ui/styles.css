@@ -50,12 +50,12 @@
 /* khung viền vàng pixel art (9 mảnh, mỗi góc 8px ảnh → 16px màn hình) */
 .fr { border: 16px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 16px / 0 stretch; image-rendering: pixelated; }
 .hero-sprite { --s: 3; flex-shrink: 0; width: calc(58px * var(--s)); height: calc(106px * var(--s));
-  background: url('/ui/hero_full.png?v=0.9.3') 0 0 / calc(232px * var(--s)) calc(106px * var(--s)) no-repeat; image-rendering: pixelated;
+  background: url('/ui/hero_full.png?v=0.9.5') 0 0 / calc(232px * var(--s)) calc(106px * var(--s)) no-repeat; image-rendering: pixelated;
   animation: hero-idle 1s steps(4) infinite; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
 @keyframes hero-idle { from { background-position: 0 0; } to { background-position: calc(-232px * var(--s)) 0; } }
 .avatar { position: relative; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   background: radial-gradient(circle at 50% 35%, #8ccaf8, #2763d0); border: 2px solid #e8b24a; box-shadow: 0 0 0 2px #0a1030, 0 0 10px #ffd96a66; }
-.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png?v=0.9.3') -36px -22px / 464px 212px no-repeat; image-rendering: pixelated; }
+.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png?v=0.9.5') -16px -12px / 464px 212px no-repeat; image-rendering: pixelated; }
 
 /* ---------- Menu chính ---------- */
 .menu { overflow: hidden; --frame: #e8b24a; --frame-hi: #fff0b0; --panel1: #1c2a63; --panel2: #0e1738; }
@@ -189,7 +189,7 @@
 .nv.on .ic { filter: drop-shadow(0 0 6px #ffbf5e99); }
 /* Tu Luyện: nhân vật ngồi thiền (dải 8 khung 60x60, phóng 3 lần) */
 .realm-card { text-align: center; }
-.meditate { width: 216px; height: 216px; margin: 0 auto 6px; background: url('/ui/hero_meditate.png?v=0.9.3') 0 0 / 1728px 216px no-repeat; image-rendering: pixelated; animation: meditate 1.33s steps(8) infinite; }
+.meditate { width: 216px; height: 216px; margin: 0 auto 6px; background: url('/ui/hero_meditate.png?v=0.9.5') 0 0 / 1728px 216px no-repeat; image-rendering: pixelated; animation: meditate 1.33s steps(8) infinite; }
 @keyframes meditate { to { background-position: -1728px 0; } }
 .realm-card .dim { max-width: 62ch; margin-left: auto; margin-right: auto; }
 /* Hành Trang: nhân vật ở giữa, ô trang bị xung quanh */
@@ -478,7 +478,7 @@
 @media (max-width: 760px) {
   .lb-top { padding: 6px 8px 4px; gap: 6px; }
   .avatar { width: 42px; height: 42px; }
-  .avatar i { background-position: -41px -27px; }
+  .avatar i { background-position: -21px -17px; }
   .pf-name { font-size: 15px; }
   .pf-realm { font-size: 12px; }
   .pf-text .bar { width: 130px; height: 12px; }

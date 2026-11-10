@@ -73,7 +73,8 @@ export class Player extends Phaser.GameObjects.Sprite {
     // Đi thì chạy hoạt ảnh bước chân và quay mặt theo hướng ngang; đứng yên thì về khung đứng
     if (dir.lengthSq() > 0.0001) {
       this.heading = Phaser.Math.Angle.RotateTo(this.heading, dir.angle(), 0.3);
-      if (Math.abs(dir.x) > 0.05) this.setFlipX(dir.x < 0);
+      // sprite gốc nhìn xéo sang TRÁI → đi sang phải thì lật lại cho mặt hướng theo đường đi
+      if (Math.abs(dir.x) > 0.05) this.setFlipX(dir.x > 0);
       if (!this.anims.isPlaying) this.play(PLAYER_WALK_ANIM);
     } else if (this.anims.isPlaying) {
       this.stop();

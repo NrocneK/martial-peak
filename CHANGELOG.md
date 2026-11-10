@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.9.5 — Nhân vật nhìn xéo sang trái
+- Mọi sprite nhân vật (dáng đứng, đi bộ, ngồi thiền) được lật ngang (`flip: 'x'` trong `hero.px.js`) để nhìn xéo sang **trái**, chừa phía bên phải cho lớp vũ khí sẽ vẽ sau (vũ khí không đè lên thân).
+- Trong trận: đi sang phải thì lật lại cho mặt hướng theo đường đi. Avatar cắt lại theo vị trí mặt mới.
+
 ## v0.9.4 — Điện thoại: nội dung luôn trọn trong khung
 - Chặn trình duyệt di động tự phóng chữ (`text-size-adjust: 100%`) — nguyên nhân chữ to hơn thiết kế ~35% trên một số máy.
 - Hành Trang: nhân vật đổi cỡ theo màn hình ngay khi vẽ (trước đây thuộc tính trên thẻ đè CSS nên vẫn ×3, đẩy ô trang bị bên phải ra ngoài khung).

@@ -9,6 +9,9 @@
 //        node <pxl>/bin/pxl.js build tools/art/hero.px.js  → chép out/anims/hero_*.png vào public/ui/
 // =====================================================================
 include('hero_trace.px.js')
+// HƯỚNG NHÌN: concept nhìn xéo sang PHẢI; mọi sprite xuất ra được LẬT NGANG (flip: 'x') để nhìn xéo sang TRÁI,
+// chừa phía tay phải (bên phải màn hình) cho lớp vũ khí vẽ sau không đè lên thân. Các mốc tọa độ bên dưới
+// vẫn tính theo lưới gốc (chưa lật) vì pxl lật SAU khi vẽ xong.
 const G = globalThis
 // '1'..'6' không trùng khóa của bảng màu lấy từ concept (a..z, A..P)
 pal({ k: '#120e1c', ...G.HERO_PAL, 1: '#4f7ee8', 2: '#9fc2ff', 3: '#ffd765', 4: '#2a3a78', 5: '#1b2552', 6: '#d9e4ff' })
@@ -41,7 +44,7 @@ const C = { pant: nearest('#2c3358'), pantHi: nearest('#46507e'), robe: nearest(
 sprite('_hero_base', G.HERO_GRID)
 
 // ---------------------------------------------------------------- Dáng đứng (58x106 sau viền)
-anim('hero_full', { w: 56, h: 104, frames: 4, fps: 4, outline: 'k' }, (c) => {
+anim('hero_full', { w: 56, h: 104, frames: 4, fps: 4, outline: 'k', flip: 'x' }, (c) => {
   c.stamp('_hero_base', 0, 0)
   const f = c.frame
   // thở: thân trên hạ 1px ở khung 1-2 (chân + vạt áo đứng yên)
@@ -55,7 +58,7 @@ anim('hero_full', { w: 56, h: 104, frames: 4, fps: 4, outline: 'k' }, (c) => {
 // ---------------------------------------------------------------- Đi bộ trong trận (21x38 sau viền)
 // Lưới nhỏ 19x36: ủng trái ~ cột 7-9, ủng phải ~ cột 13-18, hàng 30-35.
 sprite('_hero_s', G.HERO_S_GRID)
-anim('hero_walk', { w: 19, h: 36, frames: 4, fps: 8, outline: 'k' }, (c) => {
+anim('hero_walk', { w: 19, h: 36, frames: 4, fps: 8, outline: 'k', flip: 'x' }, (c) => {
   c.stamp('_hero_s', 0, 0)
   const f = c.frame
   if (f === 1 || f === 3) shift(c, 0, 0, 19, 30, 0, -1) // nhún lên khi hai chân chụm
@@ -98,7 +101,7 @@ anim('_med_body', { w: 72, h: 72, frames: 8, fps: 6, outline: 'k' }, (c) => {
   c.hline(cx - 11, knee + 2, 23, C.blueDk); c.hline(cx - 10, knee, 21, C.blue)
   for (let x = cx - 9; x <= cx + 8; x += 4) { c.px(x, knee - 1, C.blue); c.px(x + 1, knee - 1, C.blue); c.px(x + 1, knee - 2, C.blue) }
 })
-anim('hero_meditate', { w: 72, h: 72, frames: 8, fps: 6 },
+anim('hero_meditate', { w: 72, h: 72, frames: 8, fps: 6, flip: 'x' },
   (c) => {
     const ph = c.phase * Math.PI * 2
     const cx = MX + BODY_X, cy = MY + 28
