@@ -15,7 +15,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
-    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.0', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
+    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.1', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
   }
 
   create(): void {

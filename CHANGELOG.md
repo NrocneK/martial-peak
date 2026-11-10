@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.12.1 — Vung tay, tóc và dải đai lay theo bước
+- `walk_battle.py`: khai báo vùng cẳng tay + bàn tay, đuôi tóc, dải đai trên từng hướng (`PARTS`).
+- Tay đánh ngược pha với chân cùng bên, lệch theo hướng đi; đuôi tóc + dải đai lay ngang mỗi bước, uốn dần từ gốc ra ngọn, dải đai trễ nhịp hơn tóc.
+
 ## v0.12.0 — Nhân vật trong trận: 8 hướng + đi bộ
 - Sprite mới góc nhìn top-down nghiêng, chuyển từ ảnh mẫu 8 hướng (`tools/art/ref/hero_battle_ref.webp`) bằng `tools/art/trace_battle.py`: tách nền + bóng, căn chân, bảng 40 màu chung cho 8 hướng, thu nhỏ 1/6 giữ nét tối.
 - Sheet di chuyển `public/ui/hero_b_walk.png` (`tools/art/walk_battle.py`): 8 hàng hướng (s, sw, w, nw, n, ne, e, se) × 6 khung đi + 1 khung đứng, khung 52x68. Chân tách đôi, sải theo hướng đi + nhấc chân, thân nhún 1 điểm ảnh giữa bước.

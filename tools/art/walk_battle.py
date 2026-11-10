@@ -10,6 +10,8 @@ Cách dựng mỗi khung:
     Chân A / B lệch pha nửa chu kỳ: sải dọc theo HƯỚNG ĐI trên màn hình (ngang: sải trước/sau; thẳng: tiến/lùi theo
     chiều dọc; chéo: cả hai) và NHẤC lên khi đang đưa về phía trước.
   - THÂN (trên LEG_Y): nhún lên 1 điểm ảnh lúc một chân đang đưa qua (giữa bước), vẽ đè lên chân (vạt áo che đùi).
+  - TAY (vùng cẳng tay + bàn tay, khai báo tay trong PARTS): đánh NGƯỢC pha với chân cùng bên, lệch 1 điểm ảnh theo hướng đi.
+  - ĐUÔI TÓC, DẢI ĐAI: lay ngang 2 lần mỗi chu kỳ (mỗi bước một lần), uốn dần từ gốc ra ngọn; dải đai trễ nhịp hơn tóc.
   - Viền ngoài 1px vẽ lại sau khi ghép.
 """
 import math
@@ -30,6 +32,20 @@ LEG_Y = {'s': 55, 'n': 55, 'se': 55, 'sw': 55, 'ne': 55, 'nw': 55, 'e': 56, 'w':
 FWD = {'s': (0, 1), 'n': (0, -1), 'e': (1, 0), 'w': (-1, 0), 'se': (0.8, 0.45), 'sw': (-0.8, 0.45), 'ne': (0.8, -0.45), 'nw': (-0.8, -0.45)}
 STRIDE = {'s': 1.5, 'n': 1.5, 'e': 3.2, 'w': 3.2, 'se': 2.6, 'sw': 2.6, 'ne': 2.6, 'nw': 2.6}
 LIFT = 2
+# Vùng cử động riêng trên từng hình (x0, y0, x1, y1 — x1/y1 không tính). arm: side 0 = tay bên trái màn hình
+# (đánh cùng pha chân phải màn hình), 1 = tay bên phải. hair/sash: root = 'top' (gốc ở trên, ngọn rủ xuống) hoặc
+# 'bottom' (gốc ở dưới — đuôi tóc vồng lên trên đầu khi nhìn thẳng). keep: không xóa chỗ cũ (vùng nằm giữa thân).
+PARTS = {
+    's': [('arm', (13, 34, 20, 43), 0), ('arm', (33, 34, 41, 43), 1), ('hair', (17, 0, 37, 10), 'bottom'),
+          ('sash', (11, 43, 18, 52), 'top'), ('sash', (35, 43, 43, 52), 'top')],
+    'se': [('arm', (15, 38, 23, 46), 0), ('arm', (28, 31, 37, 38), 1), ('hair', (8, 6, 20, 26), 'top'), ('sash', (5, 36, 15, 50), 'top')],
+    'e': [('arm', (24, 38, 31, 46), 0), ('hair', (7, 9, 16, 27), 'top'), ('sash', (7, 34, 20, 50), 'top')],
+    'ne': [('arm', (29, 37, 36, 45), 1), ('hair', (7, 15, 17, 36), 'top'), ('sash', (6, 38, 17, 50), 'top')],
+    'n': [('arm', (13, 35, 20, 43), 0), ('arm', (33, 35, 40, 43), 1), ('hair', (18, 17, 36, 36), 'top', 'keep'), ('sash', (18, 36, 35, 50), 'top', 'keep')],
+    'nw': [('arm', (16, 37, 23, 45), 0), ('hair', (32, 14, 46, 31), 'top'), ('sash', (34, 39, 47, 49), 'top')],
+    'w': [('arm', (21, 38, 28, 46), 1), ('hair', (34, 9, 46, 28), 'top'), ('sash', (33, 35, 46, 50), 'top')],
+    'sw': [('arm', (15, 32, 21, 38), 0), ('arm', (30, 39, 37, 46), 1), ('hair', (34, 6, 46, 24), 'top'), ('sash', (36, 36, 48, 49), 'top')],
+}
 
 
 def components(mask):
@@ -61,6 +77,46 @@ def outline(img):
     img[edge, :3] = OUTLINE
     img[edge, 3] = 255
     return img
+
+
+def move_region(src, dst, box, off_fn, keep):
+    """Dời các điểm ảnh trong box theo off_fn(y) → (dx, dy); keep = không xóa chỗ cũ"""
+    x0, y0, x1, y1 = box
+    blk = src[y0:y1, x0:x1].copy()
+    if not keep:
+        dst[y0:y1, x0:x1][blk[:, :, 3] > 0] = 0
+    for yy in range(y1 - y0):
+        dx, dy = off_fn(y0 + yy)
+        for xx in range(x1 - x0):
+            if blk[yy, xx, 3] == 0:
+                continue
+            ty, tx = y0 + yy + dy, x0 + xx + dx
+            if 0 <= ty < H and 0 <= tx < W:
+                dst[ty, tx] = blk[yy, xx]
+
+
+def animate_parts(upper, d, t, fx, fy):
+    out = upper.copy()
+    for part in PARTS.get(d, []):
+        kind, box = part[0], part[1]
+        keep = 'keep' in part[3:]
+        if kind == 'arm':
+            ph = t + math.pi if part[2] == 0 else t          # ngược pha chân cùng bên
+            sw = math.sin(ph) * 1.2
+            dx, dy = round(fx * sw), round(fy * sw)
+            if dx or dy:
+                move_region(upper, out, box, lambda y, dx=dx, dy=dy: (dx, dy), keep)
+        else:
+            lag = 0.9 if kind == 'hair' else 1.8
+            amp = 1.4 if kind == 'hair' else 1.8
+            sway = math.sin(2 * t - lag) * amp
+            x0, y0, x1, y1 = box
+            if part[2] == 'top':
+                f = lambda y, sway=sway, y0=y0, y1=y1: (round(sway * max(0, y - y0) / max(1, y1 - 1 - y0)), 0)
+            else:
+                f = lambda y, sway=sway, y0=y0, y1=y1: (round(sway * max(0, y1 - 1 - y) / max(1, y1 - 1 - y0)), 0)
+            move_region(out.copy(), out, box, f, keep)
+    return out
 
 
 sheet = np.zeros((H * len(DIRS), W * (N + 1), 4), np.uint8)
@@ -98,10 +154,11 @@ for r, d in enumerate(DIRS):
                 if 0 <= yy < H and 0 <= xx < W:
                     img[yy, xx] = base[y, x]
         bob = -1 if abs(math.cos(t)) > 0.7 else 0          # giữa bước: thân nhô lên 1 điểm ảnh
-        ua = upper[:, :, 3] > 0
+        up = animate_parts(upper, d, t, fx, fy)
+        ua = up[:, :, 3] > 0
         ys, xs = np.where(ua)
         ok = (ys + bob >= 0) & (ys + bob < H)
-        img[ys[ok] + bob, xs[ok]] = upper[ys[ok], xs[ok]]
+        img[ys[ok] + bob, xs[ok]] = up[ys[ok], xs[ok]]
         img = outline(img)
         sheet[r * H:(r + 1) * H, f * W:(f + 1) * W] = img
         frames.append(img)
