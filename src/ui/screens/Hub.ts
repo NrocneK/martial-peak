@@ -530,7 +530,10 @@ export class Hub {
           `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
         kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
         // đoạn quanh điểm cầm đưa ra trước thân (bản sao cắt tròn), để nắm tay đè lên thấy rõ là đang nắm
-        if (hd.near) kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:circle(${hd.near * scale}px at ${(hd.gx + 0.5) * scale}px ${(hd.gy + 0.5) * scale}px)` }));
+        if (hd.near) {
+          const [nx, ny] = hd.nearAt ?? [hd.gx + 0.5, hd.gy + 0.5];
+          kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:circle(${hd.near * scale}px at ${nx * scale}px ${ny * scale}px)` }));
+        }
         if (hd.cover) kids.push(img('/ui/hero_fist.png?v=0.11.1', 'wpn fist-cover', FIST_COVER.x, FIST_COVER.y, FIST_COVER.w, FIST_COVER.h));
       }
     }

@@ -1,5 +1,8 @@
 # Lịch sử phiên bản
 
+## v0.11.2 — Kiếm, đao trở lại sau thân
+- Kiếm / đao nằm SAU nhân vật (chuôi, đốc, tua bị che); chỉ một chút chuôi sát hộ thủ đè lên mép dưới nắm tay (chỗ ngón cái) — `near` + `nearAt` trong `WEAPON_HOLD`. Bỏ nắm tay vẽ đè cho kiếm / đao (chuôi không còn đâm ra trước đùi).
+
 ## v0.11.1 — Tay nắm vũ khí
 - **Nắm tay đè lên chuôi** (`public/ui/hero_fist.png`, tạo bởi `tools/art/hero_poses.py`): kiếm / đao đưa ra trước, nắm tay vẽ đè giữa chuôi — đốc nhô lên trên, hộ thủ ngay dưới nắm tay.
 - Thương, cung (phần lớn nằm sau thân): đoạn cán / chuôi trong lòng bàn tay được đưa ra trước (bản sao cắt tròn, `near` trong `WEAPON_HOLD`), rồi nắm tay đè lên.

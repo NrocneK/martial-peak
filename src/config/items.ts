@@ -131,6 +131,7 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
  *   cover  : vẽ đè lại nắm tay (hero_fist.png) lên chuôi → ngón tay nắm quanh chuôi, đốc nhô trên, hộ thủ dưới
  *   near   : (vũ khí nằm sau thân) bán kính quanh điểm cầm, tính bằng điểm ảnh hình, được đưa ra TRƯỚC thân —
  *            đoạn cán / chuôi trong lòng bàn tay lộ ra rồi nắm tay (cover) đè lên, phần còn lại vẫn khuất sau lưng
+ *   nearAt : tâm vùng đưa ra trước (điểm ảnh trên hình), mặc định = điểm cầm
  */
 export interface WeaponHold {
   w: number;
@@ -142,13 +143,15 @@ export interface WeaponHold {
   pose?: 'fan';
   cover?: boolean;
   near?: number;
+  nearAt?: [number, number];
 }
 /** Số khung của hình cầm tay */
 export const HELD_FRAMES = 8;
 export const WEAPON_HOLD: Record<string, WeaponHold> = {
-  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước; nắm tay vẽ đè lên giữa chuôi (đốc nhô lên trên, hộ thủ dưới)
-  wp_sword: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'front', cover: true },
-  wp_blade: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'front', cover: true },
+  // kiếm, đao: tay buông → lưỡi chĩa xuống chéo phía trước. Cả thanh nằm SAU thân (chuôi, đốc, tua bị che);
+  // chỉ một chút chuôi sát hộ thủ đè lên mép dưới nắm tay (chỗ ngón cái) → nhìn ra là đang nắm
+  wp_sword: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'back', near: 2.6, nearAt: [36.5, 14] },
+  wp_blade: { w: 48, h: 52, gx: 38, gy: 12, anchor: 'fist', layer: 'back', near: 2.6, nearAt: [36.5, 14] },
   // thương cầm chéo: mũi chĩa xuống trước chân, đốc sau vai phải; đoạn qua lưng bị che
   wp_spear: { w: 82, h: 82, gx: 40, gy: 41, anchor: 'fist', layer: 'back', near: 7, cover: true },
   // cung xoay chéo: bụng cung tại nắm tay, cánh trên vươn ra ngoài, cánh dưới chạy sau thân
@@ -173,7 +176,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'he
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 9;
+export const GEAR_ART_V = 10;
 
 export interface BibaoDef {
   id: string;
