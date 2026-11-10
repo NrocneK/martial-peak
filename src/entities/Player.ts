@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/game';
 import { RUN } from '../config/balance';
-import { PLAYER_DIRS, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
+import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
+import { BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
+import { HERO_HANDS } from '../config/heroHands';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
@@ -30,8 +32,11 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** Hướng sprite đang quay (8 hướng) */
   private face: PlayerDir = 's';
 
-  /** Hình vũ khí đang cầm (chỉ là ngoại hình, không ảnh hưởng chỉ số) */
+  /** Vũ khí cầm tay phải (chỉ là ngoại hình, không ảnh hưởng chỉ số) + găng quyền sáo hai tay */
   private weaponImg: Phaser.GameObjects.Image | null = null;
+  /** nửa sau (phía đốc) của vũ khí dài — luôn vẽ sau thân */
+  private weaponBack: Phaser.GameObjects.Image | null = null;
+  private fists: Phaser.GameObjects.Image[] = [];
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEX.PLAYER, PLAYER_WALK_FRAMES);
@@ -40,24 +45,55 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.setDepth(10).setOrigin(0.5, 0.62);
   }
 
-  /** Đặt ngoại hình vũ khí theo loại vũ khí và màu phẩm chất */
-  setWeaponLook(weaponId: string, color: number): void {
-    const key = TEX.WEAPON + weaponId;
-    if (!this.scene.textures.exists(key)) return;
-    if (!this.weaponImg) this.weaponImg = this.scene.add.image(this.x, this.y, key).setDepth(11);
-    this.weaponImg.setTexture(key).setTint(color).setScale(0.8);
+  /** Đặt ngoại hình vũ khí theo loại + cấp (quyền sáo: găng hai tay) */
+  setWeaponLook(weaponId: string, tier: number): void {
+    if (weaponId === 'wp_fist') {
+      this.fists = (['near', 'far'] as const).map((hand) => this.scene.add.image(this.x, this.y, fistKey(hand, tier)));
+      return;
+    }
+    if (!BATTLE_WEAPON[weaponId]) return;
+    const key = battleWeaponKey(weaponId, tier);
+    if (BATTLE_SPLIT.has(weaponId)) {
+      if (!this.scene.textures.exists(key + '_f')) return;
+      this.weaponImg = this.scene.add.image(this.x, this.y, key + '_f', 0);
+      this.weaponBack = this.scene.add.image(this.x, this.y, key + '_k', 0);
+    } else if (this.scene.textures.exists(key)) this.weaponImg = this.scene.add.image(this.x, this.y, key, 0);
   }
 
-  /** Cập nhật vị trí vũ khí: lơ lửng cạnh người, chĩa về phía `aim` (radian) */
-  syncWeapon(aim: number): void {
-    if (!this.weaponImg) return;
-    this.weaponImg.setPosition(this.x + Math.cos(aim) * 22, this.y + Math.sin(aim) * 22).setRotation(aim);
-    this.weaponImg.setAlpha(this.dead ? 0 : 1);
+  /** Đặt vũ khí / găng vào đúng bàn tay theo hướng và khung bước hiện tại (gọi mỗi khung hình) */
+  syncWeapon(): void {
+    const hands = HERO_HANDS[this.face];
+    const col = this.anims.isPlaying ? Math.max(0, (this.anims.currentFrame?.index ?? 1) - 1) : PLAYER_WALK_FRAMES;
+    const left = this.x - this.originX * PLAYER_FRAME.w;
+    const top = this.y - this.originY * PLAYER_FRAME.h;
+    const alpha = this.dead ? 0 : this.alpha;
+    if (this.weaponImg) {
+      // khung = hướng (cùng thứ tự PLAYER_DIRS); điểm cầm ở giữa khung → gốc 0.5, 0.5 đặt vào bàn tay
+      const [hx, hy] = hands.R[col];
+      const fi = PLAYER_DIRS.indexOf(this.face);
+      this.weaponImg.setFrame(fi).setOrigin(0.5, 0.5)
+        .setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth + (hands.front ? 1 : -1)).setAlpha(alpha);
+      this.weaponBack?.setFrame(fi).setOrigin(0.5, 0.5).setPosition(left + hx + 0.5, top + hy + 0.5).setDepth(this.depth - 1).setAlpha(alpha);
+    }
+    if (this.fists.length) {
+      // tay phải luôn đeo (khuất sau thân khi ở phía xa); tay trái ẩn khi khuất hẳn
+      const [nr, fr] = this.fists;
+      const [rx, ry] = hands.R[col];
+      nr.setPosition(left + rx + 0.5, top + ry + 0.5).setDepth(this.depth + (hands.front ? 1 : -1)).setAlpha(alpha);
+      if (hands.L) {
+        const [lx, ly] = hands.L[col];
+        fr.setVisible(true).setPosition(left + lx + 0.5, top + ly + 0.5).setDepth(this.depth + 1).setAlpha(alpha);
+      } else fr.setVisible(false);
+    }
   }
 
   destroy(fromScene?: boolean): void {
     this.weaponImg?.destroy();
     this.weaponImg = null;
+    this.weaponBack?.destroy();
+    this.weaponBack = null;
+    for (const f of this.fists) f.destroy();
+    this.fists = [];
     super.destroy(fromScene);
   }
 

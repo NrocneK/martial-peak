@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, SCENES, TEX, playerWalkAnim } from '../config/assets';
 
 /**
@@ -15,7 +16,18 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // 4 khung đi bộ, mỗi khung 21x38 (đã gồm viền) — lấy từ ảnh concept (tools/art/hero.px.js)
-    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.1', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
+    this.load.spritesheet(TEX.PLAYER, '/ui/hero_b_walk.png?v=0.12.2', { frameWidth: PLAYER_FRAME.w, frameHeight: PLAYER_FRAME.h });
+    // vũ khí cầm tay trong trận (dải 8 khung theo hướng) + găng quyền sáo, đủ 6 cấp
+    for (let t = 0; t < 6; t++) {
+      for (const [id, size] of Object.entries(BATTLE_WEAPON)) {
+        const fs = { frameWidth: size, frameHeight: size };
+        if (BATTLE_SPLIT.has(id)) {
+          this.load.spritesheet(battleWeaponKey(id, t) + '_f', `/gear/${id}_bf_${t}.png?v=0.12.2`, fs);
+          this.load.spritesheet(battleWeaponKey(id, t) + '_k', `/gear/${id}_bk_${t}.png?v=0.12.2`, fs);
+        } else this.load.spritesheet(battleWeaponKey(id, t), `/gear/${id}_b_${t}.png?v=0.12.2`, fs);
+      }
+      for (const hand of ['near', 'far'] as const) this.load.image(fistKey(hand, t), `/gear/wp_fist_${hand}_${t}.png?v=0.12.2`);
+    }
   }
 
   create(): void {
@@ -28,7 +40,6 @@ export class BootScene extends Phaser.Scene {
     this.makeGroundTexture();
     this.makeShapeTextures();
     this.makeMiscTextures();
-    this.makeWeaponTextures();
     // Báo cho GameFlow biết đã nạp xong → hiện menu chính (GameScene chỉ chạy khi vào màn)
     this.game.events.emit('boot-done');
   }
@@ -147,22 +158,5 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  /** Hình vũ khí cầm tay (trắng, nhuộm màu theo phẩm chất khi dùng). Thay bằng sprite thật bằng cách nạp ảnh cùng key. */
-  private makeWeaponTextures(): void {
-    const mk = (id: string, draw: (g: Phaser.GameObjects.Graphics) => void): void => {
-      const g = this.add.graphics();
-      g.fillStyle(0xffffff, 1);
-      g.lineStyle(3, 0xffffff, 1);
-      draw(g);
-      g.generateTexture(TEX.WEAPON + id, 48, 48);
-      g.destroy();
-    };
-    // Mọi hình đều hướng sang phải (+x), tâm cầm ở giữa
-    mk('wp_sword', (g) => { g.fillTriangle(46, 24, 14, 20, 14, 28); g.fillRect(10, 14, 4, 20); g.fillRect(2, 22, 9, 4); });
-    mk('wp_blade', (g) => { g.fillTriangle(46, 14, 12, 18, 30, 30); g.fillTriangle(12, 18, 30, 30, 12, 28); g.fillRect(2, 22, 11, 4); });
-    mk('wp_spear', (g) => { g.fillRect(2, 23, 36, 3); g.fillTriangle(47, 24, 36, 17, 36, 31); });
-    mk('wp_fist', (g) => { g.fillCircle(26, 24, 12); g.fillRect(8, 20, 12, 8); });
-    mk('wp_bow', (g) => { g.beginPath(); g.arc(14, 24, 22, -1.2, 1.2, false); g.strokePath(); g.lineStyle(1, 0xffffff, 1); g.lineBetween(14 + 22 * Math.cos(-1.2), 24 + 22 * Math.sin(-1.2), 14 + 22 * Math.cos(1.2), 24 + 22 * Math.sin(1.2)); });
-    mk('wp_fan', (g) => { g.slice(6, 24, 40, -0.9, 0.9, false); g.fillPath(); });
-  }
+
 }

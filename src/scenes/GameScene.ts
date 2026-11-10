@@ -110,8 +110,8 @@ export class GameScene extends Phaser.Scene {
 
     // Ngoại hình vũ khí đang cầm (màu theo phẩm chất)
     const wItem = equippedItem('weapon');
-    // trong trận vẫn là hình vũ khí tạm (sprite góc nhìn trận sẽ làm sau), không nhuộm màu theo phẩm
-    if (wItem?.weaponId) this.player.setWeaponLook(wItem.weaponId, 0xffffff);
+    // vũ khí cầm tay phải (đúng hình + cấp), đi theo tay qua từng khung bước
+    if (wItem?.weaponId) this.player.setWeaponLook(wItem.weaponId, wItem.tier);
     // Hiệu ứng riêng của bí bảo đang trang bị
     this.artifact = new ArtifactSystem(equippedItem('bibao')?.bibaoId ?? null, this.player, this.enemies, this.pickups, this.fx, this.run);
     this.enemies.onKillHook = (e) => this.artifact.onKill(e);
@@ -172,9 +172,7 @@ export class GameScene extends Phaser.Scene {
     const dir = this.botInput ? this.botInput(this) : this.inputManager.getMoveVector();
     pl.move(dir ?? this.zero, dt);
     pl.tick(dt);
-    // Vũ khí chĩa về quái gần nhất (không có thì theo hướng nhìn)
-    const tgt = this.enemies.nearest(pl.x, pl.y, 500);
-    pl.syncWeapon(tgt ? Math.atan2(tgt.y - pl.y, tgt.x - pl.x) : pl.heading);
+    pl.syncWeapon();
     this.run.time += dt;
 
     this.artifact.update(dt);

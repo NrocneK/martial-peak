@@ -32,6 +32,20 @@ LEG_Y = {'s': 55, 'n': 55, 'se': 55, 'sw': 55, 'ne': 55, 'nw': 55, 'e': 56, 'w':
 FWD = {'s': (0, 1), 'n': (0, -1), 'e': (1, 0), 'w': (-1, 0), 'se': (0.8, 0.45), 'sw': (-0.8, 0.45), 'ne': (0.8, -0.45), 'nw': (-0.8, -0.45)}
 STRIDE = {'s': 1.5, 'n': 1.5, 'e': 3.2, 'w': 3.2, 'se': 2.6, 'sw': 2.6, 'ne': 2.6, 'nw': 2.6}
 LIFT = 2
+# Bàn tay trên hình đứng (điểm giữa nắm tay; None = khuất hẳn): R = tay phải nhân vật (cầm vũ khí), L = tay trái.
+# front: vũ khí vẽ TRƯỚC thân; w / nw: tay phải khuất sau thân → vũ khí SAU thân, chỉ lộ phần thò ra ngoài.
+HANDS = {
+    's': {'R': (16, 40), 'L': (37, 40), 'front': True},
+    'se': {'R': (19, 43), 'L': (32, 34), 'front': True},
+    'e': {'R': (27, 43), 'L': None, 'front': True},
+    'ne': {'R': (33, 41), 'L': None, 'front': True},
+    'n': {'R': (36, 40), 'L': (16, 40), 'front': True},
+    'nw': {'R': (34, 37), 'L': (19, 41), 'front': False},
+    'w': {'R': (27, 41), 'L': (24, 43), 'front': False},
+    'sw': {'R': (17, 36), 'L': (33, 42), 'front': True},
+}
+TS_OUT = os.path.join(ROOT, 'src', 'config', 'heroHands.ts')
+
 # Vùng cử động riêng trên từng hình (x0, y0, x1, y1 — x1/y1 không tính). arm: side 0 = tay bên trái màn hình
 # (đánh cùng pha chân phải màn hình), 1 = tay bên phải. hair/sash: root = 'top' (gốc ở trên, ngọn rủ xuống) hoặc
 # 'bottom' (gốc ở dưới — đuôi tóc vồng lên trên đầu khi nhìn thẳng). keep: không xóa chỗ cũ (vùng nằm giữa thân).
@@ -166,6 +180,37 @@ for r, d in enumerate(DIRS):
     frames_by_dir[d] = frames
 
 Image.fromarray(sheet, 'RGBA').save(OUT)
+
+
+def hand_offset(d, f, pt):
+    """Độ lệch (dx, dy) của bàn tay ở khung f (0..N-1; N = đứng yên): thân nhún + tay vung"""
+    if f >= N or pt is None:
+        return (0, 0)
+    t = 2 * math.pi * f / N
+    bob = -1 if abs(math.cos(t)) > 0.7 else 0
+    fx, fy = FWD[d]
+    for part in PARTS.get(d, []):
+        if part[0] != 'arm':
+            continue
+        x0, y0, x1, y1 = part[1]
+        if x0 <= pt[0] < x1 and y0 <= pt[1] < y1:
+            ph = t + math.pi if part[2] == 0 else t
+            sw = math.sin(ph) * 1.2
+            return (round(fx * sw), round(fy * sw) + bob)
+    return (0, bob)
+
+
+lines = ['// TỰ SINH bởi tools/art/walk_battle.py — đừng sửa tay, sửa HANDS / PARTS trong script rồi chạy lại.',
+         '// Vị trí bàn tay của nhân vật trong trận trên khung 52x68 của hero_b_walk.png, theo hướng và khung (6 khung đi + 1 đứng).',
+         'export interface HeroHands { R: [number, number][]; L: [number, number][] | null; front: boolean }',
+         'export const HERO_HANDS: Record<string, HeroHands> = {']
+for d in DIRS:
+    hd = HANDS[d]
+    def seq(pt):
+        return '[' + ', '.join(f'[{pt[0] + o[0]}, {pt[1] + o[1]}]' for o in (hand_offset(d, f, pt) for f in range(N + 1))) + ']'
+    lines.append(f"  {d}: {{ R: {seq(hd['R'])}, L: {seq(hd['L']) if hd['L'] else 'null'}, front: {'true' if hd['front'] else 'false'} }},")
+lines.append('};')
+open(TS_OUT, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
 
 # ---- xem trước: 8 hướng xếp la bàn, phóng 3 lần, nền xanh + bóng
 S = 3

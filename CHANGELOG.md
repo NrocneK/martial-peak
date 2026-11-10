@@ -1,5 +1,11 @@
 # Lịch sử phiên bản
 
+## v0.12.2 — Vũ khí cầm tay trong trận
+- Nhân vật trong trận cầm vũ khí ĐÚNG CÁCH Ở LOBBY (nắm chuôi, lưỡi / mũi chĩa chéo xuống ra ngoài), chỉ xoay theo 8 hướng — góc lấy theo đường mẫu người dùng kẻ (`BATTLE_ANG` trong `tools/art/gear.px.js`).
+- Hình `public/gear/wp_{loại}_b_{cấp}.png`: dải 8 khung theo hướng, điểm cầm ở giữa khung; vẽ bằng chính hàm vẽ trang bị (đủ màu, kiểu dáng theo cấp; đao luôn quay lưỡi xuống). Thương, cung tách đôi tại chỗ cầm (`_bf` trước thân, `_bk` sau thân) để cán / cánh chạy ra sau lưng như ở lobby. Quạt: quạt gấp cầm tay. Quyền sáo: găng đeo cả hai tay.
+- Vũ khí đi theo bàn tay qua từng khung bước (nhún + vung tay) — vị trí tay theo hướng / khung tự sinh ở `src/config/heroHands.ts` (`walk_battle.py`). Hướng W / NW: tay phải khuất → vũ khí vẽ sau thân.
+- Bỏ hình vũ khí tạm bay quanh người và xoay theo mục tiêu.
+
 ## v0.12.1 — Vung tay, tóc và dải đai lay theo bước
 - `walk_battle.py`: khai báo vùng cẳng tay + bàn tay, đuôi tóc, dải đai trên từng hướng (`PARTS`).
 - Tay đánh ngược pha với chân cùng bên, lệch theo hướng đi; đuôi tóc + dải đai lay ngang mỗi bước, uốn dần từ gốc ra ngọn, dải đai trễ nhịp hơn tóc.

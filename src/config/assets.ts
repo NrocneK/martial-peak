@@ -21,8 +21,6 @@ export const TEX = {
   COIN: 'coin',
   /** Bình hồi máu */
   HEART: 'heart',
-  /** Hình vũ khí cầm tay: key = 'weapon_' + id kỹ năng vũ khí (wp_sword...) */
-  WEAPON: 'weapon_',
   /** Lưỡi kiếm xoay quanh người */
   BLADE: 'blade',
 } as const;

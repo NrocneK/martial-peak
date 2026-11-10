@@ -23,6 +23,13 @@ function axis(ox, oy, k = 1, s = 1, mv = 1) {
   const xy = (u, v) => [ox + s * (u + mv * v) * SQ * k, oy + s * (-u + mv * v) * SQ * k]
   return { uv, xy, k, s }
 }
+/** Trục theo góc bất kỳ (độ, trên màn hình: 0 = phải, 90 = xuống). Dùng cho vũ khí trong trận (cầm buông / dựng đứng). */
+function axisA(ox, oy, k, deg, mv = 1) {
+  const a = (deg * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a), vx = -uy * mv, vy = ux * mv
+  const uv = (x, y) => { const dx = x + 0.5 - ox, dy = y + 0.5 - oy; return [(dx * ux + dy * uy) / k, (dx * vx + dy * vy) / k] }
+  const xy = (u, v) => [ox + (u * ux + v * vx) * k, oy + (u * uy + v * vy) * k]
+  return { uv, xy, k, s: 1 }
+}
 /** Tô mọi điểm ảnh theo hàm f(u, v, x, y) → màu | null */
 function paint(c, ax, f) {
   for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) {
@@ -171,6 +178,7 @@ function hilt(c, ax, P, from, to, q, ringPommel) {
 }
 /** Hiệu ứng đặc trưng theo cấp quanh thân vũ khí (mode 'icon' có thêm sao lấp lánh) */
 function tierFx(c, ax, P, t, from, to, clear, o) {
+  if (o.noFx) return
   const pt = (u, v) => ax.xy(u, v).map(Math.round)
   if (P.fx === 'motes' && !o.held) for (const [u, v] of [[from + 22, -7], [to - 8, 6]]) { const [x, y] = pt(u, v); c.px(x, y, '#7ff0c0') }
   if (P.fx === 'clouds' && !o.held) for (const [u, v] of [[to - 18, -9], [from + 14, 9]]) { const [x, y] = pt(u, v); c.hline(x - 3, y, 6, '#d8e8ff'); c.hline(x - 1, y - 1, 4, '#ffffff') }
@@ -483,7 +491,7 @@ function drawBow(c, t, o) {
   }
   outlineNow(c)
   // linh khí quanh cánh
-  if (P.wispCols) {
+  if (P.wispCols && !o.noFx) {
     let prev = null
     for (let i = 0; i <= 1200; i++) {
       const s = i / 1200, p = at(s), tg = tan(s), n = [-tg[1] * outSign, tg[0] * outSign]
@@ -931,3 +939,53 @@ function knuckle(c, t, w, h, ox, oy) {
   if (t === 5) { c.px(X(3), Y(h - 2), RAINBOW[0]); c.px(X(5), Y(h - 2), RAINBOW[3]); c.px(X(w - 3), Y(1), RAINBOW[5]) }
   outlineNow(c)
 }
+
+// ================================================================ VŨ KHÍ TRONG TRẬN (góc nhìn top-down nghiêng, cầm tay phải)
+// GIỮ ĐÚNG CÁCH CẦM Ở LOBBY: nắm chuôi, lưỡi / mũi chĩa chéo xuống ra phía ngoài — chỉ xoay theo hướng nhân vật.
+// Mỗi món 1 dải 8 khung theo hướng (s, sw, w, nw, n, ne, e, se); ĐIỂM CẦM nằm đúng GIỮA khung.
+// Góc (độ, 0 = phải, 90 = xuống) lấy theo các đường mẫu người dùng kẻ trên 8 hướng.
+// Vị trí bàn tay theo hướng + khung bước: src/config/heroHands.ts (walk_battle.py).
+const BATTLE_DIRS = ['s', 'sw', 'w', 'nw', 'n', 'ne', 'e', 'se']
+const BATTLE_ANG = [126, 144, 160, 168, 32, 16, 40, 36]
+function drawFanClosed(c, t, ax) {
+  const P = TIER[t], L = FAN_LEAF[t]
+  paint(c, ax, (u, v, x, y) => {
+    if (u < 0 || u > 20) return null
+    const hw = 1.0 + u * 0.075 - (u > 18.5 ? (u - 18.5) * 0.8 : 0)
+    if (Math.abs(v) > hw) return null
+    if (Math.abs(v) > hw - 0.7) return v < 0 ? P.guard[2] : P.guard[1]               // nan cái hai bên
+    if (u > 15) return t === 5 ? RAINBOW[Math.floor(u * 2) % 7] : L[2]               // đầu quạt có màu tranh
+    return Math.floor((v + 5) * 1.6) % 2 ? L[1] : L[0]                              // nếp gấp
+  })
+  const [px, py] = ax.xy(0.6, 0)
+  c.circ(Math.round(px), Math.round(py), 1, P.guard[1]); c.px(Math.round(px), Math.round(py), P.gem ?? P.guard[2])
+  outlineNow(c)
+}
+/** Trục đặt sao cho điểm u = ug nằm giữa khung (C, C); mv: lật bên để lưỡi đao luôn quay xuống */
+const gripAxis = (C, k, deg, ug) => {
+  const a = (deg * Math.PI) / 180, mv = Math.cos(a) < 0 ? -1 : 1
+  return axisA(C - Math.cos(a) * ug * k, C - Math.sin(a) * ug * k, k, deg, mv)
+}
+/** Giữ một nửa hình theo đường vuông góc với góc cầm đi qua tâm khung: front = nửa phía mũi / đầu ngoài */
+function half(c, C, deg, front) {
+  const a = (deg * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a)
+  for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) {
+    const d = (x + 0.5 - C) * ux + (y + 0.5 - C) * uy
+    if (front ? d < 0 : d >= 0) c.px(x, y, '_')
+  }
+}
+for (let t = 0; t < 6; t++) BATTLE_DIRS.forEach((d, i) => {
+  const deg = BATTLE_ANG[i]
+  // kiếm / đao 64x64, tỉ lệ 0.4 (cỡ nhân vật trong trận / lobby ≈ 0.58), nắm giữa chuôi (u = 8)
+  sprite(`wp_sword_b${d}_${t}`, { w: 64, h: 64 }, (c) => drawSword(c, t, { ax: gripAxis(32, 0.4, deg, 8), ph: 0, held: true, noFx: true }), ...GLOW(t))
+  sprite(`wp_blade_b${d}_${t}`, { w: 64, h: 64 }, (c) => drawBlade(c, t, { ax: gripAxis(32, 0.4, deg, 8), ph: 0, held: true, noFx: true }), ...GLOW(t))
+  // thương 80x80 như lobby: cầm giữa cán (u = 62), mũi chĩa theo góc, đốc ngược lại
+  //   tách đôi tại chỗ cầm: _bf (nửa phía mũi, vẽ TRƯỚC thân) · _bk (nửa phía đốc, vẽ SAU thân)
+  for (const fr of [true, false]) sprite(`wp_spear_b${fr ? 'f' : 'k'}${d}_${t}`, { w: 80, h: 80 }, (c) => { drawSpear(c, t, { ax: gripAxis(40, 0.5, deg, 62), ph: 0, held: true, noFx: true, shaft: 86 }); half(c, 40, deg, fr) }, ...GLOW(t))
+  // cung như lobby (chuôi trong tay, cánh trên / dưới chéo), xoay quanh chuôi theo góc − 135° (góc của lobby), 64x64
+  const rot = ((deg - 135) * Math.PI) / 180, K = 0.6
+  const pts = [[7, 7], [23, 41], [55, 47]].map(([x, y]) => { const dx = (x - 23) * K, dy = (y - 41) * K; return [32 + dx * Math.cos(rot) - dy * Math.sin(rot), 32 + dx * Math.sin(rot) + dy * Math.cos(rot)] })
+  for (const fr of [true, false]) sprite(`wp_bow_b${fr ? 'f' : 'k'}${d}_${t}`, { w: 64, h: 64 }, (c) => { drawBow(c, t, { pts, k: 0.45, ph: 0, held: true, noFx: true }); half(c, 32, deg, fr) }, ...GLOW(t))
+  // quạt gấp 32x32, nắm ở đinh trục (u = 1.5)
+  sprite(`wp_fan_b${d}_${t}`, { w: 32, h: 32 }, (c) => drawFanClosed(c, t, gripAxis(16, 0.85, deg, 1.5)), ...GLOW(t))
+})
