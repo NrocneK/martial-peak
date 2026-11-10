@@ -15,6 +15,10 @@ export const TEX = {
   SHAPE: 'shape_',
   /** Đạn của nhân vật (thanh dài, nhuộm màu theo kỹ năng) */
   PROJ: 'proj',
+  /** Hình đạn đòn đánh vũ khí (tools/art/vfx.px.js → public/vfx/): kiếm khí, mũi tên, cánh quạt */
+  VFX_QI: 'vfx_qi',
+  VFX_ARROW: 'vfx_arrow',
+  VFX_FAN: 'vfx_fan',
   /** Đạn của quái / boss */
   BULLET: 'bullet',
   /** Hạt XP */

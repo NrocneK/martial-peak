@@ -4,6 +4,7 @@ import { RUN } from '../config/balance';
 import type { Enemy } from '../entities/Enemy';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
+import type { Fx } from './Fx';
 
 /** Một viên đạn (của người chơi hoặc của quái). Dùng pool, không tạo mới liên tục. */
 export class Proj {
@@ -25,6 +26,10 @@ export class Proj {
   traveled = 0;
   maxDist = 0;
   speed = 0;
+  /** Hiệu ứng: vệt bay theo (màu, độ dày; 0 = không) và tia tóe khi trúng */
+  trail = 0;
+  trailW = 0;
+  spark = false;
   /** Những quái đã bị trúng (để xuyên mà không đánh trùng) */
   readonly hit: Enemy[] = [];
   constructor(readonly img: Phaser.GameObjects.Image) {
@@ -39,6 +44,8 @@ export class Projectiles {
   private readonly mine: Proj[] = [];
   private readonly theirs: Proj[] = [];
   private readonly tmp: Enemy[] = [];
+  /** Lớp hiệu ứng (vệt bay, tia tóe) — GameScene gán sau khi tạo */
+  fx: Fx | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -74,6 +81,12 @@ export class Projectiles {
     boomerang?: boolean;
     maxDist?: number;
     life?: number;
+    /** hình đạn riêng (vẽ sẵn màu, không nhuộm); mặc định TEX.PROJ nhuộm theo color */
+    tex?: string;
+    texScale?: number;
+    trail?: number;
+    trailW?: number;
+    spark?: boolean;
   }): void {
     const p = this.take(this.mine, TEX.PROJ, 220);
     if (!p) return;
@@ -93,7 +106,11 @@ export class Projectiles {
     p.traveled = 0;
     p.maxDist = o.maxDist ?? 0;
     p.life = o.life ?? 3;
-    p.img.setTexture(TEX.PROJ).setTint(o.color).setScale(Math.max(0.6, o.r / 9)).setRotation(o.angle).setPosition(p.x, p.y);
+    p.trail = o.trail ?? 0;
+    p.trailW = o.trailW ?? 0;
+    p.spark = !!o.spark;
+    if (o.tex) p.img.setTexture(o.tex).clearTint().setScale(o.texScale ?? 1).setRotation(o.angle).setPosition(p.x, p.y);
+    else p.img.setTexture(TEX.PROJ).setTint(o.color).setScale(Math.max(0.6, o.r / 9)).setRotation(o.angle).setPosition(p.x, p.y);
   }
 
   /** Bắn đạn của quái / boss. */
@@ -139,6 +156,7 @@ export class Projectiles {
       }
       const sx = p.vx * dt;
       const sy = p.vy * dt;
+      if (p.trail && this.fx) this.fx.trail(p.x, p.y, p.x + sx, p.y + sy, p.trailW, p.trail);
       p.x += sx;
       p.y += sy;
       p.traveled += Math.hypot(sx, sy);
@@ -155,6 +173,7 @@ export class Projectiles {
         if (dx * dx + dy * dy > rr * rr) continue;
         p.hit.push(e);
         this.enemies.hurt(e, p.dmg, p.slow);
+        if (p.spark && this.fx) this.fx.spark(e.x, e.y, Math.atan2(p.vy, p.vx), p.trail || p.color);
         if (!p.boomerang) {
           if (p.pierce <= 0) {
             this.kill(p);

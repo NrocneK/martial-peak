@@ -1,5 +1,15 @@
 # Lịch sử phiên bản
 
+## v0.13.0 — Hiệu ứng đòn đánh (VFX) cho từng vũ khí
+Giữ nguyên lối chơi (sát thương, tầm, hồi chiêu), chỉ làm lại phần hình:
+- **Kiếm**: kiếm khí trăng lưỡi liềm (`public/vfx/vfx_qi.png`) + vệt sáng kéo theo + tia tóe khi trúng.
+- **Đao**: nhát chém QUÉT — dải quạt hiện dần từ mép này sang mép kia, mép sáng, vệt chém, chớp sáng đầu nhát; tia tóe ở quái trúng đòn.
+- **Thương**: thương khí thuôn (gốc mảnh → phình về mũi), lõi sáng, mũi thương lao tới, sóng nhỏ cuối đường, vệt tốc độ.
+- **Quyền sáo**: sóng chấn hai lớp + 12 tia tỏa + chớp giữa, rung màn hình nhẹ; tia tóe ở quái trúng đòn.
+- **Cung**: mũi tên pixel có lông đuôi (`vfx_arrow.png`) + vệt gió mảnh.
+- **Quạt**: cánh quạt tròn 8 nan xoay tít (`vfx_fan.png`) + vòng gió bay theo.
+- `Fx` có thêm lớp vẽ cộng sáng (ADD) cho hiệu ứng đòn đánh; `Projectiles` hỗ trợ hình đạn riêng, vệt bay, tia tóe. Hình đạn vẽ trong `tools/art/vfx.px.js`. Kỹ năng chủ động cùng kiểu giữ hiệu ứng cũ.
+
 ## v0.12.7 — Tư thế cầm quạt trong trận
 - Mẫu 8 hướng cầm quạt (`tools/art/ref/hero_battle_fan_ref.webp`, tay phải đưa lên trước ngực) chuyển thành sprite: `trace_battle.py fan` → `hero_bf_base_*`; `walk_battle.py` dựng `public/ui/hero_bf_walk.png` (6 khung đi + đứng, tay trái vung, tay phải giữ yên ở ngực, tóc / dải đai lay) — cùng lúc với sheet thường.
 - `heroHands.ts` có thêm `HERO_HANDS_FAN`. Trang bị quạt → nhân vật đổi sang bộ hình cầm quạt; quạt MỞ nhỏ che ngực, trục ở bàn tay, nhìn nghiêng thì co ngang; n / ne / nw khuất sau người.

@@ -102,6 +102,7 @@ export class GameScene extends Phaser.Scene {
     this.texts = new FloatingText(this);
     this.enemies = new EnemyManager(this, this.player);
     this.proj = new Projectiles(this, this.player, this.enemies);
+    this.proj.fx = this.fx;
     this.pickups = new Pickups(this, this.player, this.run);
     this.enemies.setLinks({ proj: this.proj, pickups: this.pickups, fx: this.fx, texts: this.texts, run: this.run });
     this.enemies.coinValue = Math.max(1, Math.round(2 * econScale(WORLD_FIRST_TIER[this.stage.world])));

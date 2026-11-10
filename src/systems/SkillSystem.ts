@@ -112,6 +112,9 @@ export class SkillSystem {
     const p = this.player;
     switch (def.kind) {
       case 'projectile': {
+        // hình đạn riêng của vũ khí: kiếm khí / mũi tên (kỹ năng chủ động cùng kiểu giữ đạn mặc định)
+        const look = def.id === 'wp_sword' ? { tex: TEX.VFX_QI, texScale: 1.35, trail: 0x8fd8ff, trailW: 7, spark: true }
+          : def.id === 'wp_bow' ? { tex: TEX.VFX_ARROW, trail: 0xc8ffc0, trailW: 2, spark: true } : {};
         const targets = this.nearestN(r.count, 650);
         if (targets.length === 0) return false;
         for (let i = 0; i < r.count; i++) {
@@ -120,7 +123,7 @@ export class SkillSystem {
           const a = Math.atan2(t.y - p.y, t.x - p.x) + spread;
           this.proj.fireMine({
             x: p.x, y: p.y, angle: a, speed: r.speed, r: r.width * 0.9, dmg: r.damage, pierce: r.pierce,
-            color: def.color, homing: def.homing, slow: def.slow,
+            color: def.color, homing: def.homing, slow: def.slow, ...look,
           });
         }
         audio.play('cast');
@@ -132,13 +135,16 @@ export class SkillSystem {
         const base = Math.atan2(t.y - p.y, t.x - p.x);
         for (let i = 0; i < r.count; i++) {
           const a = base + (i * Math.PI * 2) / r.count;
-          this.fx.arc(p.x, p.y, r.area, a, r.arc, def.color);
+          if (def.group === 'weapon') this.fx.sweep(p.x, p.y, r.area, a, r.arc, def.color);
+          else this.fx.arc(p.x, p.y, r.area, a, r.arc, def.color);
           this.enemies.inRadius(p.x, p.y, r.area, this.buf);
+          let sparks = 0;
           for (const e of this.buf) {
             const d = Math.abs(Phaser.Math.Angle.Wrap(Math.atan2(e.y - p.y, e.x - p.x) - a));
             if (d <= r.arc / 2) {
               this.enemies.hurt(e, r.damage, def.slow ?? 0);
               this.knock(e, 160);
+              if (def.group === 'weapon' && sparks++ < 8) this.fx.spark(e.x, e.y, Math.atan2(e.y - p.y, e.x - p.x), def.color);
             }
           }
         }
@@ -153,7 +159,8 @@ export class SkillSystem {
           const a = base + (i - (r.count - 1) / 2) * 0.35;
           const ex = p.x + Math.cos(a) * r.area;
           const ey = p.y + Math.sin(a) * r.area;
-          this.fx.line(p.x, p.y, ex, ey, r.width + 6, def.color, 0.22);
+          if (def.group === 'weapon') this.fx.thrust(p.x, p.y, ex, ey, r.width + 4, def.color);
+          else this.fx.line(p.x, p.y, ex, ey, r.width + 6, def.color, 0.22);
           this.hitLine(p.x, p.y, ex, ey, r.width, r.damage, def.slow ?? 0);
         }
         audio.play('cast');
@@ -163,11 +170,16 @@ export class SkillSystem {
         // Không cần mục tiêu, nhưng chỉ nổ khi có quái trong phạm vi để không phí hồi chiêu
         this.enemies.inRadius(p.x, p.y, r.area, this.buf);
         if (this.buf.length === 0) return false;
-        this.fx.ring(p.x, p.y, r.area, def.color, 0.35);
-        this.fx.burst(p.x, p.y, r.area, def.color, 0.3);
+        if (def.group === 'weapon') this.fx.shock(p.x, p.y, r.area, def.color);
+        else {
+          this.fx.ring(p.x, p.y, r.area, def.color, 0.35);
+          this.fx.burst(p.x, p.y, r.area, def.color, 0.3);
+        }
+        let sparks = 0;
         for (const e of this.buf) {
           this.enemies.hurt(e, r.damage, def.slow ?? 0);
           this.knock(e, 220);
+          if (def.group === 'weapon' && sparks++ < 8) this.fx.spark(e.x, e.y, Math.atan2(e.y - p.y, e.x - p.x), def.color);
         }
         audio.play('cast');
         return true;
@@ -197,6 +209,7 @@ export class SkillSystem {
           this.proj.fireMine({
             x: p.x, y: p.y, angle: base + (i - (r.count - 1) / 2) * 0.4, speed: r.speed, r: 16, dmg: r.damage,
             pierce: 99, color: def.color, boomerang: true, maxDist: r.area, life: 6,
+            ...(def.id === 'wp_fan' ? { tex: TEX.VFX_FAN, texScale: 1.4, trail: 0xd0b0ff, trailW: 4, spark: true } : {}),
           });
         }
         audio.play('cast');
