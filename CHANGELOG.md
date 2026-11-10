@@ -1,5 +1,14 @@
 # Lịch sử phiên bản
 
+## v0.13.1 — Hoạt ảnh ra đòn của nhân vật
+- Khi vũ khí ra đòn, nhân vật QUAY MẶT về phía mục tiêu và có động tác riêng theo vũ khí (`WEAPON_ATTACK` trong `src/config/heroBattle.ts`):
+  - Kiếm / đao: lấy đà ra sau rồi chém một vòng qua hướng mục tiêu, thu về.
+  - Thương: chĩa mũi vào mục tiêu, đâm tới 16 điểm ảnh rồi rút về (tay đi theo cán).
+  - Quyền sáo: tay phải đấm tới theo hướng đòn.
+  - Cung: xoay cung cho dây vuông góc hướng bắn, giật nhẹ khi buông tên.
+  - Quạt: hất tay ném; quạt rời tay trong lúc bay.
+- Thân nhào nhẹ theo hướng đòn (cung: lùi nhẹ) — chỉ dời hình, không đổi vị trí va chạm. Vũ khí xoay quanh điểm cầm từ góc nghỉ (`WEAPON_REST_ANG`).
+
 ## v0.13.0 — Hiệu ứng đòn đánh (VFX) cho từng vũ khí
 Giữ nguyên lối chơi (sát thương, tầm, hồi chiêu), chỉ làm lại phần hình:
 - **Kiếm**: kiếm khí trăng lưỡi liềm (`public/vfx/vfx_qi.png`) + vệt sáng kéo theo + tia tóe khi trúng.

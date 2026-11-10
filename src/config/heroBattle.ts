@@ -34,3 +34,27 @@ export const NO_HAND_COVER = new Set(['wp_fist']);
 
 export const battleWeaponKey = (weaponId: string, tier: number): string => `bw_${weaponId}_${tier}`;
 export const fistKey = (hand: 'near' | 'far', tier: number): string => `bf_${hand}_${tier}`;
+
+/**
+ * Góc NGHỈ của vũ khí trên từng hướng (độ; 0 = phải, 90 = xuống) — hướng lưỡi / mũi (cung: hướng dây cung) đúng như hình
+ * đã vẽ trong gear.px.js (BATTLE_ANG / SPEAR_ANG / BOW_DIR). Hoạt ảnh ra đòn xoay vũ khí quanh điểm cầm từ góc này.
+ */
+const SWORD_ANG = { s: 126, sw: 144, w: 160, nw: 168, n: 32, ne: 16, e: 40, se: 36 };
+export const WEAPON_REST_ANG: Record<string, Record<string, number>> = {
+  wp_sword: SWORD_ANG,
+  wp_blade: SWORD_ANG,
+  wp_fan: SWORD_ANG,
+  wp_spear: { ...SWORD_ANG, n: 36, ne: 19 },
+  wp_bow: { s: 31, sw: 49, w: 27, nw: 65, n: 133, ne: 126, e: 144, se: 157 },
+};
+
+export type AttackType = 'swing' | 'thrust' | 'punch' | 'draw' | 'throw';
+/** Hoạt ảnh ra đòn theo vũ khí: kiểu + thời lượng (giây) */
+export const WEAPON_ATTACK: Record<string, { type: AttackType; dur: number }> = {
+  wp_sword: { type: 'swing', dur: 0.24 },
+  wp_blade: { type: 'swing', dur: 0.28 },
+  wp_spear: { type: 'thrust', dur: 0.26 },
+  wp_fist: { type: 'punch', dur: 0.2 },
+  wp_bow: { type: 'draw', dur: 0.24 },
+  wp_fan: { type: 'throw', dur: 0.5 },
+};

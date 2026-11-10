@@ -121,6 +121,7 @@ export class SkillSystem {
           const t = targets[i % targets.length];
           const spread = targets.length < r.count ? (i - (r.count - 1) / 2) * 0.14 : 0;
           const a = Math.atan2(t.y - p.y, t.x - p.x) + spread;
+          if (i === 0 && def.group === 'weapon') p.playAttack(a);
           this.proj.fireMine({
             x: p.x, y: p.y, angle: a, speed: r.speed, r: r.width * 0.9, dmg: r.damage, pierce: r.pierce,
             color: def.color, homing: def.homing, slow: def.slow, ...look,
@@ -133,6 +134,7 @@ export class SkillSystem {
         const t = this.enemies.nearest(p.x, p.y, r.area + 200);
         if (!t) return false;
         const base = Math.atan2(t.y - p.y, t.x - p.x);
+        if (def.group === 'weapon') p.playAttack(base);
         for (let i = 0; i < r.count; i++) {
           const a = base + (i * Math.PI * 2) / r.count;
           if (def.group === 'weapon') this.fx.sweep(p.x, p.y, r.area, a, r.arc, def.color);
@@ -155,6 +157,7 @@ export class SkillSystem {
         const t = this.enemies.nearest(p.x, p.y, 650);
         if (!t) return false;
         const base = Math.atan2(t.y - p.y, t.x - p.x);
+        if (def.group === 'weapon') p.playAttack(base);
         for (let i = 0; i < r.count; i++) {
           const a = base + (i - (r.count - 1) / 2) * 0.35;
           const ex = p.x + Math.cos(a) * r.area;
@@ -170,7 +173,11 @@ export class SkillSystem {
         // Không cần mục tiêu, nhưng chỉ nổ khi có quái trong phạm vi để không phí hồi chiêu
         this.enemies.inRadius(p.x, p.y, r.area, this.buf);
         if (this.buf.length === 0) return false;
-        if (def.group === 'weapon') this.fx.shock(p.x, p.y, r.area, def.color);
+        if (def.group === 'weapon') {
+          this.fx.shock(p.x, p.y, r.area, def.color);
+          const n = this.buf[0];
+          p.playAttack(n ? Math.atan2(n.y - p.y, n.x - p.x) : null);
+        }
         else {
           this.fx.ring(p.x, p.y, r.area, def.color, 0.35);
           this.fx.burst(p.x, p.y, r.area, def.color, 0.3);
@@ -205,6 +212,7 @@ export class SkillSystem {
         const t = this.enemies.nearest(p.x, p.y, 650);
         if (!t) return false;
         const base = Math.atan2(t.y - p.y, t.x - p.x);
+        if (def.group === 'weapon') p.playAttack(base);
         for (let i = 0; i < r.count; i++) {
           this.proj.fireMine({
             x: p.x, y: p.y, angle: base + (i - (r.count - 1) / 2) * 0.4, speed: r.speed, r: 16, dmg: r.damage,
