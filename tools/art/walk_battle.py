@@ -1,8 +1,10 @@
 """
-Sheet DI CHUYỂN của nhân vật trong trận, dựng từ 8 hình đứng đã duyệt (tools/art/out/hero_b_base_*.png, do trace_battle.py tạo).
+Sheet DI CHUYỂN của nhân vật trong trận, dựng từ 8 hình đứng đã duyệt (tools/art/out/hero_b*_base_*.png, do trace_battle.py tạo).
+Hai tư thế: thường (hero_b) và CẦM QUẠT — tay phải trước ngực (hero_bf).
 
-  python3 -I tools/art/walk_battle.py   → public/ui/hero_b_walk.png (8 hàng hướng × 7 cột, mỗi khung 52x68: 6 khung đi + cột cuối = đứng yên)
-                                          + tools/art/out/hero_b_walk_preview.gif
+  python3 -I tools/art/walk_battle.py   → public/ui/hero_b_walk.png + hero_bf_walk.png (8 hàng hướng × 7 cột, khung 52x68:
+                                          6 khung đi + cột cuối = đứng yên) + tools/art/out/hero_b*_walk_preview.gif
+                                          + src/config/heroHands.ts (vị trí bàn tay theo hướng / khung cho cả hai tư thế)
 
 Hàng (hướng): s, sw, w, nw, n, ne, e, se.  Chu kỳ 6 khung (đề xuất 10 khung/giây).
 Cách dựng mỗi khung:
@@ -22,8 +24,6 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-OUT = os.path.join(ROOT, 'public', 'ui', 'hero_b_walk.png')
-GIF = os.path.join(HERE, 'out', 'hero_b_walk_preview.gif')
 DIRS = ['s', 'sw', 'w', 'nw', 'n', 'ne', 'e', 'se']
 W, H, N = 52, 68, 6
 OUTLINE = (18, 14, 28)
@@ -60,6 +60,33 @@ PARTS = {
     'w': [('arm', (21, 38, 28, 46), 1), ('hair', (34, 9, 46, 28), 'top'), ('sash', (33, 35, 46, 50), 'top')],
     'sw': [('arm', (15, 32, 21, 38), 0), ('arm', (30, 39, 37, 46), 1), ('hair', (34, 6, 46, 24), 'top'), ('sash', (36, 36, 48, 49), 'top')],
 }
+
+# ---- tư thế CẦM QUẠT (hero_bf): tay phải giữ quạt trước ngực (không vung); n / ne / nw: tay phải + quạt khuất sau người
+LEG_Y_FAN = {'s': 55, 'n': 56, 'se': 56, 'sw': 55, 'ne': 56, 'nw': 56, 'e': 56, 'w': 56}
+HANDS_FAN = {
+    's': {'R': (23, 34), 'L': (37, 42), 'front': True},
+    'se': {'R': (28, 34), 'L': (36, 38), 'front': True},
+    'e': {'R': (33, 33), 'L': None, 'front': True},
+    'ne': {'R': (34, 28), 'L': None, 'front': False},
+    'n': {'R': (30, 34), 'L': (15, 44), 'front': False},
+    'nw': {'R': (25, 33), 'L': (19, 43), 'front': False},
+    'w': {'R': (16, 32), 'L': (24, 42), 'front': True},
+    'sw': {'R': (21, 33), 'L': (33, 42), 'front': True},
+}
+PARTS_FAN = {
+    's': [('arm', (34, 39, 41, 46), 1), ('hair', (17, 0, 37, 12), 'bottom'), ('sash', (11, 43, 18, 52), 'top')],
+    'se': [('arm', (34, 36, 39, 41), 1), ('hair', (8, 0, 18, 24), 'top'), ('sash', (5, 35, 18, 48), 'top')],
+    'e': [('hair', (6, 0, 20, 28), 'top'), ('sash', (5, 36, 20, 52), 'top')],
+    'ne': [('hair', (7, 0, 19, 28), 'top'), ('sash', (5, 37, 20, 52), 'top')],
+    'n': [('arm', (13, 40, 19, 47), 0), ('hair', (16, 14, 37, 30), 'top', 'keep'), ('sash', (33, 40, 43, 55), 'top')],
+    'nw': [('arm', (16, 40, 24, 47), 0), ('hair', (30, 0, 46, 24), 'top'), ('sash', (33, 36, 48, 50), 'top')],
+    'w': [('arm', (21, 39, 28, 45), 1), ('hair', (33, 0, 45, 25), 'top'), ('sash', (31, 35, 45, 49), 'top')],
+    'sw': [('arm', (31, 40, 37, 45), 1), ('hair', (34, 0, 45, 23), 'top'), ('sash', (35, 35, 49, 49), 'top')],
+}
+POSES = [
+    {'pfx': 'hero_b', 'ts': 'HERO_HANDS', 'leg': LEG_Y, 'parts': PARTS, 'hands': HANDS},
+    {'pfx': 'hero_bf', 'ts': 'HERO_HANDS_FAN', 'leg': LEG_Y_FAN, 'parts': PARTS_FAN, 'hands': HANDS_FAN},
+]
 
 
 def components(mask):
@@ -109,9 +136,9 @@ def move_region(src, dst, box, off_fn, keep):
                 dst[ty, tx] = blk[yy, xx]
 
 
-def animate_parts(upper, d, t, fx, fy):
+def animate_parts(upper, d, t, fx, fy, parts):
     out = upper.copy()
-    for part in PARTS.get(d, []):
+    for part in parts.get(d, []):
         kind, box = part[0], part[1]
         keep = 'keep' in part[3:]
         if kind == 'arm':
@@ -133,63 +160,67 @@ def animate_parts(upper, d, t, fx, fy):
     return out
 
 
-sheet = np.zeros((H * len(DIRS), W * (N + 1), 4), np.uint8)
-frames_by_dir = {}
-for r, d in enumerate(DIRS):
-    base = np.array(Image.open(os.path.join(HERE, 'out', f'hero_b_base_{d}.png')).convert('RGBA'))
-    ly = LEG_Y[d]
-    a = base[:, :, 3] > 0
-    legmask = a.copy()
-    legmask[:ly] = False
-    comps = sorted(components(legmask), key=len, reverse=True)
-    legs = [c for c in comps[:2] if len(c) >= 6]
-    if len(legs) == 1:                                     # một mảng: chia đôi theo x
-        xs = sorted(x for _, x in legs[0])
-        mid = xs[len(xs) // 2]
-        legs = [[p for p in legs[0] if p[1] < mid], [p for p in legs[0] if p[1] >= mid]]
-    legs.sort(key=lambda c: sum(x for _, x in c) / len(c))
-    rest = [p for c in comps[2:] for p in c]               # mảnh vụn dưới vạt: đi theo thân
-    upper = base.copy()
-    upper[ly:] = 0
-    for y, x in rest:
-        upper[y, x] = base[y, x]
-    fx, fy = FWD[d]
-    frames = []
-    for f in range(N):
-        t = 2 * math.pi * f / N
-        img = np.zeros((H, W, 4), np.uint8)
-        for i, leg in enumerate(legs):
-            ph = t if i == 0 else t + math.pi
-            fwd = math.sin(ph) * STRIDE[d]
-            lift = max(0.0, math.cos(ph)) * LIFT
-            dx, dy = round(fx * fwd), round(fy * fwd - lift)
-            for y, x in leg:
-                yy, xx = y + dy, x + dx
-                if 0 <= yy < H and 0 <= xx < W:
-                    img[yy, xx] = base[y, x]
-        bob = -1 if abs(math.cos(t)) > 0.7 else 0          # giữa bước: thân nhô lên 1 điểm ảnh
-        up = animate_parts(upper, d, t, fx, fy)
-        ua = up[:, :, 3] > 0
-        ys, xs = np.where(ua)
-        ok = (ys + bob >= 0) & (ys + bob < H)
-        img[ys[ok] + bob, xs[ok]] = up[ys[ok], xs[ok]]
-        img = outline(img)
-        sheet[r * H:(r + 1) * H, f * W:(f + 1) * W] = img
-        frames.append(img)
-    sheet[r * H:(r + 1) * H, N * W:(N + 1) * W] = outline(base.copy())   # cột đứng yên
-    frames_by_dir[d] = frames
+def build(pose):
+    sheet = np.zeros((H * len(DIRS), W * (N + 1), 4), np.uint8)
+    frames_by_dir = {}
+    for r, d in enumerate(DIRS):
+        base = np.array(Image.open(os.path.join(HERE, 'out', f"{pose['pfx']}_base_{d}.png")).convert('RGBA'))
+        ly = pose['leg'][d]
+        a = base[:, :, 3] > 0
+        legmask = a.copy()
+        legmask[:ly] = False
+        comps = sorted(components(legmask), key=len, reverse=True)
+        legs = [c for c in comps[:2] if len(c) >= 6]
+        if len(legs) == 1:                                     # một mảng: chia đôi theo x
+            xs = sorted(x for _, x in legs[0])
+            mid = xs[len(xs) // 2]
+            legs = [[p for p in legs[0] if p[1] < mid], [p for p in legs[0] if p[1] >= mid]]
+        legs.sort(key=lambda c: sum(x for _, x in c) / len(c))
+        rest = [p for c in comps[2:] for p in c]               # mảnh vụn dưới vạt: đi theo thân
+        upper = base.copy()
+        upper[ly:] = 0
+        for y, x in rest:
+            upper[y, x] = base[y, x]
+        fx, fy = FWD[d]
+        frames = []
+        for f in range(N):
+            t = 2 * math.pi * f / N
+            img = np.zeros((H, W, 4), np.uint8)
+            for i, leg in enumerate(legs):
+                ph = t if i == 0 else t + math.pi
+                fwd = math.sin(ph) * STRIDE[d]
+                lift = max(0.0, math.cos(ph)) * LIFT
+                dx, dy = round(fx * fwd), round(fy * fwd - lift)
+                for y, x in leg:
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < H and 0 <= xx < W:
+                        img[yy, xx] = base[y, x]
+            bob = -1 if abs(math.cos(t)) > 0.7 else 0          # giữa bước: thân nhô lên 1 điểm ảnh
+            up = animate_parts(upper, d, t, fx, fy, pose['parts'])
+            ua = up[:, :, 3] > 0
+            ys, xs = np.where(ua)
+            ok = (ys + bob >= 0) & (ys + bob < H)
+            img[ys[ok] + bob, xs[ok]] = up[ys[ok], xs[ok]]
+            img = outline(img)
+            sheet[r * H:(r + 1) * H, f * W:(f + 1) * W] = img
+            frames.append(img)
+        sheet[r * H:(r + 1) * H, N * W:(N + 1) * W] = outline(base.copy())   # cột đứng yên
+        frames_by_dir[d] = frames
 
-Image.fromarray(sheet, 'RGBA').save(OUT)
+    Image.fromarray(sheet, 'RGBA').save(os.path.join(ROOT, 'public', 'ui', f"{pose['pfx']}_walk.png"))
 
 
-def hand_offset(d, f, pt):
+    return frames_by_dir
+
+
+def hand_offset(d, f, pt, parts):
     """Độ lệch (dx, dy) của bàn tay ở khung f (0..N-1; N = đứng yên): thân nhún + tay vung"""
     if f >= N or pt is None:
         return (0, 0)
     t = 2 * math.pi * f / N
     bob = -1 if abs(math.cos(t)) > 0.7 else 0
     fx, fy = FWD[d]
-    for part in PARTS.get(d, []):
+    for part in parts.get(d, []):
         if part[0] != 'arm':
             continue
         x0, y0, x1, y1 = part[1]
@@ -200,33 +231,42 @@ def hand_offset(d, f, pt):
     return (0, bob)
 
 
+
 lines = ['// TỰ SINH bởi tools/art/walk_battle.py — đừng sửa tay, sửa HANDS / PARTS trong script rồi chạy lại.',
-         '// Vị trí bàn tay của nhân vật trong trận trên khung 52x68 của hero_b_walk.png, theo hướng và khung (6 khung đi + 1 đứng).',
-         'export interface HeroHands { R: [number, number][]; L: [number, number][] | null; front: boolean }',
-         'export const HERO_HANDS: Record<string, HeroHands> = {']
-for d in DIRS:
-    hd = HANDS[d]
-    def seq(pt):
-        return '[' + ', '.join(f'[{pt[0] + o[0]}, {pt[1] + o[1]}]' for o in (hand_offset(d, f, pt) for f in range(N + 1))) + ']'
-    lines.append(f"  {d}: {{ R: {seq(hd['R'])}, L: {seq(hd['L']) if hd['L'] else 'null'}, front: {'true' if hd['front'] else 'false'} }},")
-lines.append('};')
+         '// Vị trí bàn tay của nhân vật trong trận trên khung 52x68 của hero_b*_walk.png, theo hướng và khung (6 khung đi + 1 đứng).',
+         '// HERO_HANDS: tư thế thường · HERO_HANDS_FAN: tư thế cầm quạt (tay phải trước ngực).',
+         'export interface HeroHands { R: [number, number][]; L: [number, number][] | null; front: boolean }']
+for pose in POSES:
+    lines.append(f"export const {pose['ts']}: Record<string, HeroHands> = {{")
+    for d in DIRS:
+        hd = pose['hands'][d]
+        def seq(pt):
+            return '[' + ', '.join(f'[{pt[0] + o[0]}, {pt[1] + o[1]}]' for o in (hand_offset(d, f, pt, pose['parts']) for f in range(N + 1))) + ']'
+        lines.append(f"  {d}: {{ R: {seq(hd['R'])}, L: {seq(hd['L']) if hd['L'] else 'null'}, front: {'true' if hd['front'] else 'false'} }},")
+    lines.append('};')
 open(TS_OUT, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
 
+
 # ---- xem trước: 8 hướng xếp la bàn, phóng 3 lần, nền xanh + bóng
-S = 3
-lay = [['nw', 'n', 'ne'], ['w', None, 'e'], ['sw', 's', 'se']]
-gif = []
-for f in range(N):
-    pv = Image.new('RGBA', (3 * (W * S + 12), 3 * (H * S + 12)), (36, 58, 112, 255))
-    from PIL import ImageDraw
-    dr = ImageDraw.Draw(pv)
-    for rr, row in enumerate(lay):
-        for cc, d in enumerate(row):
-            if not d:
-                continue
-            ox, oy = cc * (W * S + 12) + 6, rr * (H * S + 12) + 6
-            dr.ellipse([ox + 16 * S, oy + 61.5 * S, ox + 36 * S, oy + 66.5 * S], fill=(16, 28, 60, 255))
-            pv.alpha_composite(Image.fromarray(frames_by_dir[d][f], 'RGBA').resize((W * S, H * S), Image.NEAREST), (ox, oy))
-    gif.append(pv.convert('RGB'))
-gif[0].save(GIF, save_all=True, append_images=gif[1:], duration=100, loop=0)
-print('→', OUT, '·', GIF)
+def preview(pfx, frames_by_dir):
+    S = 3
+    lay = [['nw', 'n', 'ne'], ['w', None, 'e'], ['sw', 's', 'se']]
+    gif = []
+    for f in range(N):
+        pv = Image.new('RGBA', (3 * (W * S + 12), 3 * (H * S + 12)), (36, 58, 112, 255))
+        from PIL import ImageDraw
+        dr = ImageDraw.Draw(pv)
+        for rr, row in enumerate(lay):
+            for cc, d in enumerate(row):
+                if not d:
+                    continue
+                ox, oy = cc * (W * S + 12) + 6, rr * (H * S + 12) + 6
+                dr.ellipse([ox + 16 * S, oy + 61.5 * S, ox + 36 * S, oy + 66.5 * S], fill=(16, 28, 60, 255))
+                pv.alpha_composite(Image.fromarray(frames_by_dir[d][f], 'RGBA').resize((W * S, H * S), Image.NEAREST), (ox, oy))
+        gif.append(pv.convert('RGB'))
+    gif[0].save(os.path.join(HERE, 'out', f'{pfx}_walk_preview.gif'), save_all=True, append_images=gif[1:], duration=100, loop=0)
+
+
+for pose in POSES:
+    preview(pose['pfx'], build(pose))
+print('→ public/ui/hero_b_walk.png, hero_bf_walk.png · src/config/heroHands.ts')

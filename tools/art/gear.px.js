@@ -531,8 +531,9 @@ function fanArt(t, an, rn, x, y) {
 function drawFan(c, t, o) {
   const P = TIER[t], L = FAN_LEAF[t], k = o.k ?? 1
   const [px, py] = o.pivot, R0 = o.r0, R1 = o.r1, A0 = -172, A1 = -8, folds = o.folds ?? 12
+  const sx = o.sx ?? 1                                                         // co ngang: quạt nhìn nghiêng
   paintXY(c, (x, y) => {
-    const dx = x - px, dy = y - py, r = Math.hypot(dx, dy)
+    const dx = (x - px) / sx, dy = y - py, r = Math.hypot(dx, dy)
     let a = Math.atan2(dy, dx) * 180 / Math.PI
     if (a < A0 || a > A1) return null
     const an = (a - A0) / (A1 - A0), fi = an * folds, fpos = fi - Math.floor(fi)
@@ -556,7 +557,7 @@ function drawFan(c, t, o) {
   if (o.hand) o.hand(c)
   outlineNow(c)
   if (P.tassel && o.tassel !== false) tassel(c, Math.round(px), Math.round(py + 2.5 * k), P.tassel, Math.round(8 * k), o.ph, t === 5)
-  if (P.wispCols) {   // linh khí bay vòng trên mép quạt
+  if (P.wispCols && !o.noFx) {   // linh khí bay vòng trên mép quạt
     let prev = null
     for (let a = A0 - 6; a < A1 + 6; a += 0.5) {
       const rr = R1 + 3.5 * k + Math.sin(a * 0.09 - o.ph) * 2.5 * k, r2 = a * Math.PI / 180
@@ -947,6 +948,7 @@ function knuckle(c, t, w, h, ox, oy) {
 // Vị trí bàn tay theo hướng + khung bước: src/config/heroHands.ts (walk_battle.py).
 const BATTLE_DIRS = ['s', 'sw', 'w', 'nw', 'n', 'ne', 'e', 'se']
 const BATTLE_ANG = [126, 144, 160, 168, 32, 16, 40, 36]
+const FAN_SX = { s: 1, sw: 0.8, w: 0.45, nw: 0.8, n: 1, ne: 0.8, e: 0.45, se: 0.8 }
 // Thương: N / NE theo đường mẫu (cán chạy chéo qua LƯNG lên vai trái — nhìn từ sau lưng nên cán nằm TRƯỚC, thấy được)
 const SPEAR_ANG = { n: 36, ne: 19 }
 const SPEAR_WHOLE_FRONT = new Set(['n', 'ne'])
@@ -1013,6 +1015,7 @@ for (let t = 0; t < 6; t++) BATTLE_DIRS.forEach((d, i) => {
     const pts = [[7, 7], [23, 41], [55, 47]].map(([x, y]) => { const dx = (x - 23) * K, dy = (y - 41) * K; return [48 + dx * Math.cos(rot) - dy * Math.sin(rot), 48 + dx * Math.sin(rot) + dy * Math.cos(rot)] })
     for (const fr of [true, false]) sprite(`wp_bow_b${fr ? 'f' : 'k'}${d}_${t}`, { w: 96, h: 96 }, (c) => { drawBow(c, t, { pts, k: 0.45, ph: 0, held: true, noFx: true }); half(c, 48, deg, fr) }, ...GLOW(t))
   }
-  // quạt gấp 32x32, nắm ở đinh trục (u = 1.5)
-  sprite(`wp_fan_b${d}_${t}`, { w: 32, h: 32 }, (c) => drawFanClosed(c, t, gripAxis(16, 0.85, deg, 1.5)), ...GLOW(t))
+  // quạt: nhân vật đổi sang tư thế CẦM QUẠT (tay phải trước ngực, hero_bf_walk.png) → quạt MỞ nhỏ che ngực, trục ở bàn tay
+  // (giữa khung 32x32); nhìn nghiêng thì co ngang (FAN_SX). n / ne / nw: khuất sau người (HERO_HANDS_FAN.front = false).
+  sprite(`wp_fan_b${d}_${t}`, { w: 32, h: 32 }, (c) => drawFan(c, t, { pivot: [16, 16.5], r0: 3, r1: 10.5, k: 0.4, folds: 9, ph: 0, held: true, noFx: true, tassel: false, sx: FAN_SX[d] }), ...GLOW(t))
 })

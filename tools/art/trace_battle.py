@@ -2,26 +2,37 @@
 Chuyển ảnh mẫu 8 hướng của nhân vật trong trận (tools/art/ref/hero_battle_ref.webp, lưới 4x2 ô)
 thành sprite pixel art cùng cỡ, cùng mặt đất, cùng bảng màu.
 
-  python3 -I tools/art/trace_battle.py   → public/ui/hero_b_{s,se,e,ne,n,nw,w,sw}.png + tools/art/out/hero_b_preview.png
-                                           + tools/art/out/hero_b_base_*.png (chưa viền, đầu vào của walk_battle.py)
+  python3 -I tools/art/trace_battle.py       → tư thế thường: public/ui/hero_b_*.png + tools/art/out/hero_b_base_*.png
+  python3 -I tools/art/trace_battle.py fan   → tư thế CẦM QUẠT (tay phải trước ngực, mẫu hero_battle_fan_ref.webp):
+                                               tools/art/out/hero_bf_base_*.png (+ public/ui/hero_bf_*.png, ảnh xem trước)
+  (hero_*_base_*.png chưa viền = đầu vào của walk_battle.py)
 
-Thứ tự ô trong ảnh mẫu: hàng 1 = S, SE, E, NE · hàng 2 = N, NW, W, SW.
+Thứ tự ô trong ảnh mẫu thường: hàng 1 = S, SE, E, NE · hàng 2 = N, NW, W, SW.
+Mẫu cầm quạt: hàng 1 = NW, N, NE, E · hàng 2 = SE, S, SW, W.
 Các bước: tách nền xanh + bóng dưới chân (loang từ mép ô, viền tối của nhân vật chặn vùng loang)
 → căn chân về cùng một điểm → thu nhỏ theo khối F x F (màu trung vị của phần thuộc nhân vật)
 → gom 8 hướng về CHUNG một bảng màu → xóa điểm lẻ → viền ngoài 1px.
 """
 import os
+import sys
 from collections import deque
 import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-SRC = os.path.join(HERE, 'ref', 'hero_battle_ref.webp')
+VARIANT = sys.argv[1] if len(sys.argv) > 1 else ''
+if VARIANT == 'fan':
+    SRC = os.path.join(HERE, 'ref', 'hero_battle_fan_ref.webp')
+    ORDER = [['nw', 'n', 'ne', 'e'], ['se', 's', 'sw', 'w']]
+    PFX = 'hero_bf'
+else:
+    SRC = os.path.join(HERE, 'ref', 'hero_battle_ref.webp')
+    ORDER = [['s', 'se', 'e', 'ne'], ['n', 'nw', 'w', 'sw']]
+    PFX = 'hero_b'
 OUT_DIR = os.path.join(ROOT, 'public', 'ui')
-PREVIEW = os.path.join(HERE, 'out', 'hero_b_preview.png')
+PREVIEW = os.path.join(HERE, 'out', f'{PFX}_preview.png')
 
-ORDER = [['s', 'se', 'e', 'ne'], ['n', 'nw', 'w', 'sw']]
 F = 6                    # 6 điểm ảnh mẫu → 1 điểm ảnh sprite
 W, H = 52, 68            # khung sprite
 FOOT = (26, 64)          # điểm giữa hai chân trên sprite (x, hàng mặt đất)
@@ -142,7 +153,7 @@ for k, name in enumerate(names):
     img = np.zeros((H, W, 4), np.uint8)
     img[a, :3] = rgb[a]
     img[a, 3] = 255
-    Image.fromarray(img, 'RGBA').save(os.path.join(HERE, 'out', f'hero_b_base_{name}.png'))   # chưa viền: walk_battle.py cắt ghép
+    Image.fromarray(img, 'RGBA').save(os.path.join(HERE, 'out', f'{PFX}_base_{name}.png'))   # chưa viền: walk_battle.py cắt ghép
     # viền ngoài 1px
     edge = np.zeros_like(a)
     for y in range(H):
@@ -151,7 +162,7 @@ for k, name in enumerate(names):
                 edge[y, x] = True
     img[edge, :3] = OUTLINE
     img[edge, 3] = 255
-    Image.fromarray(img, 'RGBA').save(os.path.join(OUT_DIR, f'hero_b_{name}.png'))
+    Image.fromarray(img, 'RGBA').save(os.path.join(OUT_DIR, f'{PFX}_{name}.png'))
     small[name] = img
 
 # ---- ảnh xem trước: lưới la bàn, phóng to 4 lần, có bóng dưới chân
@@ -169,4 +180,4 @@ for r, row in enumerate(lay):
         pv.alpha_composite(sh, (ox, oy))
         pv.alpha_composite(Image.fromarray(small[name], 'RGBA').resize((W * S, H * S), Image.NEAREST), (ox, oy))
 pv.save(PREVIEW)
-print('→', OUT_DIR, 'hero_b_*.png ·', PREVIEW)
+print('→', OUT_DIR, f'{PFX}_*.png ·', PREVIEW)

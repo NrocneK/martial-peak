@@ -7,6 +7,8 @@
 export const TEX = {
   /** Nhân vật chính (Cố Trường Ca) trong trận: public/ui/hero_b_walk.png — 8 hàng hướng × (6 khung đi + 1 khung đứng) */
   PLAYER: 'player',
+  /** Tư thế CẦM QUẠT (tay phải trước ngực): public/ui/hero_bf_walk.png, cùng bố cục với PLAYER */
+  PLAYER_FAN: 'player_fan',
   /** Nền đất lặp vô hạn */
   GROUND: 'ground',
   /** Hình dạng quái (màu trắng, được nhuộm màu bằng setTint). Key = 'shape_' + tên hình. */
@@ -40,4 +42,4 @@ export const PLAYER_WALK_FRAMES = 6;
 export const PLAYER_SHEET_COLS = PLAYER_WALK_FRAMES + 1;
 export const PLAYER_FRAME = { w: 52, h: 68 };
 /** Khóa hoạt ảnh đi theo hướng, vd. 'hero-walk-se' */
-export const playerWalkAnim = (d: PlayerDir): string => `hero-walk-${d}`;
+export const playerWalkAnim = (d: PlayerDir, fan = false): string => `hero-${fan ? 'fan' : 'walk'}-${d}`;

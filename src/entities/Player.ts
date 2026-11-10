@@ -3,7 +3,7 @@ import { BASE_PLAYER_STATS, PLAYER_RADIUS, type PlayerStats } from '../config/ga
 import { RUN } from '../config/balance';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, TEX, playerWalkAnim, type PlayerDir } from '../config/assets';
 import { BATTLE_ANCHOR_OVERRIDE, BATTLE_FRONT_OVERRIDE, BATTLE_SPLIT, BATTLE_WEAPON, NO_HAND_COVER, battleWeaponKey, fistKey } from '../config/heroBattle';
-import { HERO_HANDS } from '../config/heroHands';
+import { HERO_HANDS, HERO_HANDS_FAN } from '../config/heroHands';
 
 /**
  * Nhân vật chính (Cố Trường Ca).
@@ -31,6 +31,8 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   /** Hướng sprite đang quay (8 hướng) */
   private face: PlayerDir = 's';
+  /** Tư thế cầm quạt (tay phải trước ngực) — đổi bộ hình nhân vật + bảng vị trí tay */
+  private fanPose = false;
 
   /** Vũ khí cầm tay phải (chỉ là ngoại hình, không ảnh hưởng chỉ số) + găng quyền sáo hai tay */
   private weaponImg: Phaser.GameObjects.Image | null = null;
@@ -51,6 +53,8 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** Đặt ngoại hình vũ khí theo loại + cấp (quyền sáo: găng hai tay) */
   setWeaponLook(weaponId: string, tier: number): void {
     this.weaponId = weaponId;
+    this.fanPose = weaponId === 'wp_fan';
+    if (this.fanPose) this.setTexture(TEX.PLAYER_FAN, PLAYER_WALK_FRAMES);
     if (weaponId === 'wp_fist') {
       this.fists = (['near', 'far'] as const).map((hand) => this.scene.add.image(this.x, this.y, fistKey(hand, tier)));
       return;
@@ -62,12 +66,12 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.weaponImg = this.scene.add.image(this.x, this.y, key + '_f', 0);
       this.weaponBack = this.scene.add.image(this.x, this.y, key + '_k', 0);
     } else if (this.scene.textures.exists(key)) this.weaponImg = this.scene.add.image(this.x, this.y, key, 0);
-    if (this.weaponImg) this.handCover = this.scene.add.image(this.x, this.y, TEX.PLAYER, PLAYER_WALK_FRAMES);
+    if (this.weaponImg) this.handCover = this.scene.add.image(this.x, this.y, this.fanPose ? TEX.PLAYER_FAN : TEX.PLAYER, PLAYER_WALK_FRAMES);
   }
 
   /** Đặt vũ khí / găng vào đúng bàn tay theo hướng và khung bước hiện tại (gọi mỗi khung hình) */
   syncWeapon(): void {
-    const hands = HERO_HANDS[this.face];
+    const hands = (this.fanPose ? HERO_HANDS_FAN : HERO_HANDS)[this.face];
     const col = this.anims.isPlaying ? Math.max(0, (this.anims.currentFrame?.index ?? 1) - 1) : PLAYER_WALK_FRAMES;
     const left = this.x - this.originX * PLAYER_FRAME.w;
     const top = this.y - this.originY * PLAYER_FRAME.h;
@@ -138,7 +142,7 @@ export class Player extends Phaser.GameObjects.Sprite {
       const face = (['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'] as const)[sector];
       if (face !== this.face || !this.anims.isPlaying) {
         this.face = face;
-        this.play(playerWalkAnim(face), true);
+        this.play(playerWalkAnim(face, this.fanPose), true);
       }
     } else if (this.anims.isPlaying) {
       this.stop();

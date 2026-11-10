@@ -1,5 +1,9 @@
 # Lịch sử phiên bản
 
+## v0.12.7 — Tư thế cầm quạt trong trận
+- Mẫu 8 hướng cầm quạt (`tools/art/ref/hero_battle_fan_ref.webp`, tay phải đưa lên trước ngực) chuyển thành sprite: `trace_battle.py fan` → `hero_bf_base_*`; `walk_battle.py` dựng `public/ui/hero_bf_walk.png` (6 khung đi + đứng, tay trái vung, tay phải giữ yên ở ngực, tóc / dải đai lay) — cùng lúc với sheet thường.
+- `heroHands.ts` có thêm `HERO_HANDS_FAN`. Trang bị quạt → nhân vật đổi sang bộ hình cầm quạt; quạt MỞ nhỏ che ngực, trục ở bàn tay, nhìn nghiêng thì co ngang; n / ne / nw khuất sau người.
+
 ## v0.12.6
 - Cung hướng W hạ thấp 10 điểm ảnh (cánh trên ngang vai thay vì ngang đầu).
 
