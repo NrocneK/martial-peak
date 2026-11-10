@@ -27,7 +27,7 @@ export const BATTLE_FRONT_OVERRIDE: Record<string, Partial<Record<string, boolea
  * đặt sao cho phần lộ ra đúng mẫu (cung w / nw: cánh trên ló ra phía trên-trái). Vẫn nhún / vung theo tay qua từng khung.
  */
 export const BATTLE_ANCHOR_OVERRIDE: Record<string, Partial<Record<string, [number, number]>>> = {
-  wp_bow: { w: [23, 28], nw: [15, 31] },
+  wp_bow: { w: [23, 38], nw: [15, 31] },
 };
 /** Vũ khí KHÔNG vẽ nắm tay đè lên (quyền sáo đã là găng) */
 export const NO_HAND_COVER = new Set(['wp_fist']);

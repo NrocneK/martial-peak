@@ -1,5 +1,8 @@
 # Lịch sử phiên bản
 
+## v0.12.6
+- Cung hướng W hạ thấp 10 điểm ảnh (cánh trên ngang vai thay vì ngang đầu).
+
 ## v0.12.5 — Tay nắm cung / vũ khí trong trận
 - Nắm tay phải (cắt từ chính khung nhân vật) vẽ ĐÈ lên chuôi vũ khí khi vũ khí ở trước thân → thấy rõ tay đang nắm (trước đây cung che mất bàn tay nên trông lơ lửng).
 - Cung N: chéo qua lưng theo mẫu mới. W / NW (tay phải khuất): cung đặt sau lưng ở điểm riêng (`BATTLE_ANCHOR_OVERRIDE`) để cánh trên ló ra phía trên-trái như mẫu.
