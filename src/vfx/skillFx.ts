@@ -28,19 +28,20 @@ const H = (s: Stage): Pt => ({ x: s.hero.x, y: s.hero.y - 6 });
 // ---------------------------------------------------------------- VŨ KHÍ
 /** Ảnh kiếm khí ánh sáng (public/vfx/qi_sword_light.png, vẽ bằng tools/art/qi_sword_light.py) — nạp ở preload */
 export const QI_SWORD = 'vx_qisword';
-const QS = 0.34;            // cỡ kiếm khí trong trận
+const QS = 0.24;            // cỡ kiếm khí trong trận
+const QA = 0.62;            // độ đậm kiếm khí (mờ bớt để không che quái / hiệu ứng khác)
 
 /** Một thanh kiếm khí: hiện ra (ngưng tụ), có bóng kiếm + vệt sáng lavender bám theo */
 function qiSword(k: Stage['kit'], x: number, y: number, rot: number, delayIn = 0): { im: Phaser.GameObjects.Image; trail: Phaser.GameObjects.Particles.ParticleEmitter } {
   const im = k.img(QI_SWORD, x, y, { scale: QS * 0.55, alpha: 0, rot, depth: 22 });
-  k.scene.tweens.add({ targets: im, scale: QS, alpha: 1, duration: 140, delay: delayIn, ease: 'Back.easeOut' });
+  k.scene.tweens.add({ targets: im, scale: QS, alpha: QA, duration: 140, delay: delayIn, ease: 'Back.easeOut' });
   // ngưng tụ: hạt sáng hút vào thân kiếm
   k.later(delayIn, () => {
-    k.glow(x, y, 0xc8c4ff, 90, 260);
+    k.glow(x, y, 0xc8c4ff, 50, 240, { alpha: 0.6 });
     k.burst(x, y, [0xffffff, 0xd8d4ff], 10, { speed: [-160, -60], life: 220, scale: [0.5, 0] });
   });
   const trail = k.scene.add.particles(0, 0, VT.SOFT, {
-    follow: im, lifespan: 360, speed: 6, scale: { start: 0.22, end: 0 }, alpha: { start: 0.55, end: 0 },
+    follow: im, lifespan: 360, speed: 6, scale: { start: 0.14, end: 0 }, alpha: { start: 0.35, end: 0 },
     tint: [0xc8c4ff, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 14, emitting: false,
   }).setDepth(21);
   return { im, trail };
@@ -65,7 +66,7 @@ function flyQi(k: Stage['kit'], q: ReturnType<typeof qiSword>, from: Pt, to: Pt,
       const now = k.scene.time.now;
       if (now - lastGhost > 30) {
         lastGhost = now;
-        const g = k.img(QI_SWORD, x, y, { scale: QS, rot: q.im.rotation, alpha: 0.32, depth: 21 });
+        const g = k.img(QI_SWORD, x, y, { scale: QS, rot: q.im.rotation, alpha: 0.16, depth: 21 });
         k.tw(g, { alpha: 0 }, 170, 'Linear');
       }
     },
@@ -75,7 +76,7 @@ function flyQi(k: Stage['kit'], q: ReturnType<typeof qiSword>, from: Pt, to: Pt,
 
 function endQi(k: Stage['kit'], q: ReturnType<typeof qiSword>): void {
   q.trail.stop();
-  k.glow(q.im.x, q.im.y, 0xd8d4ff, 70, 260);
+  k.glow(q.im.x, q.im.y, 0xd8d4ff, 40, 240, { alpha: 0.6 });
   k.burst(q.im.x, q.im.y, [0xffffff, 0xc8c4ff], 12, { tex: VT.DOT, speed: [30, 120], life: 420, scale: [0.5, 0] });
   k.tw(q.im, { alpha: 0, scale: QS * 1.15 }, 160);
   k.later(450, () => q.trail.destroy());
@@ -84,9 +85,9 @@ function endQi(k: Stage['kit'], q: ReturnType<typeof qiSword>): void {
 function qiHit(s: Stage, t: Pt, a: number): void {
   const k = s.kit;
   s.hit(t, 0xd8d4ff);
-  k.glow(t.x, t.y, 0xffffff, 70, 200);
-  k.ring(t.x, t.y, 0xc8c4ff, 6, 46, 260);
-  k.burst(t.x, t.y, [0xffffff, 0xc8c4ff], 10, { tex: VT.SPARK, speed: [120, 300], life: 260, scale: [0.35, 0], angle: [(a * 180) / Math.PI - 35, (a * 180) / Math.PI + 35] });
+  k.glow(t.x, t.y, 0xffffff, 44, 180, { alpha: 0.7 });
+  k.ring(t.x, t.y, 0xc8c4ff, 6, 34, 240, false, { alpha: 0.6 });
+  k.burst(t.x, t.y, [0xffffff, 0xc8c4ff], 7, { tex: VT.SPARK, speed: [100, 240], life: 240, scale: [0.25, 0], alpha: [0.8, 0], angle: [(a * 180) / Math.PI - 35, (a * 180) / Math.PI + 35] });
 }
 
 const nguKiem: Fx = (s, aw) => {
@@ -120,7 +121,7 @@ const nguKiem: Fx = (s, aw) => {
   k.later(2200, () => smoke.destroy());
   for (let i = 0; i < 6; i++) {
     const fa = -Math.PI / 2 + (i - 2.5) * 0.42;                 // xòe phía trên / sau lưng
-    const p = polar(h, fa, 96);
+    const p = polar(h, fa, 78);
     const q = qiSword(k, p.x, p.y, fa, i * 50);
     k.scene.tweens.add({ targets: q.im, y: p.y - 6, duration: 300, yoyo: true, delay: 300, ease: 'Sine.easeInOut' });
     k.later(650 + i * 90, () => {
