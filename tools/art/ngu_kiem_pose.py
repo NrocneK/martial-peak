@@ -4,10 +4,9 @@ Tư thế thi triển NGỰ KIẾM THUẬT (vẽ điểm ảnh trên khung đứ
   python3 -I tools/art/ngu_kiem_pose.py → tools/art/out/ngu_kiem_pose.png (khung 52x68: hàng S, E × cột [tư thế 1, tư thế 2])
                                            + tools/art/out/ngu_kiem_pose_preview.png (phóng to, đặt cạnh khung đứng gốc)
 
-Tư thế 1: tay phải cầm kiếm NGƯỢC (phản thủ) — lưỡi dựng đứng vuông góc mặt đất, nằm sau cẳng tay;
-          tay trái kết KIẾM ẤN trước ngực (ngón trỏ + ngón giữa duỗi thẳng, 3 ngón còn lại nắm chặt).
-Tư thế 2: tay phải giữ nguyên; tay trái duỗi thẳng ra trước song song mặt đất, bàn tay vẫn kết kiếm ấn.
-Kiếm vẽ ở đây chỉ để xem dáng — trong game gắn kiếm đúng loại + cấp ở điểm cầm.
+Tay phải: tạm giữ nguyên dáng đứng gốc (theo yêu cầu).
+Tư thế 1: tay trái kết KIẾM ẤN dựng trước ngực/mặt (ngón trỏ + ngón giữa duỗi thẳng, 3 ngón còn lại nắm chặt).
+Tư thế 2: tay trái duỗi thẳng ra trước song song mặt đất, bàn tay vẫn kết kiếm ấn (tham khảo tools/art/ref).
 """
 import os
 from PIL import Image, ImageDraw
@@ -62,6 +61,18 @@ class Pen:
                     self.p(x0 + i, y0 + j, pal[ch])
 
 
+# bàn tay kết KIẾM ẤN (to, rõ như mẫu): 2 ngón trỏ + giữa duỗi thẳng lên (tách nhau bằng nét viền), 3 ngón nắm lại
+HAND = """
+.oo.oo..
+oabobco.
+oabobco.
+oabobco.
+oabbbbco
+obbccddo
+obcccddo
+.oddddo.
+"""
+
 PAL = {'o': OL, 'O': OL2, 'a': SK1, 'b': SK2, 'c': SK3, 'd': SK4, 'w': SL1, 'x': SL2, 'y': SL3, 'z': SL4,
        'u': CF1, 'v': CF2, 'n': CF3, 'r': RB1, 'R': RB2, 'B': BL1, 'C': BL2, 'k': BLO, 'g': GD1, 'G': GD2, 'h': GR}
 
@@ -83,16 +94,7 @@ def sword_vertical(pen, x, y_tip, y_guard, hidden=None):
 def pose_s(n):
     im = frame('s')
     pen = Pen(im)
-    # tay phải (bên trái người xem): giữ nguyên, nắm tay cầm kiếm ngược — lưỡi dựng sau cánh tay, lộ phía trên vai
-    sword_vertical(pen, 15, 17, 28)                         # mũi ngang tai, phần dưới khuất sau tay áo
-    pen.rows(14, 37, """
-oGGGo
-""", PAL)
-    pen.rows(14, 42, """
-.oho
-.oGo
-..o.
-""", PAL)
+    # tay phải: giữ nguyên dáng đứng gốc
     # tay trái (bên phải người xem): xóa cẳng tay + bàn tay đang buông, vá lại vạt áo
     for y in range(36, 43):
         for x in range(33, 40):
@@ -108,33 +110,24 @@ rrRo.
 rRo..
 """, PAL)
     if n == 1:
-        # kiếm ấn trước ngực: cẳng tay chéo từ khuỷu vào giữa ngực, 2 ngón duỗi thẳng lên
-        pen.rows(24, 25, """
-..oo.oo......
-..oaoao......
-..oaoao......
-.oabbbao.....
-.oaabbcdo....
-.ocbbcddo....
-..ocdddunno..
-...ounnuwxyoo
-....onuwxxyyo
-.....owxxyzo.
-......oyyzo..
+        # kiếm ấn dựng trước ngực, đầu ngón ngang cằm: cẳng tay đứng (theo mẫu)
+        pen.rows(27, 18, HAND + """
+.ognnuo.
+.ounnuo.
+.owxxyo.
+.owxyyo.
+..oxyzo.
+..ozzo..
 """, PAL)
     else:
-        # tay trái duỗi ra trước (chéo nhẹ về phía người xem): ống tay áo rộng → cổ tay xanh → bàn tay, 2 ngón chĩa ra
-        pen.rows(32, 28, """
-.ooooo.......
-owwxxyoo.....
-owxxxyyyoo...
-oxxyyyyzznoo.
-.oyyyzzznubbo
-..oyzzznubbaao
-...ooooonuccao
-........ooddao
-.........oaao.
-..........oo..
+        # tay trái duỗi thẳng ra trước (về phía người xem): bàn tay dựng đứng, 2 ngón chỉ lên; miệng ống tay áo rộng bên dưới
+        pen.rows(30, 19, HAND, PAL)
+        pen.rows(28, 27, """
+..ognnnuo...
+.owxxxxxyyo.
+owxxxyyyyzzo
+.oxyyyyzzzo.
+..ooooooo...
 """, PAL)
     return im
 
@@ -143,41 +136,33 @@ oxxyyyyzznoo.
 def pose_e(n):
     im = frame('e')
     pen = Pen(im)
-    # tay phải (phía gần): buông, nắm tay ở (26..29, 41..44) cầm kiếm ngược; lưỡi dựng sau cẳng tay (lệch về sau)
-    sleeve = lambda xx, yy: 30 <= yy <= 40 and 21 <= xx <= 29        # khuất sau tay áo + cẳng tay
-    sword_vertical(pen, 23, 19, 41, hidden=sleeve)                     # mũi ngang tai, lưỡi nằm dọc sau cẳng tay
-    pen.rows(25, 40, """
-oGGo
-""", PAL)
-    pen.rows(26, 45, """
-oho
-oGo
-.o.
-""", PAL)
+    # tay phải (phía gần): giữ nguyên dáng đứng gốc
     if n == 1:
-        # kiếm ấn trước ngực: bàn tay trái hiện trước ngực, 2 ngón duỗi thẳng lên
-        pen.rows(33, 26, """
-.oo....
-.oao...
-.oaoo..
-.oaoao.
-oubbao.
-nubcbdo
-nucddo.
-.oooo..
+        # kiếm ấn trước mặt: đầu ngón ngang mắt, lòng bàn tay ngang miệng, cẳng tay dựng đứng (theo mẫu)
+        pen.rows(34, 12, HAND + """
+.ognnuo.
+.ounnuo.
+.owxxyo.
+.owxyyo.
+.oxyyzo.
+..ozzo..
+...oo...
 """, PAL)
     else:
-        # tay trái duỗi thẳng ra trước, song song mặt đất: tay áo rộng rủ xuống dưới cánh tay → cổ tay xanh → bàn tay → 2 ngón chĩa thẳng
-        pen.rows(32, 27, """
-.oooooooooooooo......
-owwwxxxxxyyynuooooo..
-owxxxxxxyyyynubbaaaao
-oxyyyyyyzzzznubccaaao
-oxyyyyzzzzzoonuddooo.
-.oyyzzzzzoo...oooo...
-..ozzzzoo............
-...oooo..............
+        # tay trái duỗi thẳng ra trước, song song mặt đất; bàn tay dựng đứng, 2 ngón chỉ lên trời;
+        # cổ tay áo xanh đậm viền vàng, tay áo trắng rộng rủ xuống dưới cánh tay
+        pen.rows(32, 25, """
+..........oo..
+oooooooooogno.
+owwwxxxxxygnuo
+owxxxxxyyygnuo
+oxyyyyyzzzgnuo
+oxyyyzzzzzoooo
+.oyyzzzzoo....
+..ozzzzo......
+...oooo.......
 """, PAL)
+        pen.rows(43, 19, HAND, PAL)
     return im
 
 
