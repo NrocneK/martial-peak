@@ -149,9 +149,9 @@ const nguKiem: Fx = (s, aw) => {
 /** vết chém vòng đao khí Bá Đao (ảnh gốc, 8 hướng — tools/art/ba_dao_hd.py): khóa ảnh theo hướng */
 export const BA_DAO_DIRS = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'] as const;
 export const baDaoKey = (d: string): string => `vx_badao_${d}`;
-/** đao khí bay (thức tỉnh) — ảnh lưỡi liềm đổi màu từ mẫu (tools/art/ba_dao_wave.py); "phía trước" trong ảnh ≈ 60° (vuông góc dây cung lưỡi liềm) */
-export const BA_DAO_WAVE = 'vx_badao_wave';
-const WAVE_FWD = (60 * Math.PI) / 180;
+/** đao khí bay (thức tỉnh) — lưỡi liềm đổi màu từ mẫu, dựng sẵn 8 hướng đúng phối cảnh mặt đất
+ *  (tools/art/ba_dao_wave.py); tâm ảnh = chỗ nhân vật đứng → đặt ảnh tại nhân vật rồi cho trượt thẳng theo hướng bay */
+export const baDaoWaveKey = (d: string): string => `vx_badao_wave_${d}`;
 const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
 
 /** hiện vết chém vòng theo hướng `aa`, vòng rộng ~2r quanh nhân vật: bung nhanh → giữ → loãng dần */
@@ -180,14 +180,13 @@ const baDao: Fx = (s, aw) => {
     for (let i = 0; i < 8; i++) k.later(i * 35, () => cut(a + (i * Math.PI) / 4, 120));
     k.later(120, () => {
       const end = polar(h, a, 300);
-      // lưỡi liềm đao khí bung ra trước mặt rồi lao đi 300px, loãng dần ở cuối
-      const st = polar(h, a, 30);
-      const w = k.scene.add.image(st.x, st.y, BA_DAO_WAVE).setDepth(9).setRotation(a - WAVE_FWD).setAlpha(0);
-      const sc = 230 / w.width;
-      w.setScale(sc * 0.6);
+      // lưỡi liềm đao khí (ảnh đúng hướng, không xoay) bung ra trước mặt rồi trượt thẳng 300px theo hướng bay
+      const w = k.scene.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0);
+      const sc = 0.62;
+      w.setScale(sc * 0.75);
       k.scene.tweens.add({ targets: w, alpha: 1, scale: sc, duration: 90, ease: 'Quad.easeOut' });
-      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 460, ease: 'Sine.easeIn' });
-      k.scene.tweens.add({ targets: w, alpha: 0, scale: sc * 1.15, delay: 300, duration: 160, onComplete: () => w.destroy() });
+      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
+      k.scene.tweens.add({ targets: w, alpha: 0, delay: 320, duration: 160, onComplete: () => w.destroy() });
       for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
     });
     k.shake(160, 0.005);
