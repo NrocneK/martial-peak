@@ -1,16 +1,24 @@
 """
-NGỰ KIẾM — hướng NW (quay lưng, chéo lên trái): giữ NGUYÊN thân + tay phải của khung đứng gốc, chỉ sửa tay trái.
+NGỰ KIẾM — hướng NW (quay lưng, chéo lên trái): giữ NGUYÊN thân + tay phải của khung đứng gốc, chỉ vẽ lại tay trái.
 
-Tay trái ở PHÍA GẦN, bên trái người xem: bắp tay áo phồng x17-24 / y29-36, cẳng tay tối y36-39, bàn tay x18-21 / y40-43.
-  Xóa cẳng tay + bàn tay buông, vá lại vạt áo phía sau (xanh đậm, mép viền trái).
-  khung 1 (đưa tay lên trước miệng): bắp tay vẫn buông, cẳng tay gập ra trước bị thân che → chỉ còn đầu khuỷu
-  khung 2 (duỗi thẳng ra trước = chếch lên trái, xa người xem): xóa cả bắp tay buông, vá hông;
-           vẽ cánh tay giơ chếch lên trái: tay áo trắng phồng ở vai (vân nếp như tay áo gốc),
-           cẳng tay áo tối (đúng các màu G B 5 7 của cẳng tay gốc), mu bàn tay ở đầu (màu da gốc b Y S)
+Tay trái ở PHÍA GẦN (bên trái người xem). Trong khung gốc: bắp tay áo trắng x17-24 / y29-36,
+cẳng tay áo tối y36-39 (màu G B 5 7 6 0), bàn tay x18-22 / y40-43 (ngón chúc xuống).
+
+1) Xóa cẳng tay + bàn tay buông: lấp chỗ trống bằng VÂN ÁO BÊN CẠNH lật đối xứng qua mép chỗ xóa
+   (nếp áo chạy liền, không tô một màu), rồi viền lại mép ngoài như mép áo gốc.
+2) Vẽ lại tay bằng chính các phần của tay gốc:
+   - cẳng tay: dải áo tối, màu lấy theo thứ tự sáng→tối của cẳng tay gốc
+   - bàn tay: đúng các điểm ảnh của bàn tay gốc, lật cho ngón hướng lên
+   - viền: chỗ giáp nền dùng nét viền ngoài (2), chỗ đè lên thân dùng nét trong (0) — như tay áo gốc giáp thân
+   khung 1 (đưa tay lên trước miệng): bắp tay giữ ở vai, khuỷu gập ở hông, cẳng tay chạy chéo lên phía mặt (lộ ra
+            bên trái thân), bàn tay khuất một nửa sau má
+   khung 2 (duỗi thẳng ra trước = chếch lên trái, xa người xem): bắp tay áo trắng vung lên theo, chỗ bắp tay cũ ở hông
+            cũng lấp bằng vân áo; cánh tay ngắn lại vì chĩa ra xa
 
   python3 -I tools/art/ngu_kiem_nw.py → tools/art/out/ngu_kiem_nw.png (2 khung) + ngu_kiem_nw_preview.png
 """
 import json
+import math
 import os
 from PIL import Image
 
@@ -19,55 +27,16 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
 W, H = 52, 68
 PAL = {k: tuple(v) for k, v in json.load(open(os.path.join(HERE, 'hero_palette.json'))).items()}
+NONE = (0, 0, 0, 0)
 
-# ' ' giữ nguyên, '.' trong suốt, còn lại = màu bảng sprite
-# vá vạt áo sau khi bỏ cẳng tay + bàn tay buông (dùng chung 2 khung)
-PATCH_LOWER = [
-    (37, 18, '20HKKHEEF'),
-    (38, 18, '20HKKHEEF'),
-    (39, 17, '20HKKHEE'),
-    (40, 17, '20HKKHE'),
-    (41, 16, '20HKKHEE'),
-    (42, 17, '20UKKHE'),
-    (43, 17, '20UXKHO'),
-]
-# vá hông khi bắp tay cũng vung lên (khung 2)
-PATCH_UPPER = [
-    (29, 18, '20HKK'),
-    (30, 18, '.20HKKHE'),
-    (31, 18, '.20HKKHE'),
-    (32, 17, '..20HKKHE'),
-    (33, 16, '...20HKKHE'),
-    (34, 16, '...20HKKHE'),
-    (35, 16, '...20HKEHE'),
-    (36, 17, '..20HKEEF'),
-]
-POSE = {
-    1: PATCH_LOWER + [
-        (37, 18, '29BB92'),      # đầu khuỷu ló dưới bắp tay áo
-        (38, 19, '2222'),
-    ],
-    2: PATCH_LOWER + PATCH_UPPER + [
-        # cánh tay giơ chếch lên trái (xa dần người xem): mu bàn tay → cẳng tay áo tối → tay áo trắng phồng gắn vào vai
-        (12 + 0, 4, '  222              '),
-        (12 + 1, 4, ' 2bbY2             '),
-        (12 + 2, 4, ' 2bbY2             '),
-        (12 + 3, 4, '2bbbbS2            '),
-        (12 + 4, 4, '2YbbSS2            '),
-        (12 + 5, 4, ' 2SSS52            '),
-        (12 + 6, 4, ' 2GBB552           '),
-        (12 + 7, 4, '  2GBB552          '),
-        (12 + 8, 4, '   2GBB5522222     '),
-        (12 + 9, 4, '    2GB52eeedd2    '),
-        (12 + 10, 4, '     222eeeddcc2   '),
-        (12 + 11, 4, '      2eeeddccZa2  '),
-        (12 + 12, 4, '      2eddcccZaT2  '),
-        (12 + 13, 4, '       2ddccZaT02  '),
-        (12 + 14, 4, '        2dcZaT0    '),
-        (12 + 15, 4, '         2ZZT0     '),
-        (12 + 16, 4, '          220      '),
-    ],
-}
+# vùng tay buông cần xóa: hàng → (x đầu, x cuối, mép áo mới)
+ERASE_FORE = {36: (19, 25, 18), 37: (19, 26, 18), 38: (19, 27, 18), 39: (18, 24, 17), 40: (18, 23, 17),
+              41: (17, 23, 16), 42: (18, 23, 17), 43: (18, 23, 17)}
+ERASE_UPPER = {29: (18, 23, 19), 30: (18, 24, 19), 31: (18, 24, 19), 32: (17, 24, 19), 33: (16, 24, 19),
+               34: (16, 24, 19), 35: (16, 24, 19)}
+
+FORE = ['G', 'B', '5', '7']               # cẳng tay áo gốc: sáng → tối
+SLEEVE = ['e', 'd', 'c', 'Z', 'a', 'T']   # tay áo trắng gốc: sáng → tối
 
 
 def frame():
@@ -75,13 +44,73 @@ def frame():
     return sh.crop((6 * W, 3 * H, 7 * W, 4 * H))
 
 
+def hand_up(base):
+    """bàn tay gốc (x18-22, y40-43) lật dọc → ngón hướng lên"""
+    px = base.load()
+    pts = {}
+    for y in range(40, 44):
+        for x in range(17, 23):
+            c = px[x, y]
+            r, g, b, a = c
+            if a and r > 150 and r - b > 30:
+                pts[(x - 17, 43 - y)] = c
+    return pts
+
+
+def refill(im, rows):
+    """lấp vùng xóa bằng vân áo bên phải lật đối xứng qua mép; viền mép ngoài"""
+    px = im.load()
+    src = im.copy().load()
+    for y, (x0, x1, edge) in rows.items():
+        for x in range(min(x0, edge), x1 + 1):
+            px[x, y] = NONE
+        for x in range(edge + 1, x1 + 1):
+            px[x, y] = src[x1 + 1 + (x1 - x), y]
+        px[edge, y] = PAL['2']
+
+
+def limb(im, segs, hand=None):
+    """vẽ đoạn tay: segs = [(đầu, cuối, bán kính, dải màu)], hand = (gốc x, gốc y, điểm ảnh bàn tay)"""
+    base = im.copy().load()
+    px = im.load()
+    fill = {}
+    for (ax, ay), (bx, by), r, cols in segs:
+        dx, dy = bx - ax, by - ay
+        L = math.hypot(dx, dy) or 1
+        for y in range(int(min(ay, by) - r - 2), int(max(ay, by) + r + 3)):
+            for x in range(int(min(ax, bx) - r - 2), int(max(ax, bx) + r + 3)):
+                t = max(0, min(1, ((x - ax) * dx + (y - ay) * dy) / (L * L)))
+                cx, cy = ax + t * dx, ay + t * dy
+                d = math.hypot(x - cx, y - cy)
+                if d <= r:
+                    side = ((x - cx) * (-dy) + (y - cy) * dx) / L       # lệch về phía trên-trái → sáng
+                    k = (r - side) / (2 * r)
+                    fill[(x, y)] = PAL[cols[min(len(cols) - 1, max(0, int(k * len(cols))))]]
+    if hand:
+        hx, hy, pts = hand
+        for (x, y), c in pts.items():
+            fill[(hx + x, hy + y)] = c
+    for (x, y), c in fill.items():
+        if 0 <= x < W and 0 <= y < H:
+            px[x, y] = c
+    for (x, y) in fill:
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if (nx, ny) in fill or not (0 <= nx < W and 0 <= ny < H):
+                continue
+            px[nx, ny] = PAL['2'] if base[nx, ny][3] == 0 else PAL['0']
+
+
 def pose(n):
     im = frame()
-    px = im.load()
-    for y, x0, row in POSE[n]:
-        for i, ch in enumerate(row):
-            if ch != ' ':
-                px[x0 + i, y] = (0, 0, 0, 0) if ch == '.' else PAL[ch]
+    hand = hand_up(im)
+    refill(im, ERASE_FORE)
+    if n == 1:
+        # khuỷu ở đáy bắp tay áo (20,36) → cổ tay dưới cằm (17,25); bàn tay che mép mặt bên trái
+        limb(im, [((20, 36), (17, 25), 1.6, FORE)], (15, 19, hand))
+    else:
+        refill(im, ERASE_UPPER)
+        # tay chĩa ra xa nên ngắn lại: vai (21,29) → khuỷu (17,25) tay áo trắng phồng; khuỷu → cổ tay (13,21) áo tối
+        limb(im, [((21, 29), (17, 25), 2.8, SLEEVE), ((17, 25), (13, 21), 1.6, FORE)], (9, 16, hand))
     return im
 
 
