@@ -198,35 +198,79 @@ const baDao: Fx = (s, aw) => {
   }
 };
 
+/** Phá Trận Thương — ảnh hiệu ứng đòn đâm (tools/art/spear_fx.py, dựng theo đòn đâm đầu trong video mẫu) */
+export const SPEAR_TEX = { lance: 'vx_spear_lance', flash: 'vx_spear_flash', wind: 'vx_spear_wind', ring: 'vx_spear_ring' } as const;
+const SPEAR_COL = 0x3cf0c8;
+
+/** 1 đòn đâm theo góc `a`, dài `L`: tụ lực (2 vệt gió hút về mũi) → bung khối thoi → mũi giáo năng lượng vụt ra
+ *  + vòng sóng ở gốc → thuôn mảnh rồi tắt. Trả về thời điểm (ms) mũi giáo chạm tới để tính trúng đòn. */
+function spearThrust(k: Stage['kit'], h: Pt, a: number, L: number): number {
+  const sc = k.scene;
+  const add = (key: string, x: number, y: number) => sc.add.image(x, y, key).setBlendMode(Phaser.BlendModes.ADD).setDepth(9).setRotation(a);
+  const tip0 = polar(h, a, 22);
+  const nx = -Math.sin(a), ny = Math.cos(a);
+  // 1) tụ lực: 2 vệt gió cong từ sau lưng hai bên hút dồn về mũi thương
+  for (const side of [-1, 1]) {
+    const st = polar(h, a, -26);
+    const wnd = add(SPEAR_TEX.wind, st.x + nx * side * 30, st.y + ny * side * 30).setAlpha(0).setScale(0.9, side * 0.9);
+    sc.tweens.add({ targets: wnd, x: tip0.x + nx * side * 6, y: tip0.y + ny * side * 6, alpha: { from: 0, to: 1 }, duration: 160, ease: 'Quad.easeIn', onComplete: () => wnd.destroy() });
+  }
+  k.glow(tip0.x, tip0.y, SPEAR_COL, 30, 220);
+  // 2) bung khối thoi ở mũi thương
+  k.later(160, () => {
+    const f = add(SPEAR_TEX.flash, tip0.x, tip0.y).setScale(0.35);
+    sc.tweens.add({ targets: f, scale: 0.85, duration: 70, ease: 'Quad.easeOut' });
+    sc.tweens.add({ targets: f, alpha: 0, delay: 70, duration: 120, onComplete: () => f.destroy() });
+  });
+  // 3) mũi giáo năng lượng vụt ra + vòng sóng ở gốc
+  k.later(190, () => {
+    const st = polar(h, a, 6);
+    const ln = add(SPEAR_TEX.lance, st.x, st.y).setOrigin(0.02, 0.5);
+    const full = (L * 1.05) / ln.width;
+    ln.setScale(0.12, 1);
+    sc.tweens.add({ targets: ln, scaleX: full, duration: 90, ease: 'Expo.easeOut' });
+    // 4) thuôn mảnh rồi tắt
+    sc.tweens.add({ targets: ln, scaleY: 0.35, delay: 110, duration: 200, ease: 'Quad.easeIn' });
+    sc.tweens.add({ targets: ln, alpha: 0, delay: 200, duration: 160, onComplete: () => ln.destroy() });
+    const rp = polar(h, a, 16);
+    const rg = add(SPEAR_TEX.ring, rp.x, rp.y).setScale(0.12, 0.3).setAlpha(0.9);
+    sc.tweens.add({ targets: rg, scaleX: 0.2, scaleY: 0.62, alpha: 0, duration: 300, ease: 'Quad.easeOut', onComplete: () => rg.destroy() });
+    const e = polar(h, a, L);
+    k.later(80, () => {
+      k.burst(e.x, e.y, [SPEAR_COL, 0xb0ffe8, 0xffffff], 10, { tex: VT.SPARK, angle: [((a * 180) / Math.PI) - 35, ((a * 180) / Math.PI) + 35], speed: [80, 260], scale: [0.35, 0], life: 320 });
+    });
+  });
+  return 230;
+}
+
 const phaThuong: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 100, h.y);
   const a = ang(h, t);
   const thrust = (i: number, last: boolean) =>
-    k.later(i * 150, () => {
+    k.later(i * 240, () => {
       const L = aw ? 260 : 190;
-      const e = polar(h, a, L);
-      k.streak(h.x, h.y, e.x, e.y, 0xffd870, aw ? 46 : 34, 260);
-      k.slash(e.x, e.y, a, 34, 0xffe9a0, 220, { sweep: 0.05, width: 0.7 });
-      k.glow(e.x, e.y, 0xffe9a0, 50, 220);
-      k.ring(e.x, e.y, 0xffe9a0, 10, 44, 240);
-      k.burst(e.x, e.y, 0xffe9a0, 10, { tex: VT.SPARK, angle: [((a * 180) / Math.PI) - 30, ((a * 180) / Math.PI) + 30], speed: [120, 320], scale: [0.4, 0], life: 300 });
-      for (const o of s.targets()) {
-        const d = dist(h, o), da = Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a));
-        if (d < L + 10 && Math.sin(da) * d < 22) s.hit(o, 0xffd870);
-      }
-      if (last) k.debris(e.x, e.y, 6);
+      const hitAt = spearThrust(k, h, a, L);
+      k.later(hitAt, () => {
+        for (const o of s.targets()) {
+          const d = dist(h, o), da = Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a));
+          if (d < L + 10 && Math.cos(da) > 0 && Math.sin(da) * d < 22) s.hit(o, SPEAR_COL);   // chỉ phía trước mũi thương
+        }
+        if (last) k.debris(polar(h, a, L).x, polar(h, a, L).y, 6);
+      });
     });
   if (aw) {
     // lướt theo mũi thương, để lại long khí
     thrust(0, true);
     const hero = s.hero;
     const sx = hero.x, sy = hero.y;
-    for (let i = 0; i < 4; i++) k.later(i * 30, () => { const g = k.img(hero.texture.key, hero.x, hero.y, { add: true, tint: 0xffd870, alpha: 0.6, depth: 9 }); g.setFrame(hero.frame.name); k.tw(g, { alpha: 0 }, 300); });
-    k.scene.tweens.add({ targets: hero, x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120, duration: 150, yoyo: true, hold: 500, ease: 'Quad.easeOut' });
-    const trail = k.scene.add.particles(0, 0, VT.SOFT, { x: { min: sx, max: sx }, y: sy, lifespan: 2000, scale: { start: 0.35, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: [0xffd870, 0xffb030], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Line(sx, sy, sx + Math.cos(a) * 120, sy + Math.sin(a) * 120) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(4);
-    k.later(1600, () => trail.stop());
-    k.later(2400, () => trail.destroy());
+    k.later(190, () => {
+      for (let i = 0; i < 4; i++) k.later(i * 30, () => { const g = k.img(hero.texture.key, hero.x, hero.y, { add: true, tint: SPEAR_COL, alpha: 0.6, depth: 9 }); g.setFrame(hero.frame.name); k.tw(g, { alpha: 0 }, 300); });
+      k.scene.tweens.add({ targets: hero, x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120, duration: 150, yoyo: true, hold: 500, ease: 'Quad.easeOut' });
+      const trail = k.scene.add.particles(0, 0, VT.SOFT, { x: { min: sx, max: sx }, y: sy, lifespan: 2000, scale: { start: 0.35, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: [SPEAR_COL, 0x20b090], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Line(sx, sy, sx + Math.cos(a) * 120, sy + Math.sin(a) * 120) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(4);
+      k.later(1600, () => trail.stop());
+      k.later(2400, () => trail.destroy());
+    });
   } else {
     thrust(0, false);
     thrust(1, false);

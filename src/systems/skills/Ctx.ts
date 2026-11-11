@@ -109,8 +109,12 @@ export class Ctx {
     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, half = Math.hypot(x2 - x1, y2 - y1) / 2;
     const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy || 1;
     const out: { e: Enemy; t: number }[] = [];
+    const len = Math.sqrt(L2);
     for (const e of this.inRadius(cx, cy, half + 20)) {
-      const t = Math.max(0, Math.min(1, ((e.x - x1) * dx + (e.y - y1) * dy) / L2));
+      const raw = ((e.x - x1) * dx + (e.y - y1) * dy) / L2;
+      // quái nằm SAU điểm đầu đường (phía sau lưng nhân vật) không tính — trước đây t bị kẹp về 0 nên quái sát lưng vẫn dính
+      if (raw * len < -e.r * 0.5) continue;
+      const t = Math.max(0, Math.min(1, raw));
       const px = x1 + dx * t, py = y1 + dy * t, rr = w / 2 + e.r;
       if ((e.x - px) ** 2 + (e.y - py) ** 2 <= rr * rr) out.push({ e, t });
     }
