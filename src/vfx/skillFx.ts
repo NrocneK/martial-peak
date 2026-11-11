@@ -149,6 +149,9 @@ const nguKiem: Fx = (s, aw) => {
 /** vết chém vòng đao khí Bá Đao (ảnh gốc, 8 hướng — tools/art/ba_dao_hd.py): khóa ảnh theo hướng */
 export const BA_DAO_DIRS = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'] as const;
 export const baDaoKey = (d: string): string => `vx_badao_${d}`;
+/** đao khí bay (thức tỉnh) — ảnh lưỡi liềm đổi màu từ mẫu (tools/art/ba_dao_wave.py); "phía trước" trong ảnh ≈ 60° (vuông góc dây cung lưỡi liềm) */
+export const BA_DAO_WAVE = 'vx_badao_wave';
+const WAVE_FWD = (60 * Math.PI) / 180;
 const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
 
 /** hiện vết chém vòng theo hướng `aa`, vòng rộng ~2r quanh nhân vật: bung nhanh → giữ → loãng dần */
@@ -177,8 +180,14 @@ const baDao: Fx = (s, aw) => {
     for (let i = 0; i < 8; i++) k.later(i * 35, () => cut(a + (i * Math.PI) / 4, 120));
     k.later(120, () => {
       const end = polar(h, a, 300);
-      const w = k.img(VT.BLADE_WAVE, h.x, h.y, { tint: 0xc060ff, scale: 0.9, rot: a });
-      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, alpha: 0.2, duration: 420, onComplete: () => w.destroy() });
+      // lưỡi liềm đao khí bung ra trước mặt rồi lao đi 300px, loãng dần ở cuối
+      const st = polar(h, a, 30);
+      const w = k.scene.add.image(st.x, st.y, BA_DAO_WAVE).setDepth(9).setRotation(a - WAVE_FWD).setAlpha(0);
+      const sc = 230 / w.width;
+      w.setScale(sc * 0.6);
+      k.scene.tweens.add({ targets: w, alpha: 1, scale: sc, duration: 90, ease: 'Quad.easeOut' });
+      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 460, ease: 'Sine.easeIn' });
+      k.scene.tweens.add({ targets: w, alpha: 0, scale: sc * 1.15, delay: 300, duration: 160, onComplete: () => w.destroy() });
       for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
     });
     k.shake(160, 0.005);
