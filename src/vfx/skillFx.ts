@@ -14,6 +14,8 @@ export interface Stage {
   targets(): Pt[];
   /** Báo trúng đòn (trang demo cho hình nhân chớp + rung) */
   hit(t: Pt, color?: number): void;
+  /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
+  pose?(skill: string, n: 0 | 1 | 2, a: number): void;
 }
 
 type Fx = (s: Stage, aw: boolean) => void;
@@ -92,6 +94,12 @@ function qiHit(s: Stage, t: Pt, a: number): void {
 
 const nguKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
+  const t0 = s.targets()[0];
+  const fa = t0 ? ang(h, t0) : 0;
+  // tư thế: kết kiếm ấn trước miệng (ngưng kiếm) → duỗi tay chỉ ra trước (phóng kiếm) → về dáng đứng
+  s.pose?.('ngu_kiem', 1, fa);
+  k.later(aw ? 600 : 140, () => s.pose?.('ngu_kiem', 2, fa));
+  k.later(aw ? 1500 : 900, () => s.pose?.('ngu_kiem', 0, fa));
   if (!aw) {
     // bản thường: kiếm ngưng tụ cạnh tay → lao vào mục tiêu, xuyên qua → vòng về tay rồi tan
     s.targets().slice(0, 3).forEach((t, i) =>

@@ -20,7 +20,7 @@ BG = np.array([28, 52, 112])      # màu nền ảnh mẫu
 
 # đường bao cánh tay trái trong ảnh mẫu (toạ độ ảnh mẫu) + điểm neo mặt (mẫu → sprite)
 POSES = {
-    1: dict(k=1.3, anchor=((548, 440), (34, 21)), poly=[
+    1: dict(k=1.3, anchor=((548, 440), (35, 23)), poly=[
         (514, 438), (538, 438), (540, 476), (556, 470), (576, 476), (602, 488), (602, 542), (576, 548),
         (544, 548), (528, 534), (514, 522), (504, 510), (504, 478), (512, 476)]),
     2: dict(k=1.1, anchor=((1310, 445), (33, 23)), poly=[
@@ -41,9 +41,10 @@ def palette(im):
     return np.array(sorted(cols))
 
 
-def arm_layer(ref, n):
+def arm_layer(ref, n, dx=0):
     cfg = POSES[n]
     (rx, ry), (sx, sy) = cfg['anchor']
+    sx += dx
     sc = S * cfg['k']              # phóng tay to hơn chút cho rõ ở cỡ sprite
     m = Image.new('L', ref.size, 0)
     ImageDraw.Draw(m).polygon(cfg['poly'], fill=255)
@@ -73,11 +74,11 @@ def arm_layer(ref, n):
     return lay
 
 
-def compose(n):
+def compose(n, base=None, dx=0):
     ref = Image.open(os.path.join(HERE, 'ref', 'ngu_kiem_pose_ref.png')).convert('RGB')
-    base = frame_e()
+    base = (base if base is not None else frame_e()).copy()
     pal = palette(base)
-    lay = arm_layer(ref, n)
+    lay = arm_layer(ref, n, dx)
     px = base.load()
     for Y in range(H):
         for X in range(W):

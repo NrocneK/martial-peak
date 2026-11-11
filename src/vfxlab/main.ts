@@ -31,6 +31,8 @@ class LabScene extends Phaser.Scene {
   preload(): void {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
     this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
+    // tư thế thi triển: hàng = hướng (s,sw,w,nw,n,ne,e,se), cột = tư thế 1, 2
+    this.load.spritesheet('cast_ngu_kiem', '/ui/hero_cast_ngukiem.png', { frameWidth: 52, frameHeight: 68 });
   }
 
   create(): void {
@@ -45,6 +47,7 @@ class LabScene extends Phaser.Scene {
     g.lineStyle(2, 0x2c2a4a, 1).strokeCircle(0, 0, 300);
     this.hero = this.add.sprite(0, 0, 'hero', 6).setDepth(10).setOrigin(0.5, 0.62);
     this.textures.get('hero').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('cast_ngu_kiem').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.add.ellipse(0, 18, 40, 12, 0x000000, 0.35).setDepth(1);
     const spots: Pt[] = [];
     for (let i = 0; i < 8; i++) spots.push({ x: Math.cos((i / 8) * Math.PI * 2 + 0.2) * 130, y: Math.sin((i / 8) * Math.PI * 2 + 0.2) * 100 });
@@ -68,6 +71,14 @@ class LabScene extends Phaser.Scene {
         d.hitT = 0.09;
         this.tweens.add({ targets: d.img, angle: { from: -10, to: 0 }, duration: 160, ease: 'Back.easeOut' });
       },
+      pose: (skill, n, a) => {
+        // góc → hàng hướng của sprite (0 = Đông, chiều kim đồng hồ vì trục y hướng xuống)
+        const oct = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+        const row = [6, 7, 0, 1, 2, 3, 4, 5][oct];
+        const key = 'cast_' + skill;
+        if (n === 0 || !this.textures.exists(key)) this.hero.setTexture('hero', row * 7 + 6);
+        else this.hero.setTexture(key, row * 2 + (n - 1));
+      },
     };
   }
 
@@ -79,6 +90,7 @@ class LabScene extends Phaser.Scene {
 
   play(id: string, aw: boolean): void {
     this.current = { id, aw };
+    this.hero.setTexture('hero', 6);
     this.timer = 3.4;
     SKILL_FX[id]?.(this.stage, aw);
   }
