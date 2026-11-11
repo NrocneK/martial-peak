@@ -1,0 +1,700 @@
+// =====================================================================
+// HIỆU ỨNG HÌNH ẢNH 23 KỸ NĂNG (bản thường + bản thức tỉnh).
+// Mỗi hàm nhận "sân khấu" (vị trí nhân vật, danh sách mục tiêu, hàm báo trúng đòn) và diễn một lượt thi triển.
+// Dùng cho trang demo vfx-lab.html; khi đưa vào game, các kỹ năng gọi lại đúng các khối hiệu ứng này.
+// =====================================================================
+import Phaser from 'phaser';
+import { VT } from './textures';
+import { VfxKit, type Pt } from './VfxKit';
+
+export interface Stage {
+  kit: VfxKit;
+  hero: Phaser.GameObjects.Sprite;
+  /** Mục tiêu sắp theo khoảng cách tới nhân vật */
+  targets(): Pt[];
+  /** Báo trúng đòn (trang demo cho hình nhân chớp + rung) */
+  hit(t: Pt, color?: number): void;
+}
+
+type Fx = (s: Stage, aw: boolean) => void;
+
+const ang = (a: Pt, b: Pt) => Math.atan2(b.y - a.y, b.x - a.x);
+const dist = (a: Pt, b: Pt) => Math.hypot(b.x - a.x, b.y - a.y);
+const near = (s: Stage, c: Pt, r: number) => s.targets().filter((t) => dist(t, c) < r);
+const pt = (x: number, y: number): Pt => ({ x, y });
+const polar = (c: Pt, a: number, r: number): Pt => ({ x: c.x + Math.cos(a) * r, y: c.y + Math.sin(a) * r });
+const H = (s: Stage): Pt => ({ x: s.hero.x, y: s.hero.y - 6 });
+
+// ---------------------------------------------------------------- VŨ KHÍ
+const nguKiem: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const ts = s.targets().slice(0, aw ? 6 : 3);
+  ts.forEach((t, i) =>
+    k.later(i * 70, () => {
+      const a = ang(h, t);
+      const end = polar(h, a, dist(h, t) + 70);
+      k.glow(h.x, h.y, 0x9fd8ff, 40, 200);
+      k.fly(VT.SWORD, h, end, {
+        dur: 260, scale: 0.75, trail: aw ? 0xc8f0ff : 0x7ac8ff, trailScale: 0.9, add: false,
+        onArrive: () => {
+          if (aw) {
+            // tâm kiếm hợp nhất: đuổi sang mục tiêu kế
+            const nx = s.targets().find((o) => o !== t && dist(o, end) < 260) ?? t;
+            k.fly(VT.SWORD, end, nx, { dur: 220, scale: 0.75, trail: 0xc8f0ff, add: false, arc: 0.3, onArrive: () => { s.hit(nx, 0xc8f0ff); k.burst(nx.x, nx.y, 0xc8f0ff, 10, { tex: VT.SPARK, scale: [0.4, 0], speed: [80, 220] }); } });
+          } else k.fly(VT.SWORD, end, H(s), { dur: 300, scale: 0.7, trail: 0x7ac8ff, add: false, arc: 0.25 });
+        },
+      });
+      k.later(260 * (dist(h, t) / (dist(h, t) + 70)), () => {
+        s.hit(t, 0x9fd8ff);
+        k.burst(t.x, t.y, 0x9fd8ff, 8, { tex: VT.SPARK, scale: [0.35, 0], speed: [80, 200], life: 300 });
+        k.slash(t.x, t.y, a + Math.PI / 2, 26, 0x9fd8ff, 180, { sweep: 0.2 });
+      });
+    }),
+  );
+};
+
+const baDao: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const t = s.targets()[0] ?? pt(h.x + 100, h.y);
+  const a = ang(h, t);
+  const cut = (aa: number, r: number) => {
+    k.slash(h.x, h.y, aa, r, 0xff8a3a, 300, { sweep: 1.4, width: 1.1, core: 0xfff0c0 });
+    k.burst(h.x + Math.cos(aa) * r * 0.8, h.y + Math.sin(aa) * r * 0.8, [0xffb070, 0xff6a2a], 14, { speed: [60, 260], life: 420, scale: [0.5, 0] });
+    for (const o of s.targets()) if (dist(h, o) < r + 10 && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - aa)) < 1.2) s.hit(o, 0xff9a50);
+  };
+  if (aw) {
+    for (let i = 0; i < 4; i++) k.later(i * 40, () => cut(a + (i * Math.PI) / 2, 120));
+    k.ring(h.x, h.y, 0xff9a50, 40, 140, 380, true);
+    k.later(120, () => {
+      const end = polar(h, a, 300);
+      const w = k.img(VT.BLADE_WAVE, h.x, h.y, { tint: 0xff8a3a, scale: 0.9, rot: a });
+      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, alpha: 0.2, duration: 420, onComplete: () => w.destroy() });
+      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xffb070));
+    });
+    k.shake(160, 0.005);
+  } else {
+    cut(a, 105);
+    k.later(180, () => cut(a + Math.PI, 105));
+  }
+};
+
+const phaThuong: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const t = s.targets()[0] ?? pt(h.x + 100, h.y);
+  const a = ang(h, t);
+  const thrust = (i: number, last: boolean) =>
+    k.later(i * 150, () => {
+      const L = aw ? 260 : 190;
+      const e = polar(h, a, L);
+      k.streak(h.x, h.y, e.x, e.y, 0xffd870, aw ? 46 : 34, 260);
+      k.slash(e.x, e.y, a, 34, 0xffe9a0, 220, { sweep: 0.05, width: 0.7 });
+      k.glow(e.x, e.y, 0xffe9a0, 50, 220);
+      k.ring(e.x, e.y, 0xffe9a0, 10, 44, 240);
+      k.burst(e.x, e.y, 0xffe9a0, 10, { tex: VT.SPARK, angle: [((a * 180) / Math.PI) - 30, ((a * 180) / Math.PI) + 30], speed: [120, 320], scale: [0.4, 0], life: 300 });
+      for (const o of s.targets()) {
+        const d = dist(h, o), da = Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a));
+        if (d < L + 10 && Math.sin(da) * d < 22) s.hit(o, 0xffd870);
+      }
+      if (last) k.debris(e.x, e.y, 6);
+    });
+  if (aw) {
+    // lướt theo mũi thương, để lại long khí
+    thrust(0, true);
+    const hero = s.hero;
+    const sx = hero.x, sy = hero.y;
+    for (let i = 0; i < 4; i++) k.later(i * 30, () => { const g = k.img(hero.texture.key, hero.x, hero.y, { add: true, tint: 0xffd870, alpha: 0.6, depth: 9 }); g.setFrame(hero.frame.name); k.tw(g, { alpha: 0 }, 300); });
+    k.scene.tweens.add({ targets: hero, x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120, duration: 150, yoyo: true, hold: 500, ease: 'Quad.easeOut' });
+    const trail = k.scene.add.particles(0, 0, VT.SOFT, { x: { min: sx, max: sx }, y: sy, lifespan: 2000, scale: { start: 0.35, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: [0xffd870, 0xffb030], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Line(sx, sy, sx + Math.cos(a) * 120, sy + Math.sin(a) * 120) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(4);
+    k.later(1600, () => trail.stop());
+    k.later(2400, () => trail.destroy());
+  } else {
+    thrust(0, false);
+    thrust(1, false);
+    thrust(2, true);
+  }
+};
+
+const bangQuyen: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const t = s.targets()[0] ?? pt(h.x + 60, h.y);
+  const a = ang(h, t);
+  for (let i = 0; i < 3; i++)
+    k.later(i * 120, () => {
+      const p = polar(h, a + (i - 1) * 0.25, 46);
+      k.glow(p.x, p.y, 0xff7a6a, 80, 200);
+      k.ring(p.x, p.y, 0xffc0b0, 8, 48, 220, true);
+      k.slash(p.x, p.y, a, 30, 0xff8a6a, 160, { sweep: 0.1, width: 0.6 });
+      k.burst(p.x, p.y, 0xffd0c0, 10, { tex: VT.SPARK, scale: [0.4, 0], speed: [80, 220], life: 240, angle: [(a * 180) / Math.PI - 40, (a * 180) / Math.PI + 40] });
+      s.hit(t, 0xff7a6a);
+    });
+  k.later(360, () => {
+    // chấn động
+    k.ring(h.x, h.y + 10, 0xff7a6a, 20, 110, 420, true);
+    k.ring(h.x, h.y + 10, 0xffe0d0, 10, 80, 300);
+    k.debris(h.x, h.y + 10, 12);
+    k.shake(150, 0.006);
+    for (const o of near(s, h, 110)) s.hit(o, 0xff7a6a);
+    if (aw)
+      for (const da of [-0.5, 0, 0.5]) {
+        const c = k.img(VT.CRACK, h.x, h.y + 10, { tint: 0xff6a3a, origin: [0, 0.5], sx: 0.2, sy: 1.4, rot: a + da });
+        k.scene.tweens.add({ targets: c, scaleX: 1.6, duration: 220, ease: 'Quad.easeOut', onComplete: () => k.tw(c, { alpha: 0 }, 500) });
+        for (let j = 1; j <= 4; j++) k.later(j * 50, () => { const p = polar(h, a + da, j * 50); k.glow(p.x, p.y + 10, 0xff7a3a, 40, 260); k.debris(p.x, p.y + 10, 3); });
+      }
+  });
+};
+
+const truyTien: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const ts = s.targets();
+  const t = ts[ts.length - 1] ?? pt(h.x + 300, h.y);
+  const shoot = (to: Pt, star: boolean, delay: number) =>
+    k.later(delay, () =>
+      k.fly(VT.ARROW, h, to, {
+        dur: (dist(h, to) / 900) * 1000, scale: star ? 1.3 : 1, add: false, trail: star ? 0xffe080 : 0xb8ffc0, trailTex: star ? VT.SPARK : VT.DOT, trailScale: star ? 0.35 : 0.5,
+        onArrive: () => {
+          s.hit(to, 0x9affb0);
+          if (star) {
+            k.glow(to.x, to.y, 0xffe080, 90, 300);
+            k.ring(to.x, to.y, 0xffe080, 10, 70, 300);
+            k.burst(to.x, to.y, [0xffe080, 0xffffff], 16, { tex: VT.SPARK, scale: [0.4, 0], speed: [100, 260] });
+            for (const o of near(s, to, 70)) s.hit(o, 0xffe080);
+          } else k.burst(to.x, to.y, 0xb8ffc0, 6, { speed: [60, 160], life: 220 });
+        },
+      }),
+    );
+  if (aw) {
+    const a = ang(h, t);
+    for (let i = 0; i < 5; i++) shoot(polar(h, a + (i - 2) * 0.18, dist(h, t)), true, 0);
+    k.later(500, () => {
+      const c = ts[Math.floor(ts.length / 2)] ?? t;
+      k.ring(c.x, c.y, 0xffe080, 90, 70, 500, false, { alpha: 0.6 });
+      k.later(500, () => {
+        k.streak(c.x - 160, c.y - 320, c.x, c.y, 0xffe080, 40, 260);
+        k.glow(c.x, c.y, 0xffd060, 220, 500);
+        k.ring(c.x, c.y, 0xffe080, 20, 140, 500, true);
+        k.burst(c.x, c.y, [0xffe080, 0xffffff, 0xffa040], 30, { tex: VT.SPARK, speed: [120, 380], scale: [0.5, 0] });
+        k.shake(220, 0.008);
+        for (const o of near(s, c, 120)) s.hit(o, 0xffe080);
+      });
+    });
+  } else {
+    shoot(t, false, 0);
+    shoot(ts[1] ?? t, false, 100);
+    shoot(ts[2] ?? t, true, 200);
+  }
+};
+
+const thanhPhien: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const t = s.targets()[0] ?? pt(h.x + 100, h.y);
+  const a = ang(h, t);
+  const n = aw ? 12 : 5;
+  for (let i = 0; i < n; i++) {
+    const b = aw ? a + (i / n) * Math.PI * 2 : a + (i / (n - 1) - 0.5) * (Math.PI / 2);
+    const end = polar(h, b, 230);
+    k.fly(VT.FAN_BLADE, h, end, {
+      dur: 380, tint: 0x80f0d0, scale: 0.8, trail: 0x80f0d0, trailScale: 0.4, ease: 'Quad.easeOut', faceDir: true,
+      onArrive: () => k.fly(VT.FAN_BLADE, end, H(s), { dur: 380, tint: 0x80f0d0, scale: 0.7, trail: 0x80f0d0, trailScale: 0.4, ease: 'Quad.easeIn', arc: 0.2 }),
+    });
+  }
+  k.burst(h.x, h.y, 0x9fe8b0, 8, { tex: VT.LEAF, speed: [80, 200], life: 700, add: false, rotate: true, scale: [0.9, 0.5] });
+  for (const o of near(s, h, 230)) if (aw || Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.8) k.later((dist(h, o) / 230) * 380, () => s.hit(o, 0x80f0d0));
+  if (aw) {
+    // lốc xoáy
+    const c = polar(h, a, 90);
+    const tor = k.scene.add.particles(c.x, c.y, VT.SOFT, {
+      lifespan: 700, speed: 0, scale: { start: 0.25, end: 0.05 }, alpha: { start: 0.7, end: 0 }, tint: [0x80f0d0, 0xc8fff0], blendMode: Phaser.BlendModes.ADD, frequency: 14,
+      emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const y = -Math.random() * 80; const r = 6 + (-y / 80) * 30; const th = Math.random() * 6.28; p.x = Math.cos(th) * r; p.y = y; p.velocityY = -30; p.velocityX = -Math.sin(th) * 90; },
+    }).setDepth(21);
+    k.scene.tweens.add({ targets: tor, x: c.x + Math.cos(a) * 120, y: c.y + Math.sin(a) * 120, duration: 2000 });
+    k.later(2000, () => { tor.stop(); k.later(700, () => tor.destroy()); });
+  }
+};
+
+// ---------------------------------------------------------------- CẢNH GIỚI
+const hoKhieu: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  if (aw) {
+    const c = s.targets()[Math.min(3, s.targets().length - 1)] ?? pt(h.x + 120, h.y);
+    k.later(0, () => {
+      const cl = k.img(VT.CLAW, c.x, c.y, { tint: 0xfff0c0, scale: 0.2, rot: -0.4 });
+      k.scene.tweens.add({ targets: cl, scale: 0.9, duration: 160, ease: 'Back.easeOut', onComplete: () => k.tw(cl, { alpha: 0 }, 300) });
+      k.glow(c.x, c.y, 0xffe0a0, 120, 300);
+      for (const o of near(s, c, 80)) s.hit(o, 0xffe0a0);
+    });
+  }
+  const wave = (d: number, big: number) =>
+    k.later(d, () => {
+      k.ring(h.x, h.y, 0xffe0a0, 20, 130 * big, 460, true);
+      k.ring(h.x, h.y, 0xffffff, 10, 100 * big, 360);
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const p1 = polar(h, a, 40), p2 = polar(h, a, 120 * big);
+        k.streak(p1.x, p1.y, p2.x, p2.y, 0xffe0a0, 6, 300);
+      }
+      k.shake(160, 0.006);
+      for (const o of near(s, h, 130 * big)) s.hit(o, 0xffe0a0);
+    });
+  wave(aw ? 200 : 0, 1);
+  wave(aw ? 550 : 350, 1.15);
+};
+
+const linhDan: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const ts = s.targets();
+  const n = aw ? 9 : 4;
+  for (let i = 0; i < n; i++) {
+    const t = ts[i % Math.max(1, ts.length)] ?? pt(h.x + 100, h.y);
+    k.later(i * 40, () =>
+      k.fly(VT.ORB, h, t, {
+        dur: 420, tint: 0x70c8ff, scale: 0.8, trail: 0x9fd8ff, trailScale: 0.6, arc: (i % 2 ? 1 : -1) * 0.35, ease: 'Sine.easeIn',
+        onArrive: () => { s.hit(t, 0x70c8ff); k.glow(t.x, t.y, 0x9fe0ff, 60, 240); k.ring(t.x, t.y, 0x70c8ff, 6, 40, 240); },
+      }),
+    );
+  }
+  if (aw) k.burst(h.x, h.y, 0xc8ecff, 20, { tex: VT.ORB, speed: [40, 120], life: 500, scale: [0.4, 0] });
+};
+
+const hoaPhu: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const ts = s.targets();
+  const spots: Pt[] = aw ? [0, 1, 2, 3, 4].map((i) => polar(h, (i / 5) * Math.PI * 2, 110)) : [ts[1] ?? pt(h.x + 140, h.y), ts[4] ?? pt(h.x - 140, h.y)];
+  spots.forEach((p, i) =>
+    k.later(i * 80, () =>
+      k.fly(VT.TALISMAN, h, p, {
+        dur: 420, add: false, scale: 1, arc: 0.4, spin: 0.25, faceDir: false, trail: 0xff7a30, trailScale: 0.5,
+        onArrive: () => {
+          k.glow(p.x, p.y, 0xff7a30, 150, 380);
+          k.ring(p.x, p.y, 0xffc060, 20, 80, 360, true);
+          k.burst(p.x, p.y, [0xffd060, 0xff6a20, 0xff3a10], 18, { tex: VT.FLAME, speed: [40, 140], scale: [1.1, 0.2], life: 620, gravity: -340 });
+          k.shake(120, 0.004);
+          for (const o of near(s, p, 80)) s.hit(o, 0xff7a30);
+          // biển lửa
+          const fl = k.scene.add.particles(p.x, p.y, VT.FLAME, {
+            lifespan: 700, speedY: { min: -110, max: -50 }, speedX: { min: -12, max: 12 }, scale: { start: 0.9, end: 0.1 }, alpha: { start: 0.85, end: 0 },
+            tint: [0xffd060, 0xff7a20, 0xff3a10], blendMode: Phaser.BlendModes.ADD, frequency: 24,
+            emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, aw ? 60 : 55) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
+          }).setDepth(19);
+          k.later(aw ? 2200 : 1600, () => fl.stop());
+          k.later(aw ? 2900 : 2300, () => fl.destroy());
+        },
+      }),
+    ),
+  );
+};
+
+const kimDan: Fx = (s, aw) => {
+  const k = s.kit;
+  const rings = aw ? [{ n: 4, r: 70, d: 1 }, { n: 5, r: 120, d: -1 }] : [{ n: 3, r: 80, d: 1 }];
+  const orbs: { im: Phaser.GameObjects.Image; r: number; d: number; a0: number }[] = [];
+  for (const rg of rings) for (let i = 0; i < rg.n; i++) {
+    const im = k.img(VT.ORB, 0, 0, { tint: 0xffd040, scale: 0.9 });
+    orbs.push({ im, r: rg.r, d: rg.d, a0: (i / rg.n) * Math.PI * 2 });
+  }
+  const em = k.scene.add.particles(0, 0, VT.DOT, { lifespan: 260, speed: 0, scale: { start: 0.6, end: 0 }, alpha: { start: 0.8, end: 0 }, tint: 0xffd040, blendMode: Phaser.BlendModes.ADD, frequency: -1 }).setDepth(19);
+  let t = 0;
+  const dur = 2200;
+  const ev = k.scene.time.addEvent({
+    delay: 16, repeat: dur / 16, callback: () => {
+      t += 16;
+      const h = H(s);
+      for (const o of orbs) {
+        const a = o.a0 + (t / 1000) * 3 * o.d;
+        o.im.setPosition(h.x + Math.cos(a) * o.r, h.y + Math.sin(a) * o.r).setAlpha(Math.min(1, (dur - t) / 300));
+        em.emitParticleAt(o.im.x, o.im.y, 1);
+        for (const tg of s.targets()) if (dist(tg, o.im) < 16 && Math.random() < 0.1) { s.hit(tg, 0xffd040); k.burst(tg.x, tg.y, 0xffe080, 5, { tex: VT.SPARK, scale: [0.25, 0], life: 200 }); }
+      }
+    },
+  });
+  k.later(dur + 50, () => { ev.remove(); for (const o of orbs) o.im.destroy(); em.destroy(); });
+};
+
+const nguyenAnh: Fx = (s, aw) => {
+  const k = s.kit;
+  const n = aw ? 2 : 1;
+  const sp: Phaser.GameObjects.Image[] = [];
+  for (let i = 0; i < n; i++) {
+    const im = k.img(VT.SPIRIT, 0, 0, { tint: aw ? 0xffe6a0 : 0xffffff, scale: 1, alpha: 0, add: true });
+    k.scene.tweens.add({ targets: im, alpha: 0.95, duration: 300 });
+    sp.push(im);
+  }
+  const halo = sp.map(() => k.img(VT.RING, 0, 0, { tint: aw ? 0xffe6a0 : 0x70ffd8, scale: 0.18, alpha: 0.8 }));
+  let t = 0;
+  const dur = 2400;
+  const ev = k.scene.time.addEvent({
+    delay: 16, repeat: dur / 16, callback: () => {
+      t += 16;
+      const h = H(s);
+      sp.forEach((im, i) => {
+        const a = (t / 1000) * 1.6 + i * Math.PI;
+        im.setPosition(h.x + Math.cos(a) * 50, h.y - 40 + Math.sin(a) * 12 + Math.sin(t / 200) * 3);
+        halo[i].setPosition(im.x, im.y - 14).setRotation(t / 300);
+        if (t > dur - 300) { im.setAlpha((dur - t) / 300); halo[i].setAlpha((dur - t) / 300); }
+      });
+      if (t % 400 < 16)
+        sp.forEach((im) => {
+          const tg = s.targets()[Math.floor(Math.random() * Math.min(5, s.targets().length))];
+          if (!tg) return;
+          k.fly(VT.ORB, pt(im.x, im.y), tg, { dur: 260, tint: aw ? 0xffe6a0 : 0x70ffd8, scale: 0.6, trail: aw ? 0xffe6a0 : 0x70ffd8, trailScale: 0.5, onArrive: () => { s.hit(tg, 0x70ffd8); k.glow(tg.x, tg.y, 0x70ffd8, 40, 200); } });
+        });
+    },
+  });
+  k.later(dur + 50, () => { ev.remove(); sp.forEach((i) => i.destroy()); halo.forEach((i) => i.destroy()); });
+};
+
+const thanThuc: Fx = (s, aw) => {
+  const k = s.kit;
+  const ts = s.targets().slice(-3);
+  ts.forEach((t, i) =>
+    k.later(i * 150, () => {
+      const eye = k.img(VT.EYE, t.x, t.y - 46, { scale: 0.1, alpha: 0, add: false, depth: 22 });
+      k.scene.tweens.add({ targets: eye, scale: 0.5, alpha: 1, duration: 180, ease: 'Back.easeOut' });
+      k.later(260, () => {
+        k.tw(eye, { alpha: 0, scale: 0.7 }, 200);
+        k.slash(t.x, t.y, -0.8, 50, 0xc8a0ff, 220, { sweep: 0.15, width: 0.4 });
+        k.slash(t.x, t.y, 2.3, 50, 0xc8a0ff, 220, { sweep: 0.15, width: 0.4 });
+        k.streak(t.x - 46, t.y - 46, t.x + 46, t.y + 46, 0xd8b0ff, 10, 220);
+        k.streak(t.x + 46, t.y - 46, t.x - 46, t.y + 46, 0xd8b0ff, 10, 220);
+        k.glow(t.x, t.y, 0xa070ff, 90, 300);
+        s.hit(t, 0xc8a0ff);
+        if (aw) k.later(200, () => { k.ring(t.x, t.y, 0xc8a0ff, 10, 120, 420, true); k.burst(t.x, t.y, [0xc8a0ff, 0xffffff], 20, { tex: VT.SPARK, speed: [100, 300], scale: [0.4, 0] }); for (const o of near(s, t, 120)) s.hit(o, 0xc8a0ff); });
+      });
+    }),
+  );
+};
+
+const huKhong: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const c = s.targets()[2] ?? pt(h.x + 150, h.y);
+  const R = aw ? 170 : 110;
+  const core = k.img(VT.SOFT, c.x, c.y, { tint: 0x000000, add: false, scale: 0.05, depth: 18 });
+  const rim = k.img(VT.RING_THICK, c.x, c.y, { tint: 0xa060ff, scale: 0.05, depth: 19 });
+  k.scene.tweens.add({ targets: core, scale: aw ? 1.3 : 0.6, duration: 300 });
+  k.scene.tweens.add({ targets: rim, scale: aw ? 0.5 : 0.28, duration: 300 });
+  k.scene.tweens.add({ targets: rim, rotation: 12, duration: 2400 });
+  const sw = k.scene.add.particles(c.x, c.y, VT.DOT, {
+    lifespan: 700, speed: 0, scale: { start: 0.2, end: 0.7 }, alpha: { start: 0, end: 1 }, tint: [0xa060ff, 0xe0c0ff, 0x6030c0], blendMode: Phaser.BlendModes.ADD, frequency: 8,
+    emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const a = Math.random() * 6.28, r = R; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r; p.velocityX = -p.x * 1.3 - Math.sin(a) * 120; p.velocityY = -p.y * 1.3 + Math.cos(a) * 120; },
+  }).setDepth(19);
+  k.ring(c.x, c.y, 0xa060ff, R, R * 0.9, 2200, false, { alpha: 0.35 });
+  k.later(2200, () => {
+    sw.stop();
+    k.tw(core, { scale: 0 }, 160);
+    k.tw(rim, { scale: 0 }, 160);
+    k.later(160, () => {
+      k.glow(c.x, c.y, 0xc080ff, R * 2, 420);
+      k.ring(c.x, c.y, 0xe0c0ff, 10, R * 1.1, 420, true);
+      k.burst(c.x, c.y, [0xa060ff, 0xffffff], 30, { tex: VT.SPARK, speed: [120, 380], scale: [0.4, 0] });
+      k.shake(200, 0.007);
+      for (const o of near(s, c, R)) s.hit(o, 0xa060ff);
+    });
+    k.later(900, () => sw.destroy());
+  });
+};
+
+const phapTuong: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const ts = s.targets();
+  const palm = (p: Pt, big: number, delay: number) =>
+    k.later(delay, () => {
+      const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0.0, scale: 1.4 * big, depth: 4 });
+      k.scene.tweens.add({ targets: sh, alpha: 0.45, duration: 550 });
+      k.ring(p.x, p.y, 0xffc860, 100 * big, 90 * big, 600, false, { alpha: 0.6 });
+      const im = k.img(VT.PALM, p.x, p.y - 260, { scale: 1.2 * big, add: false, alpha: 0.92, depth: 23, origin: [0.5, 0.8] });
+      k.scene.tweens.add({
+        targets: im, y: p.y, duration: 560, ease: 'Quad.easeIn', onComplete: () => {
+          k.tw(im, { alpha: 0, scale: 1.4 * big }, 320);
+          k.tw(sh, { alpha: 0 }, 300);
+          k.glow(p.x, p.y, 0xffc860, 220 * big, 420);
+          k.ring(p.x, p.y, 0xfff0c0, 20, 140 * big, 460, true);
+          k.debris(p.x, p.y, 16);
+          k.shake(240, 0.01);
+          for (const o of near(s, p, 110 * big)) s.hit(o, 0xffc860);
+        },
+      });
+    });
+  if (aw) {
+    const av = k.img(VT.SPIRIT, h.x, h.y - 70, { tint: 0xffc860, scale: 0.2, alpha: 0, depth: 3 });
+    k.scene.tweens.add({ targets: av, scale: 3.4, alpha: 0.55, duration: 400 });
+    k.later(2400, () => k.tw(av, { alpha: 0 }, 400));
+    palm(ts[2] ?? pt(h.x + 140, h.y), 1.3, 300);
+    palm(ts[5] ?? pt(h.x - 140, h.y), 1.3, 1100);
+    k.later(1800, () => { k.ring(h.x, h.y, 0xffc860, 40, 420, 600, true); k.shake(300, 0.012); for (const o of s.targets()) s.hit(o, 0xffc860); });
+  } else {
+    const c = ts[2] ?? pt(h.x + 140, h.y);
+    palm(pt(c.x - 50, c.y), 1, 0);
+    palm(pt(c.x + 50, c.y), 1, 300);
+  }
+};
+
+const vanKiem: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const R = aw ? 220 : 180;
+  const drop = (p: Pt, big = 1) => {
+    const sw = k.img(VT.SWORD, p.x, p.y - 220, { add: false, rot: Math.PI / 2, scale: 0.7 * big, depth: 22 });
+    k.streak(p.x, p.y - 220, p.x, p.y, 0xd8e8ff, 8 * big, 160);
+    k.scene.tweens.add({
+      targets: sw, y: p.y - 30 * big, duration: 160, ease: 'Quad.easeIn', onComplete: () => {
+        k.glow(p.x, p.y, 0xd8e8ff, 50 * big, 220);
+        k.burst(p.x, p.y, 0xd8e8ff, 5, { tex: VT.SPARK, scale: [0.25, 0], speed: [60, 160], life: 220 });
+        for (const o of near(s, p, 34 * big)) s.hit(o, 0xd8e8ff);
+        k.later(big > 1.5 ? 1600 : 700, () => k.tw(sw, { alpha: 0 }, 300));
+      },
+    });
+  };
+  if (aw) {
+    const rr = k.img(VT.RUNES, h.x, h.y, { tint: 0xd8e8ff, scale: (R + 30) / 124, alpha: 0, depth: 3 });
+    k.scene.tweens.add({ targets: rr, alpha: 0.6, rotation: 1.5, duration: 2600 });
+    k.later(2600, () => k.tw(rr, { alpha: 0 }, 300));
+    for (let i = 0; i < 4; i++) drop(polar(h, (i / 4) * Math.PI * 2 + Math.PI / 4, R), 2.2);
+  }
+  const n = aw ? 26 : 16;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, d = Math.sqrt(Math.random()) * R;
+    k.later(200 + i * (2000 / n), () => drop(polar(h, a, d)));
+  }
+};
+
+const thanLoi: Fx = (s, aw) => {
+  const k = s.kit;
+  const ts = s.targets();
+  const n = aw ? 6 : 3;
+  for (let i = 0; i < n; i++)
+    k.later(i * 120, () => {
+      const t = ts[Math.floor(Math.random() * ts.length)];
+      if (!t) return;
+      k.lightning(t.x + 30, t.y - 340, t.x, t.y, aw ? 0xc890ff : 0xb090ff, 3.2, 300, { branches: 3 });
+      k.glow(t.x, t.y, 0xb090ff, 80, 300);
+      k.ring(t.x, t.y, 0xd0c0ff, 6, 50, 260);
+      s.hit(t, 0xb090ff);
+      let cur = t;
+      const done = [t];
+      for (let j = 0; j < 3; j++) {
+        const nx = s.targets().filter((o) => !done.includes(o)).sort((a, b) => dist(a, cur) - dist(b, cur))[0];
+        if (!nx || dist(nx, cur) > 200) break;
+        const from = cur;
+        k.later(60 * (j + 1), () => { k.lightning(from.x, from.y, nx.x, nx.y, 0xd0c0ff, 1.8, 220, { branches: 0, rough: 0.3 }); s.hit(nx, 0xd0c0ff); });
+        done.push(nx);
+        cur = nx;
+      }
+    });
+  k.flash(0x8a70ff, 120, 0.15);
+  if (aw)
+    k.later(800, () => {
+      const t = ts[Math.floor(ts.length / 2)];
+      if (!t) return;
+      k.flash(0xc0a0ff, 200, 0.35);
+      k.lightning(t.x, t.y - 420, t.x, t.y, 0xe0c0ff, 9, 500, { branches: 5 });
+      k.glow(t.x, t.y, 0xc0a0ff, 260, 500);
+      k.ring(t.x, t.y, 0xffffff, 20, 160, 500, true);
+      k.shake(300, 0.012);
+      for (const o of near(s, t, 140)) s.hit(o, 0xc0a0ff);
+    });
+};
+
+const lienHoa: Fx = (s, aw) => {
+  const k = s.kit, h0 = H(s);
+  const c = pt(h0.x, h0.y + 8);
+  const R = aw ? 150 : 120;
+  const petals: Phaser.GameObjects.Image[] = [];
+  const layers = aw ? [[8, 0.75, 0], [8, 0.55, Math.PI / 8], [6, 0.38, 0]] : [[8, 0.6, 0], [6, 0.4, Math.PI / 6]];
+  for (const [n, sc, off] of layers)
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + off;
+      const p = k.img(VT.PETAL, c.x, c.y, { add: false, scale: 0.05, rot: a + Math.PI / 2, origin: [0.5, 1], alpha: 0.9, depth: 3 });
+      k.scene.tweens.add({ targets: p, scale: sc * (R / 120) * 1.6, duration: 600, ease: 'Back.easeOut', delay: i * 20 });
+      petals.push(p);
+    }
+  const area = k.img(VT.SOFT, c.x, c.y, { tint: 0xff9ad0, scale: (R / 64) * 1.1, alpha: 0.25, depth: 2 });
+  const motes = k.scene.add.particles(c.x, c.y, VT.DOT, {
+    lifespan: 1200, speedY: { min: -60, max: -20 }, speedX: { min: -10, max: 10 }, scale: { start: 0.6, end: 0 }, alpha: { start: 0.9, end: 0 },
+    tint: [0x9affc0, 0xff9ad0, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 40,
+    emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, R) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
+  }).setDepth(19);
+  k.later(2400, () => {
+    motes.stop();
+    for (const p of petals) k.tw(p, { alpha: 0, scale: p.scale * 1.1 }, 400);
+    k.tw(area, { alpha: 0 }, 400);
+    if (aw) for (let i = 0; i < 9; i++) k.fly(VT.PETAL, c, polar(c, (i / 9) * Math.PI * 2, 260), { dur: 500, add: false, scale: 0.7, trail: 0xff9ad0, trailScale: 0.5, spin: 0.3, faceDir: false });
+    k.later(1300, () => motes.destroy());
+  });
+  for (const o of near(s, c, R)) k.later(300, () => s.hit(o, 0xff9ad0));
+};
+
+const nganHa: Fx = (s, aw) => {
+  const k = s.kit;
+  const n = aw ? 4 : 2;
+  const L = aw ? 300 : 230;
+  const g = k.scene.add.graphics().setDepth(19).setBlendMode(Phaser.BlendModes.ADD);
+  const stars = k.scene.add.particles(0, 0, VT.SPARK, { lifespan: 500, speed: { min: 10, max: 40 }, scale: { start: 0.25, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xcff4ff, 0xffffff, 0x9fe8ff], blendMode: Phaser.BlendModes.ADD, frequency: -1 }).setDepth(20);
+  let t = 0;
+  const dur = 2400;
+  const hitT = new Map<Pt, number>();
+  const ev = k.scene.time.addEvent({
+    delay: 16, repeat: dur / 16, callback: () => {
+      t += 16;
+      const h = H(s);
+      const a0 = (t / 1000) * Math.PI;
+      g.clear();
+      const fade = Math.min(1, (dur - t) / 300, t / 200);
+      for (let i = 0; i < n; i++) {
+        const a = a0 + (i / n) * Math.PI * 2;
+        const e = polar(h, a, L);
+        for (const [w, c, al] of [[22, 0x3a8ae8, 0.25], [10, 0x9fe8ff, 0.6], [3, 0xffffff, 0.95]] as [number, number, number][]) {
+          g.lineStyle(w, c, al * fade);
+          g.lineBetween(h.x, h.y, e.x, e.y);
+        }
+        const p = polar(h, a, Math.random() * L);
+        stars.emitParticleAt(p.x, p.y, 1);
+        for (const o of s.targets()) {
+          const d = dist(h, o);
+          if (d < L && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.12 && (hitT.get(o) ?? 0) < t - 400) {
+            hitT.set(o, t);
+            s.hit(o, 0x9fe8ff);
+            k.burst(o.x, o.y, 0xcff4ff, 6, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 400 });
+          }
+        }
+      }
+    },
+  });
+  k.later(dur + 40, () => { ev.remove(); g.destroy(); stars.destroy(); });
+};
+
+const hoangChung: Fx = (s, aw) => {
+  const k = s.kit;
+  const bell = k.img(VT.BELL, 0, 0, { add: false, scale: 0.2, alpha: 0, depth: 24, origin: [0.5, 0.9] });
+  const dome = k.img(VT.SOFT, 0, 0, { tint: 0xf0c040, scale: 1.2, alpha: 0, depth: 21 });
+  const rim = k.img(VT.RING, 0, 0, { tint: 0xffe080, scale: 0.42, alpha: 0, depth: 21 });
+  k.scene.tweens.add({ targets: bell, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
+  k.scene.tweens.add({ targets: [dome, rim], alpha: 0.5, duration: 300 });
+  const ring = () => {
+    const h = H(s);
+    k.ring(h.x, h.y, 0xf0c040, 30, 170, 500, true);
+    k.ring(h.x, h.y, 0xfff0c0, 20, 130, 420);
+    k.scene.tweens.add({ targets: bell, angle: { from: -12, to: 12 }, duration: 90, yoyo: true, repeat: 2 });
+    k.shake(140, 0.005);
+    for (const o of near(s, h, 170)) s.hit(o, 0xf0c040);
+  };
+  let t = 0;
+  const ev = k.scene.time.addEvent({ delay: 16, repeat: 2400 / 16, callback: () => { t += 16; const h = H(s); bell.setPosition(h.x, h.y - 30); dome.setPosition(h.x, h.y); rim.setPosition(h.x, h.y); } });
+  if (aw) { k.later(500, ring); k.later(1200, ring); k.later(1900, ring); }
+  k.later(2300, () => {
+    ring();
+    k.burst(H(s).x, H(s).y - 30, 0xffe080, 20, { tex: VT.SPARK, speed: [100, 300], scale: [0.4, 0] });
+    ev.remove();
+    k.tw(bell, { alpha: 0, scale: 1.3 }, 300);
+    k.tw(dome, { alpha: 0 }, 300);
+    k.tw(rim, { alpha: 0 }, 300);
+  });
+};
+
+const kimThan: Fx = (s, aw) => {
+  const k = s.kit, hero = s.hero;
+  hero.setTint(0xffe080);
+  const aura = k.img(VT.SOFT, 0, 0, { tint: 0xffd860, scale: 1.6, alpha: 0.55, depth: 9 });
+  const rr = k.img(VT.RUNES, 0, 0, { tint: 0xffd860, scale: (aw ? 120 : 90) / 124, alpha: 0.6, depth: 3 });
+  const rise = k.scene.add.particles(0, 0, VT.SPARK, { lifespan: 800, speedY: { min: -120, max: -60 }, speedX: { min: -20, max: 20 }, scale: { start: 0.3, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd860, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 26) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(21);
+  k.ring(hero.x, hero.y, 0xffd860, 10, 100, 400, true);
+  let t = 0;
+  const ev = k.scene.time.addEvent({
+    delay: 16, repeat: 2400 / 16, callback: () => {
+      t += 16;
+      const h = H(s);
+      aura.setPosition(h.x, h.y).setScale(1.5 + Math.sin(t / 120) * 0.1);
+      rr.setPosition(h.x, h.y + 8).setRotation(t / 900);
+      rise.setPosition(h.x, h.y);
+      if (t % 500 < 16) for (const o of near(s, h, aw ? 120 : 90)) s.hit(o, 0xffd860);
+    },
+  });
+  k.later(2400, () => { ev.remove(); hero.clearTint(); rise.stop(); k.tw(aura, { alpha: 0 }, 300); k.tw(rr, { alpha: 0 }, 300); k.later(900, () => rise.destroy()); });
+};
+
+const linhVuc: Fx = (s, aw) => {
+  const k = s.kit;
+  const R = aw ? 240 : 170;
+  const base = k.img(VT.SOFT, 0, 0, { tint: aw ? 0xff1a3a : 0xc8203a, scale: (R / 64) * 1.15, alpha: 0, depth: 2 });
+  const r1 = k.img(VT.RUNES, 0, 0, { tint: 0xff4a5a, scale: R / 124, alpha: 0, depth: 3 });
+  const r2 = k.img(VT.RUNES, 0, 0, { tint: 0xff8a6a, scale: (R * 0.62) / 124, alpha: 0, depth: 3 });
+  k.scene.tweens.add({ targets: base, alpha: 0.32, duration: 400 });
+  k.scene.tweens.add({ targets: [r1, r2], alpha: 0.7, duration: 400 });
+  const mist = k.scene.add.particles(0, 0, VT.SMOKE, { lifespan: 1400, speed: { min: 5, max: 20 }, scale: { start: 0.6, end: 1.4 }, alpha: { start: 0.35, end: 0 }, tint: [0x8a0a1a, 0xc8203a], frequency: 70, emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, R) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(2);
+  let t = 0;
+  const ev = k.scene.time.addEvent({
+    delay: 16, repeat: 2400 / 16, callback: () => {
+      t += 16;
+      const h = H(s);
+      base.setPosition(h.x, h.y);
+      r1.setPosition(h.x, h.y).setRotation(t / 1500);
+      r2.setPosition(h.x, h.y).setRotation(-t / 1000);
+      mist.setPosition(h.x, h.y);
+      if (t % 600 < 16) for (const o of near(s, h, R)) s.hit(o, 0xff4a5a);
+    },
+  });
+  if (aw) k.later(1200, () => { const tg = s.targets()[s.targets().length - 1]; if (tg) { const h = H(s); k.fly(VT.SWORD, h, tg, { dur: 260, tint: 0xff3a4a, scale: 1.1, trail: 0xff3a4a, trailScale: 0.8, onArrive: () => { s.hit(tg, 0xff3a4a); k.glow(tg.x, tg.y, 0xff3a4a, 120, 300); k.burst(tg.x, tg.y, 0xff5a5a, 16, { tex: VT.SPARK, scale: [0.4, 0] }); } }); } });
+  k.later(2400, () => { ev.remove(); mist.stop(); k.tw(base, { alpha: 0 }, 400); k.tw(r1, { alpha: 0 }, 400); k.tw(r2, { alpha: 0 }, 400); k.later(1500, () => mist.destroy()); });
+};
+
+const deAn: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const c = s.targets()[3] ?? pt(h.x + 150, h.y);
+  const big = aw ? 2.2 : 1.4;
+  const sh = k.img(VT.SOFT, c.x, c.y, { tint: 0x000000, add: false, alpha: 0, scale: 1.6 * big, depth: 4 });
+  k.scene.tweens.add({ targets: sh, alpha: 0.5, duration: 900 });
+  k.ring(c.x, c.y, 0xffd040, 120 * big, 110 * big, 900, false, { alpha: 0.7 });
+  const seal = k.img(VT.SEAL, c.x, c.y - 320, { add: false, scale: 0.9 * big, depth: 24, alpha: 0.95 });
+  k.scene.tweens.add({ targets: seal, rotation: 0.15, duration: 900 });
+  k.scene.tweens.add({
+    targets: seal, y: c.y - 20, duration: 900, ease: 'Cubic.easeIn', onComplete: () => {
+      k.flash(0xffe080, 160, 0.3);
+      k.glow(c.x, c.y, 0xffd040, 260 * big, 500);
+      k.ring(c.x, c.y, 0xfff0a0, 30, 170 * big, 500, true);
+      k.ring(c.x, c.y, 0xffd040, 20, 220 * big, 700);
+      k.debris(c.x, c.y, 22);
+      k.shake(320, 0.014);
+      for (const o of near(s, c, 120 * big)) s.hit(o, 0xffd040);
+      k.later(500, () => { k.tw(seal, { alpha: 0 }, 400); k.tw(sh, { alpha: 0 }, 400); });
+      if (aw)
+        s.targets().slice(0, 9).forEach((tg, i) =>
+          k.later(200 + i * 60, () => k.fly(VT.DRAGON, c, tg, { dur: 520, add: false, scale: 1, arc: (i % 2 ? 1 : -1) * 0.5, trail: 0xffd040, trailTex: VT.SOFT, trailScale: 0.25, onArrive: () => { s.hit(tg, 0xffd040); k.glow(tg.x, tg.y, 0xffd040, 70, 240); } })),
+        );
+    },
+  });
+};
+
+const daiDao: Fx = (s, aw) => {
+  const k = s.kit, h = H(s);
+  const cam = k.scene.cameras.main;
+  // ngưng đọng thời gian: phủ màu tím xám + vòng đồng hồ
+  const veil = k.scene.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 2, cam.height * 2, aw ? 0x2a1a08 : 0x14102a, 0).setDepth(80);
+  k.scene.tweens.add({ targets: veil, fillAlpha: 0.55, duration: 300 });
+  const clock = k.img(VT.RUNES, h.x, h.y, { tint: aw ? 0xffd860 : 0xe8e0ff, scale: 0.3, alpha: 0, depth: 81 });
+  k.scene.tweens.add({ targets: clock, scale: 2.4, alpha: 0.9, rotation: -2, duration: 1600, ease: 'Sine.easeInOut' });
+  const tj = k.img(VT.TAIJI, h.x, h.y - 10, { add: false, scale: 0.1, alpha: 0, depth: 82 });
+  k.scene.tweens.add({ targets: tj, scale: aw ? 1.6 : 0.9, alpha: 0.95, rotation: 6, duration: 1600, ease: 'Sine.easeIn' });
+  if (aw) {
+    const em = k.scene.add.particles(h.x, h.y, VT.DOT, {
+      lifespan: 700, speed: 0, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd860, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 6,
+      emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const a = Math.random() * 6.28, r = 300; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r; p.velocityX = -p.x * 1.4; p.velocityY = -p.y * 1.4; },
+    }).setDepth(83);
+    k.later(1600, () => em.stop());
+    k.later(2400, () => em.destroy());
+  }
+  k.later(1700, () => {
+    k.tw(veil, { alpha: 0 }, 400);
+    k.tw(clock, { alpha: 0, scale: 3 }, 300);
+    k.tw(tj, { alpha: 0, scale: 0.1 }, 160);
+    k.flash(0xffffff, 300, 0.85);
+    k.glow(h.x, h.y, aw ? 0xffd860 : 0xe8e0ff, 700, 700, { depth: 84 });
+    for (let i = 0; i < 3; i++) k.later(i * 90, () => k.ring(h.x, h.y, aw ? 0xffd860 : 0xffffff, 30, 520, 600, true, { depth: 84 }));
+    k.burst(h.x, h.y, [0xffffff, aw ? 0xffd860 : 0xc8b8ff], 60, { tex: VT.SPARK, speed: [200, 600], scale: [0.6, 0], life: 700, depth: 84 });
+    k.shake(400, 0.016);
+    for (const o of s.targets()) s.hit(o, 0xffffff);
+  });
+};
+
+export const SKILL_FX: Record<string, Fx> = {
+  ngu_kiem: nguKiem, ba_dao: baDao, pha_thuong: phaThuong, bang_quyen: bangQuyen, truy_tien: truyTien, thanh_phien: thanhPhien,
+  ho_khieu: hoKhieu, linh_dan: linhDan, hoa_phu: hoaPhu, kim_dan: kimDan, nguyen_anh: nguyenAnh, than_thuc: thanThuc,
+  hu_khong: huKhong, phap_tuong: phapTuong, van_kiem: vanKiem, than_loi: thanLoi, lien_hoa: lienHoa, ngan_ha: nganHa,
+  hoang_chung: hoangChung, kim_than: kimThan, linh_vuc: linhVuc, de_an: deAn, dai_dao: daiDao,
+};

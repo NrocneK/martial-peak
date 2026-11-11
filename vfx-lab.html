@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>VFX Kỹ Năng</title>
+    <link rel="icon" href="data:," />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root { --bg: #0b0a12; --panel: #141228; --line: #2c2a52; --text: #e8e6ff; --dim: #9a98c0; --gold: #ffd36a; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: 'Be Vietnam Pro', system-ui, sans-serif; overflow: hidden; }
+      #wrap { display: flex; height: 100%; }
+      #stage { flex: 1; position: relative; min-width: 0; }
+      #panel { width: 340px; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+      #panel header { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+      #panel h1 { margin: 0 0 4px; font-size: 17px; color: var(--gold); }
+      #panel p { margin: 0; font-size: 12px; color: var(--dim); line-height: 1.4; }
+      .opts { display: flex; gap: 12px; margin-top: 8px; font-size: 13px; align-items: center; flex-wrap: wrap; }
+      #list { overflow-y: auto; flex: 1; padding: 6px 8px 16px; }
+      .grp { font-size: 12px; color: var(--gold); margin: 10px 6px 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+      .row { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px; border-radius: 8px; border: 1px solid transparent; }
+      .row.on { border-color: var(--gold); background: rgba(255, 211, 106, 0.08); }
+      .row img { width: 40px; height: 40px; image-rendering: pixelated; }
+      .nm { font-size: 13.5px; font-weight: 600; }
+      .ty { font-size: 11.5px; color: var(--dim); }
+      .bt { display: flex; gap: 4px; }
+      button { font: inherit; font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: #1e1b3a; color: var(--text); cursor: pointer; }
+      button:hover { border-color: #5a56a0; }
+      button.aw { border-color: #8a6a20; color: var(--gold); }
+      #cap { position: absolute; left: 12px; top: 10px; font-size: 14px; text-shadow: 0 1px 3px #000; pointer-events: none; }
+      #cap b { color: var(--gold); }
+      @media (max-width: 760px) {
+        #wrap { flex-direction: column; }
+        #stage { flex: none; height: 55%; }
+        #panel { width: auto; flex: 1; min-height: 0; border-left: none; border-top: 1px solid var(--line); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <div id="stage"><div id="cap"></div></div>
+      <div id="panel">
+        <header>
+          <h1>VFX kỹ năng — bản xem thử</h1>
+          <p>Bấm "Thường" hoặc "Thức tỉnh" để xem hiệu ứng. Hình nhân gỗ chỉ để minh họa trúng đòn (không phải quái thật). Trang này tách riêng, chưa đưa vào game.</p>
+          <div class="opts">
+            <label><input type="checkbox" id="loop" checked /> Tự lặp</label>
+            <label><input type="checkbox" id="walk" /> Nhân vật đi vòng</label>
+            <button id="all">Chạy lần lượt tất cả</button>
+          </div>
+        </header>
+        <div id="list"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/vfxlab/main.ts"></script>
+  </body>
+</html>

@@ -6,6 +6,8 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
+      // 2 trang: game (index.html) + trang xem thử VFX kỹ năng (vfx-lab.html, tách khỏi game)
+      input: { main: 'index.html', lab: 'vfx-lab.html' },
       output: {
         manualChunks: {
           phaser: ['phaser'],
