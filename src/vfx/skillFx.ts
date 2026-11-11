@@ -243,37 +243,53 @@ function spearThrust(k: Stage['kit'], h: Pt, a: number, L: number): number {
   return 230;
 }
 
-/** quầng sáng xoáy (2 sợi xoắn ốc quanh trục đâm) chạy từ nhân vật tới mũi thương rồi nổ */
+/** quầng sáng xoáy: một ĐOẠN XOẮN ỐC liền mạch (2 sợi sáng quấn quanh trục đâm, như mũi khoan) vừa quay vừa
+ *  tiến từ nhân vật tới mũi thương rồi nổ. Sợi ở nửa phía trước (gần người xem) dày + sáng, nửa phía sau mờ + mảnh. */
 function spearVortex(s: Stage, h: Pt, a: number, L: number): void {
   const k = s.kit, sc = k.scene;
-  const dur = 320, R = 22, turns = 3.5;
-  const nx = -Math.sin(a), ny = Math.cos(a);
-  let el = 0;                                                               // thời gian riêng (theo timeScale của cảnh)
-  const heads = [0, Math.PI].map(() => sc.add.image(h.x, h.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(SPEAR_COL).setDepth(10));
-  const core = sc.add.image(h.x, h.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(0xc8fff0).setDepth(10).setScale(0.8);
-  let last = 0;
+  const dur = 620;            // ms đi hết trục
+  const R = 25;               // bán kính xoắn
+  const SEG = 92;             // chiều dài đoạn xoắn
+  const PITCH = 52;           // mỗi vòng xoắn dài 52px theo trục
+  const SPIN = 5.5;           // vòng quay / giây
+  const ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+  const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(10);
+  const core = sc.add.image(h.x, h.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(0xc8fff0).setDepth(10).setScale(0.7, 0.45).setRotation(a);
+  let el = 0;
+  const pt3 = (cx: number, cy: number, s0: number, th: number) => ({
+    x: cx + ux * s0 + nx * Math.cos(th) * R,
+    y: cy + uy * s0 + ny * Math.cos(th) * R - Math.sin(th) * R * 0.55,
+    front: Math.sin(th),
+  });
   const step = (_t: number, dms: number) => {
     el += dms * sc.time.timeScale;
     const u = Math.min(1, el / dur);
-    const e = u * u * (3 - 2 * u);                                         // tăng tốc rồi hãm nhẹ tới mũi
-    const c = polar(h, a, 8 + (L - 8) * e);
-    core.setPosition(c.x, c.y).setAlpha(0.8);
-    heads.forEach((im, i) => {
-      const th = u * turns * Math.PI * 2 + i * Math.PI;
-      const side = Math.cos(th) * R, up = Math.sin(th) * R * 0.55;         // xoắn quanh trục: lệch ngang + nhô lên/xuống
-      const x = c.x + nx * side, y = c.y + ny * side - up;
-      const near = 0.75 + 0.25 * Math.sin(th);                             // vòng phía trước to + sáng hơn
-      im.setPosition(x, y).setScale(0.5 * near).setAlpha(0.95 * near).setDepth(Math.sin(th) > 0 ? 11 : 8);
-      // vệt đuôi xoáy: thả điểm sáng tắt nhanh dọc đường đi
-      if (el - last > 12) {
-        const g = sc.add.image(x, y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(i ? 0x7affe0 : SPEAR_COL).setDepth(9).setScale(0.36 * near).setAlpha(0.8);
-        sc.tweens.add({ targets: g, alpha: 0, scale: 0.08, duration: 230, onComplete: () => g.destroy() });
+    const e = u < 0.15 ? u / 0.15 * 0.15 * 0.6 : 0.09 + (u - 0.15) / 0.85 * 0.91;   // bung chậm ở đầu rồi tiến đều
+    const c = polar(h, a, 10 + (L - 10) * e);
+    const grow = Math.min(1, el / 120);                                    // lớn dần lúc vừa bung
+    const spin = (el / 1000) * SPIN * Math.PI * 2;
+    g.clear();
+    core.setPosition(c.x, c.y).setAlpha(0.75);
+    for (const pass of [0, 1]) {                                           // vẽ nửa sau trước, nửa trước sau
+      for (let i = 0; i < 2; i++) {
+        let prev: { x: number; y: number; front: number } | null = null;
+        for (let j = 0; j <= 28; j++) {
+          const s0 = (j / 28 - 0.5) * SEG * grow;
+          const th = spin + i * Math.PI + (s0 / PITCH) * Math.PI * 2;
+          const q = pt3(c.x, c.y, s0, th);
+          if (prev && (q.front > 0) === (pass === 1)) {
+            const tail = 1 - Math.abs(j / 28 - 0.5) * 1.6;                 // hai đầu đoạn xoắn mờ dần
+            const lw = pass ? 5 : 2.5;
+            g.lineStyle(lw + 5, SPEAR_COL, 0.18 * tail).lineBetween(prev.x, prev.y, q.x, q.y);     // quầng
+            g.lineStyle(lw, pass ? 0xd8fff4 : SPEAR_COL, (pass ? 0.95 : 0.5) * tail).lineBetween(prev.x, prev.y, q.x, q.y);
+          }
+          prev = q;
+        }
       }
-    });
-    if (el - last > 12) last = el;
+    }
     if (u >= 1) {
       sc.events.off('update', step);
-      heads.forEach((im) => im.destroy());
+      g.destroy();
       core.destroy();
       // nổ ở mũi thương
       const tip = polar(h, a, L);
