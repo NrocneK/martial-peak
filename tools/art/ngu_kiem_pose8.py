@@ -1,13 +1,19 @@
 """
-Tư thế thi triển NGỰ KIẾM, 8 hướng, khung 52x68 — tay phải giữ dáng đứng gốc, chỉ tay trái cử động:
+Tư thế thi triển NGỰ KIẾM, 8 hướng, khung 52x68 — vẽ lại tay trái theo từng điểm ảnh (tay phải giữ nguyên).
   khung 1: đưa tay trái lên trước ngực      khung 2: duỗi thẳng tay trái ra trước
-Bàn tay vẽ đơn giản (nắm gọn như bàn tay gốc của sprite), tay áo trắng + cổ tay xanh đậm.
+
+Mỗi hướng: (1) XÓA cẳng tay + bàn tay trái đang buông của khung gốc và vẽ lại phần thân/vạt áo bị nó che,
+           (2) VẼ cẳng tay + bàn tay trái ở tư thế mới. Tay trái ở hướng E, NE nằm khuất sau thân nên chỉ vẽ thêm phần lộ ra.
+Bên của tay trái theo hướng nhìn: S, SW → bên phải người xem;  W, NW, N → bên trái người xem;  SE, E, NE → phía xa.
+
+Lưới chữ dùng đúng bảng màu của sprite (tools/art/hero_palette.json): ' ' = giữ điểm cũ, '.' = trong suốt.
+  2 viền · 1 9 B 7 cẳng tay áo tối · b Y V S 8 da sáng → tối · e d c Z U X a tay áo / vạt trắng · E F H K M N áo xanh
 
   python3 -I tools/art/ngu_kiem_pose8.py → public/ui/hero_cast_ngukiem.png (hàng = s,sw,w,nw,n,ne,e,se; cột = khung 1, 2)
                                            + tools/art/out/ngu_kiem_pose8_preview.png
 """
+import json
 import os
-import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -15,101 +21,71 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
 DIRS = ['s', 'sw', 'w', 'nw', 'n', 'ne', 'e', 'se']
 W, H = 52, 68
+PAL = {k: tuple(v) for k, v in json.load(open(os.path.join(HERE, 'hero_palette.json'))).items()}
 
-PAL = {
-    'o': (18, 14, 28, 255),
-    'a': (245, 205, 180, 255), 'b': (221, 178, 153, 255), 'c': (193, 151, 129, 255), 'd': (165, 127, 107, 255),
-    'w': (242, 240, 246, 255), 'x': (223, 221, 228, 255), 'y': (197, 197, 211, 255), 'z': (156, 158, 177, 255),
-    'u': (79, 100, 151, 255), 'v': (59, 73, 118, 255), 'n': (38, 39, 61, 255),
-    'r': (53, 65, 105, 255), 'R': (32, 33, 50, 255),
+# ------------------------------------------------------------------ XÓA tay trái buông + vá thân
+ERASE = {
+    's': [(34, 33, '2.......'), (35, 33, '2.......'), (36, 33, '2.......'), (37, 33, '2.......'),
+          (38, 34, '2......'), (39, 34, '2......'), (40, 34, '2......'), (41, 36, '2...'), (42, 36, '2...')],
+    'sw': [(37, 29, 'EFHH02....'), (38, 29, 'EFHH02.....'), (39, 29, 'EFHH02......'), (40, 30, 'EFHHF02.....'),
+           (41, 30, 'HcZZU02.'), (42, 30, 'HcdZU02.'), (43, 30, 'HcdZXU02.'), (44, 30, 'HcddZXRT')],
+    'w': [(37, 21, 'EFFHHKH00'), (38, 23, 'EFHHKH00'), (39, 23, 'FHHKKH0'), (40, 23, 'FHHKH02'),
+          (41, 22, 'KHXZZU0'), (42, 22, 'MXcZZU0'), (43, 22, 'UXcdZU0'), (44, 22, 'ZcddZX'), (45, 22, 'XcddZXU')],
+    'nw': [(36, 17, '.2KHHKHK'), (37, 17, '...2KHKH'), (38, 20, '2HKKHHKH'), (39, 17, '..2HKKHHE'),
+           (40, 17, '..2HKKHE'), (41, 16, '..2UKKHH7'), (42, 17, '.2UKKHH7'), (43, 17, '20UKKHO')],
+    'n': [(35, 13, '......2'), (36, 13, '......2'), (37, 13, '......2'), (38, 13, '......2'),
+          (39, 13, '.....2'), (40, 13, '.....2'), (41, 14, '....2')],
+    'se': [(32, 33, '02..'), (33, 33, '02..'), (34, 33, '02..'), (35, 33, '02..'), (36, 33, '02..'), (37, 33, '02..')],
 }
 
-FIST = """
-.oooo.
-oaabbo
-oabbco
-oabcco
-obccdo
-.oooo.
-"""
+FIST_R = ['.222.', '2bbY2', '2bYV2', '2YVS2']          # nắm tay nhìn từ bên phải (sáng bên trái)
+FIST_L = ['.222.', '2Ybb2', '2VYb2', '2SVY2']          # lật cho hướng nhìn sang trái
 
-ART = {
-    # ---- E: nhìn ngang sang phải
-    ('e', 1): [(34, 25, """
-..onnvo.
-..owxyo.
-.owxxyo.
-.owxyyo.
-owxyyzo.
-oxyyzzo.
-oyyzzo..
-.oooo...
-"""), (35, 20, FIST)],
-    ('e', 2): [(30, 23, """
-.oooooooooooo
-owwxxxyuuuuuo
-owxxxyyvvvvvo
-oxyyyzznnnnno
-oxyyzzzoooooo
-.oyzzzzo.....
-..ozzzzo.....
-...oooo......
-"""), (42, 22, FIST)],
-    # ---- S: nhìn thẳng (tay trái ở bên phải người xem)
-    ('s', 1): [(31, 25, """
-.onnvo...
-.owxyo...
-.owxyyo..
-.oxyyzzo.
-..oyzzzo.
-...oooo..
-"""), (31, 20, FIST)],
-    ('s', 2): [(29, 26, """
-.oooooo.
-ounnnvo.
-owxxyyo.
-owxyyzzo
-.oyzzzo.
-..ooo...
-"""), (30, 21, FIST)],
-    # ---- N: lưng quay về người xem (tay trái ở bên trái người xem), bàn tay bị thân che
-    ('n', 1): [(11, 27, """
-..ooo.
-.owxyo
-owxyzo
-owyzzo
-.ozzo.
-..oo..
-""")],
-    ('n', 2): [(11, 25, """
-..oooo
-.owxxy
-owxyyz
-.ozzzo
-..oo..
-""")],
-    # ---- NE: tay giơ lên thấy khuỷu áo bên trái; duỗi ra trước thấy nắm tay ló cạnh đầu
-    ('ne', 1): [(8, 27, """
-..ooo.
-.owxyo
-owxyzo
-owyzzo
-.ozzo.
-..oo..
-""")],
-    ('ne', 2): [(33, 20, """
-.ooo..
-oaabo.
-oabco.
-obcdo.
-onnvo.
-nnvo..
-""")],
+
+def at(x, y, rows):
+    return [(y + j, x, r) for j, r in enumerate(rows)]
+
+
+def diag(x, y, n, dx, s='21B92'):
+    """cẳng tay chéo: mỗi hàng dời dx điểm"""
+    return [(y + j, x + j * dx, s) for j in range(n)]
+
+
+POSE = {
+    # ---- S: tay trái bên phải người xem; bắp tay áo (phồng) giữ ở vai
+    ('s', 1): at(29, 27, FIST_R) + diag(29, 31, 4, 1) + [(35, 33, '222')],
+    ('s', 2): at(32, 29, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82']) + [(34, 31, '21B99B12'), (35, 32, '222222')],
+    # ---- SW: tay trái gần, bên phải người xem
+    ('sw', 1): at(26, 27, FIST_R) + diag(26, 31, 5, 1) + [(36, 31, '222')],
+    ('sw', 2): [(31, 30, '21B9'), (32, 30, '1B99'), (33, 30, '21B9')]
+               + at(24, 30, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
+    # ---- W: nhìn sang trái, tay trái gần
+    ('w', 1): at(13, 26, FIST_L) + diag(13, 30, 7, 1, '29B12') + [(37, 20, '222')],
+    ('w', 2): [(27, 9, '2222222222222'), (28, 8, '2B99991deeedc2'), (29, 8, '2B99991ddccZU2'),
+               (30, 8, '22222222cZZUU2'), (31, 15, '2ZUUU2'), (32, 16, '2222')]
+              + at(3, 26, ['.2222.', '2Ybbb2', '2VYbb2', '2VVYb2', '2SVVY2', '.2222.']),
+    # ---- NW: lưng chéo, tay trái gần bên trái người xem
+    ('nw', 1): [(35, 16, '2192'), (36, 16, '2B92'), (37, 17, '22')],
+    ('nw', 2): [(27, 7, '22222222222222'), (28, 6, '2B999991dddcZZ2'), (29, 6, '2B999991dccZZU2'),
+                (30, 6, '222222222ZZUUU2'), (31, 15, '2UUU2'), (32, 16, '222')]
+               + at(2, 26, ['.222.', '2Ybb2', '2VYb2', '2SVY2', '.222.']),
+    # ---- N: lưng — tay đưa ra trước bị thân che, chỉ thấy khuỷu khi gập tay
+    ('n', 1): [(35, 14, '2192'), (36, 15, '222')],
+    ('n', 2): [],
+    # ---- NE: tay trái khuất hẳn sau thân và đầu ở cả hai tư thế → giữ nguyên khung gốc
+    ('ne', 1): [],
+    ('ne', 2): [],
+    # ---- E: tay trái phía xa — chỉ phần ló ra trước ngực
+    ('e', 1): at(37, 22, FIST_R) + diag(37, 26, 2, 0) + diag(36, 28, 2, 0) + [(30, 35, '21B92'), (31, 35, '2B92')],
+    ('e', 2): [(27, 36, '2222222'), (28, 35, '2dcZB999'), (29, 35, '2cZUB999'), (30, 35, '2ZUU2222'),
+               (31, 36, '2UU2'), (32, 37, '22')]
+              + at(43, 26, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
+    # ---- SE: tay trái phía xa, bên phải người xem
+    ('se', 1): at(33, 22, FIST_R) + diag(33, 26, 2, 0) + diag(34, 28, 2, 0) + [(30, 35, '2B92'), (31, 35, '222')],
+    ('se', 2): [(27, 35, '222222'), (28, 34, '2dcZB999'), (29, 34, '2cZUB999'), (30, 34, '2ZUU2222'),
+                (31, 35, '2UU2'), (32, 36, '22')]
+               + at(42, 26, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
 }
-
-# bàn tay trái đang buông trong khung gốc (xóa trước khi vẽ tay mới): hướng → (vùng, màu vá)
-ERASE = {'s': ((33, 36, 39, 42), (53, 65, 105, 255)), 'se': ((31, 37, 40, 46), (197, 197, 211, 255)),
-         'n': ((12, 37, 19, 42), (32, 33, 50, 255))}
 
 
 def frame(d):
@@ -118,86 +94,38 @@ def frame(d):
     return sh.crop((6 * W, r * H, 7 * W, r * H + H))
 
 
-def rows(im, x0, y0, art):
+def paint(im, items):
     px = im.load()
-    for j, line in enumerate(art.strip('\n').split('\n')):
-        for i, ch in enumerate(line):
-            x, y = x0 + i, y0 + j
-            if ch != '.' and 0 <= x < W and 0 <= y < H:
-                px[x, y] = PAL[ch]
+    for y, x0, s in items:
+        for i, ch in enumerate(s):
+            x = x0 + i
+            if ch == ' ' or not (0 <= x < W and 0 <= y < H):
+                continue
+            px[x, y] = (0, 0, 0, 0) if ch == '.' else PAL[ch]
 
 
-def erase(im, d):
-    if d not in ERASE:
-        return
-    (x0, y0, x1, y1), fill = ERASE[d]
-    px = im.load()
-    for y in range(y0, y1 + 1):
-        for x in range(x0, x1 + 1):
-            r, g, b, a = px[x, y]
-            if a and r > 150 and r - b > 40:      # điểm màu da
-                px[x, y] = fill
-
-
-def draw(d, n, base_dir=None, dx=0):
+def pose(d, n):
     im = frame(d)
-    erase(im, d)
-    for x, y, art in ART[(base_dir or d, n)]:
-        rows(im, x + dx, y, art)
+    paint(im, ERASE.get(d, []))
+    paint(im, POSE[(d, n)])
     return im
-
-
-def overlay(d, n, dx=0):
-    """chỉ lớp tay (để lật gương sang hướng đối xứng)"""
-    o = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    for x, y, art in ART[(d, n)]:
-        rows(o, x + dx, y, art)
-    return o
-
-
-def mirror_onto(dst, ov, shift):
-    ov = ov.transpose(Image.FLIP_LEFT_RIGHT)
-    ov = ov.transform(ov.size, Image.AFFINE, (1, 0, -shift, 0, 1, 0))
-    dst.alpha_composite(ov)
-    return dst
-
-
-def build():
-    out = {}
-    for n in (1, 2):
-        out[('e', n)] = draw('e', n)
-        out[('s', n)] = draw('s', n)
-        out[('n', n)] = draw('n', n)
-        out[('ne', n)] = draw('ne', n)
-        out[('se', n)] = draw('se', n, 'e', dx=-2)                            # chéo xuống phải: dùng dáng của E
-        out[('w', n)] = mirror_onto(frame('w'), overlay('e', n), 1)
-        sw = frame('sw')
-        px = sw.load()
-        for y in range(37, 47):                                               # xóa tay trái buông (lật của SE)
-            for x in range(11, 21):
-                r, g, b, a = px[x, y]
-                if a and r > 150 and r - b > 40:
-                    px[x, y] = PAL['y']
-        out[('sw', n)] = mirror_onto(sw, overlay('e', n, -2), 1)
-        out[('nw', n)] = mirror_onto(frame('nw'), overlay('ne', n), 0)
-    sheet = Image.new('RGBA', (W * 2, H * 8), (0, 0, 0, 0))
-    for r, d in enumerate(DIRS):
-        for n in (1, 2):
-            sheet.alpha_composite(out[(d, n)], (W * (n - 1), H * r))
-    return sheet
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    sheet = build()
-    sheet.save(os.path.join(ROOT, 'public', 'ui', 'hero_cast_ngukiem.png'))
-    Z = 4
-    pv = Image.new('RGBA', (8 * (W * Z + 6) + 6, 3 * (H * Z + 4) + 6), (28, 52, 112, 255))
-    for i, d in enumerate(DIRS):
-        x = 6 + i * (W * Z + 6)
-        pv.alpha_composite(frame(d).resize((W * Z, H * Z), Image.NEAREST), (x, 6))
+    sheet = Image.new('RGBA', (W * 2, H * 8), (0, 0, 0, 0))
+    for r, d in enumerate(DIRS):
         for n in (1, 2):
-            pv.alpha_composite(sheet.crop((W * (n - 1), H * i, W * n, H * i + H)).resize((W * Z, H * Z), Image.NEAREST), (x, 6 + n * (H * Z + 4)))
+            sheet.alpha_composite(pose(d, n), (W * (n - 1), H * r))
+    sheet.save(os.path.join(ROOT, 'public', 'ui', 'hero_cast_ngukiem.png'))
+    Z = 5
+    pv = Image.new('RGBA', (4 * 3 * (W * Z + 4) + 40, 2 * (H * Z + 8) + 8), (28, 52, 112, 255))
+    for i, d in enumerate(DIRS):
+        bx = 8 + (i % 4) * (3 * (W * Z + 4) + 8)
+        by = 6 + (i // 4) * (H * Z + 8)
+        pv.alpha_composite(frame(d).resize((W * Z, H * Z), Image.NEAREST), (bx, by))
+        for n in (1, 2):
+            pv.alpha_composite(sheet.crop((W * (n - 1), H * i, W * n, H * i + H)).resize((W * Z, H * Z), Image.NEAREST), (bx + n * (W * Z + 4), by))
     pv.save(os.path.join(OUT, 'ngu_kiem_pose8_preview.png'))
     print('ok')
 
