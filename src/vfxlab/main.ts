@@ -21,6 +21,8 @@ class LabScene extends Phaser.Scene {
   current: { id: string; aw: boolean } | null = null;
   loop = true;
   walk = false;
+  /** hướng nhìn cố định (góc, 0 = Đông) — null = tự quay về mục tiêu gần nhất */
+  dir: number | null = null;
   private timer = 0;
   private t = 0;
 
@@ -63,7 +65,13 @@ class LabScene extends Phaser.Scene {
     this.stage = {
       kit: this.kit,
       hero: this.hero,
-      targets: () => [...this.dummies].sort((a, b) => Math.hypot(a.x - this.hero.x, a.y - this.hero.y) - Math.hypot(b.x - this.hero.x, b.y - this.hero.y)),
+      targets: () => {
+        const h = this.hero;
+        const d = (t: Pt) => Math.hypot(t.x - h.x, t.y - h.y);
+        // có chọn hướng: ưu tiên mục tiêu nằm gần hướng đó (lệch góc), rồi mới tới khoảng cách
+        const off = (t: Pt) => (this.dir === null ? 0 : Math.abs(Phaser.Math.Angle.Wrap(Math.atan2(t.y - h.y, t.x - h.x) - this.dir)));
+        return [...this.dummies].sort((a, b) => off(a) * 400 + d(a) - (off(b) * 400 + d(b)));
+      },
       hit: (t: Pt, color = 0xffffff) => {
         const d = t as Dummy;
         if (!d.img) return;
@@ -71,15 +79,28 @@ class LabScene extends Phaser.Scene {
         d.hitT = 0.09;
         this.tweens.add({ targets: d.img, angle: { from: -10, to: 0 }, duration: 160, ease: 'Back.easeOut' });
       },
-      pose: (skill, n, a) => {
+      pose: (skill, n, a0) => {
+        const a = this.dir ?? a0;
         // góc → hàng hướng của sprite (0 = Đông, chiều kim đồng hồ vì trục y hướng xuống)
         const oct = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
         const row = [6, 7, 0, 1, 2, 3, 4, 5][oct];
         const key = 'cast_' + skill;
-        if (n === 0 || !this.textures.exists(key)) this.hero.setTexture('hero', row * 7 + 6);
+        if (n === 0 || !this.textures.exists(key)) this.hero.setTexture('hero', this.idleFrame(a));
         else this.hero.setTexture(key, row * 2 + (n - 1));
       },
     };
+  }
+
+  /** khung đứng của hướng gần góc `a` nhất (hero_b_walk.png: 8 hàng × 7 khung, khung 6 = đứng) */
+  idleFrame(a: number): number {
+    const oct = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    return [6, 7, 0, 1, 2, 3, 4, 5][oct] * 7 + 6;
+  }
+
+  setDir(a: number | null): void {
+    this.dir = a;
+    this.hero.setTexture('hero', this.idleFrame(a ?? Math.PI / 2));
+    if (this.current) this.play(this.current.id, this.current.aw);
   }
 
   private fitZoom(): void {
@@ -90,7 +111,7 @@ class LabScene extends Phaser.Scene {
 
   play(id: string, aw: boolean): void {
     this.current = { id, aw };
-    this.hero.setTexture('hero', 6);
+    this.hero.setTexture('hero', this.idleFrame(this.dir ?? Math.PI / 2));
     this.timer = 3.4;
     SKILL_FX[id]?.(this.stage, aw);
   }
@@ -147,6 +168,21 @@ for (const [label, src] of [['Kỹ năng vũ khí', 'weapon'], ['Kỹ năng cả
     list.append(row);
     rows.set(s.id, row);
   }
+}
+// ---- chọn hướng nhìn
+const dirBox = document.getElementById('dirs')!;
+const dirBtns: HTMLButtonElement[] = [];
+for (const [label, a] of [['Tự động', null], ['↓', Math.PI / 2], ['↙', (3 * Math.PI) / 4], ['←', Math.PI], ['↖', (-3 * Math.PI) / 4],
+  ['↑', -Math.PI / 2], ['↗', -Math.PI / 4], ['→', 0], ['↘', Math.PI / 4]] as [string, number | null][]) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.className = a === null ? 'on' : '';
+  b.onclick = () => {
+    for (const x of dirBtns) x.classList.toggle('on', x === b);
+    scene.setDir(a);
+  };
+  dirBtns.push(b);
+  dirBox.append(b);
 }
 (document.getElementById('loop') as HTMLInputElement).onchange = (e) => (scene.loop = (e.target as HTMLInputElement).checked);
 (document.getElementById('walk') as HTMLInputElement).onchange = (e) => (scene.walk = (e.target as HTMLInputElement).checked);

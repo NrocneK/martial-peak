@@ -27,6 +27,9 @@
       button { font: inherit; font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: #1e1b3a; color: var(--text); cursor: pointer; }
       button:hover { border-color: #5a56a0; }
       button.aw { border-color: #8a6a20; color: var(--gold); }
+      #dirs { gap: 4px; }
+      #dirs button { min-width: 34px; padding: 4px 6px; }
+      #dirs button.on { border-color: var(--gold); color: var(--gold); background: rgba(255, 211, 106, 0.1); }
       #cap { position: absolute; left: 12px; top: 10px; font-size: 14px; text-shadow: 0 1px 3px #000; pointer-events: none; }
       #cap b { color: var(--gold); }
       @media (max-width: 760px) {
@@ -48,6 +51,7 @@
             <label><input type="checkbox" id="walk" /> Nhân vật đi vòng</label>
             <button id="all">Chạy lần lượt tất cả</button>
           </div>
+          <div class="opts" id="dirs"><span style="color: var(--dim)">Hướng nhìn:</span></div>
         </header>
         <div id="list"></div>
       </div>
