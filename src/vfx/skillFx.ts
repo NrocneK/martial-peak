@@ -243,6 +243,53 @@ function spearThrust(k: Stage['kit'], h: Pt, a: number, L: number): number {
   return 230;
 }
 
+/** quầng sáng xoáy (2 sợi xoắn ốc quanh trục đâm) chạy từ nhân vật tới mũi thương rồi nổ */
+function spearVortex(s: Stage, h: Pt, a: number, L: number): void {
+  const k = s.kit, sc = k.scene;
+  const dur = 320, R = 22, turns = 3.5;
+  const nx = -Math.sin(a), ny = Math.cos(a);
+  let el = 0;                                                               // thời gian riêng (theo timeScale của cảnh)
+  const heads = [0, Math.PI].map(() => sc.add.image(h.x, h.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(SPEAR_COL).setDepth(10));
+  const core = sc.add.image(h.x, h.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(0xc8fff0).setDepth(10).setScale(0.8);
+  let last = 0;
+  const step = (_t: number, dms: number) => {
+    el += dms * sc.time.timeScale;
+    const u = Math.min(1, el / dur);
+    const e = u * u * (3 - 2 * u);                                         // tăng tốc rồi hãm nhẹ tới mũi
+    const c = polar(h, a, 8 + (L - 8) * e);
+    core.setPosition(c.x, c.y).setAlpha(0.8);
+    heads.forEach((im, i) => {
+      const th = u * turns * Math.PI * 2 + i * Math.PI;
+      const side = Math.cos(th) * R, up = Math.sin(th) * R * 0.55;         // xoắn quanh trục: lệch ngang + nhô lên/xuống
+      const x = c.x + nx * side, y = c.y + ny * side - up;
+      const near = 0.75 + 0.25 * Math.sin(th);                             // vòng phía trước to + sáng hơn
+      im.setPosition(x, y).setScale(0.5 * near).setAlpha(0.95 * near).setDepth(Math.sin(th) > 0 ? 11 : 8);
+      // vệt đuôi xoáy: thả điểm sáng tắt nhanh dọc đường đi
+      if (el - last > 12) {
+        const g = sc.add.image(x, y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(i ? 0x7affe0 : SPEAR_COL).setDepth(9).setScale(0.36 * near).setAlpha(0.8);
+        sc.tweens.add({ targets: g, alpha: 0, scale: 0.08, duration: 230, onComplete: () => g.destroy() });
+      }
+    });
+    if (el - last > 12) last = el;
+    if (u >= 1) {
+      sc.events.off('update', step);
+      heads.forEach((im) => im.destroy());
+      core.destroy();
+      // nổ ở mũi thương
+      const tip = polar(h, a, L);
+      const f = sc.add.image(tip.x, tip.y, SPEAR_TEX.flash).setBlendMode(Phaser.BlendModes.ADD).setDepth(11).setRotation(a).setScale(0.6);
+      sc.tweens.add({ targets: f, scale: 1.6, alpha: 0, duration: 260, ease: 'Quad.easeOut', onComplete: () => f.destroy() });
+      const rg = sc.add.image(tip.x, tip.y, SPEAR_TEX.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(10).setScale(0.3, 0.21);
+      sc.tweens.add({ targets: rg, scaleX: 1.3, scaleY: 0.9, alpha: 0, duration: 360, ease: 'Quad.easeOut', onComplete: () => rg.destroy() });
+      k.glow(tip.x, tip.y, SPEAR_COL, 90, 300);
+      k.burst(tip.x, tip.y, [SPEAR_COL, 0xb0ffe8, 0xffffff], 26, { tex: VT.SPARK, speed: [120, 380], scale: [0.45, 0], life: 420 });
+      k.shake(120, 0.004);
+      for (const o of s.targets()) if (dist(o, tip) < 60) s.hit(o, 0xb0ffe8);
+    }
+  };
+  sc.events.on('update', step);
+}
+
 const phaThuong: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 100, h.y);
@@ -260,16 +307,17 @@ const phaThuong: Fx = (s, aw) => {
       });
     });
   if (aw) {
-    // lướt theo mũi thương, để lại long khí
+    // Du Long Phá Trận: đâm 1 đòn dài; lúc mũi giáo vừa vụt ra (trước khi tan) từ chỗ nhân vật bung một quầng sáng
+    // XOÁY nhanh quanh trục đâm, tiến về trước tới mũi thương thì NỔ thêm 1 lần (không còn vệt sáng dưới đất)
+    const L = 260;
     thrust(0, true);
+    k.later(240, () => spearVortex(s, h, a, L));
+    // lướt theo mũi thương 120px (miễn sát thương khi lướt) — giữ như thiết kế, chỉ bỏ vệt sáng dưới đất
     const hero = s.hero;
     const sx = hero.x, sy = hero.y;
     k.later(190, () => {
       for (let i = 0; i < 4; i++) k.later(i * 30, () => { const g = k.img(hero.texture.key, hero.x, hero.y, { add: true, tint: SPEAR_COL, alpha: 0.6, depth: 9 }); g.setFrame(hero.frame.name); k.tw(g, { alpha: 0 }, 300); });
       k.scene.tweens.add({ targets: hero, x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120, duration: 150, yoyo: true, hold: 500, ease: 'Quad.easeOut' });
-      const trail = k.scene.add.particles(0, 0, VT.SOFT, { x: { min: sx, max: sx }, y: sy, lifespan: 2000, scale: { start: 0.35, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: [SPEAR_COL, 0x20b090], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Line(sx, sy, sx + Math.cos(a) * 120, sy + Math.sin(a) * 120) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(4);
-      k.later(1600, () => trail.stop());
-      k.later(2400, () => trail.destroy());
     });
   } else {
     thrust(0, false);
