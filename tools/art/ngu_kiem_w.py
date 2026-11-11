@@ -1,46 +1,51 @@
 """
-NGỰ KIẾM — hướng W (nhìn ngang sang trái): giữ NGUYÊN thân + tay phải của khung đứng gốc, chỉ thay tay trái.
+NGỰ KIẾM — hướng W (nhìn ngang sang trái): giữ NGUYÊN thân + tay cầm kiếm (tay phải, phía xa) của khung đứng gốc.
+Tay TRÁI là tay ở PHÍA GẦN (tay đang buông trước thân trong khung gốc) → vẽ lại chính tay này, cùng cách với hướng NW
+(dùng chung refill / limb của ngu_kiem_nw.py):
 
-Nhìn sang trái thì tay trái ở PHÍA GẦN (tay đang buông rõ trước thân); tay cầm kiếm (tay phải) ở phía xa. Tay mới lấy từ hướng E
-(tay trái chép theo ảnh mẫu E — ngu_kiem_e.py) LẬT GƯƠNG, khớp theo mặt (mặt E x34 ↔ mặt W x18 → dời +1).
-Ảnh mẫu vẽ tay làm động tác ở phía trước thân nên khi lật vẫn đúng là tay ở phía gần.
-
-  1) xóa cẳng tay + bàn tay buông của khung W gốc (khung 2: xóa cả bắp tay áo vì cả cánh tay giơ lên)
-  2) lấp chỗ xóa bằng vân áo kề bên lật đối xứng (phần ngực/vạt trước lấy vân bên trái, phần lưng lấy bên phải);
-     chỗ bắp tay áo thì lấy vân thân áo ngay bên dưới lật dọc lên
-  3) đặt tay đã lật gương
+Tay trái gốc: bắp tay áo trắng x23-30 / y29-36 (vai ≈ (26,29)), cẳng tay áo tối y37-40, bàn tay x22-27 / y41-45.
+  1) xóa cẳng tay + bàn tay buông, lấp bằng vân áo kề bên lật đối xứng (vạt trước lấy vân trái, lưng lấy vân phải)
+  2) khung 1 (đưa tay lên trước miệng): bắp tay giữ ở vai; cẳng tay từ khuỷu (đáy tay áo) gập lên, bàn tay trước cổ/cằm
+     khung 2 (duỗi thẳng ra trước): xóa luôn bắp tay áo (lấp bằng vân thân áo bên dưới lật lên); cánh tay mọc từ
+              ĐÚNG VAI GẦN, duỗi ngang sang trái trước thân: tay áo trắng → cẳng tay áo tối → bàn tay
+  Bàn tay = đúng điểm ảnh bàn tay gốc, lật cho ngón hướng lên; màu tay áo / cẳng tay = dải màu của tay gốc.
 
   python3 -I tools/art/ngu_kiem_w.py → tools/art/out/ngu_kiem_w.png (2 khung) + ngu_kiem_w_preview.png
 """
-import json
 import os
 import sys
-import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import ngu_kiem_e as E  # noqa: E402
+import ngu_kiem_nw as NW  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
 W, H = 52, 68
-PAL = {k: tuple(v) for k, v in json.load(open(os.path.join(HERE, 'hero_palette.json'))).items()}
+PAL = NW.PAL
 NONE = (0, 0, 0, 0)
-SHIFT = 1
 
-# vùng tay buông của khung W gốc: hàng → (x đầu, x cuối, lấy vân từ 'L' trái / 'R' phải)
+# vùng tay buông: hàng → (x đầu, x cuối, lấy vân từ 'L' trái / 'R' phải)
 LOWER = {37: (21, 30, 'R'), 38: (23, 30, 'R'), 39: (23, 30, 'R'), 40: (23, 28, 'R'), 41: (23, 27, 'L'),
          42: (22, 27, 'L'), 43: (22, 27, 'L'), 44: (22, 27, 'L'), 45: (22, 27, 'L')}
-# chỗ bắp tay áo (khung 2): lấp bằng vân thân áo ngay bên dưới (hàng 37-44, sau khi đã lấp cẳng tay)
-# lật dọc qua mép dưới bắp tay (hàng 36/37) → nếp áo chạy liền lên tới vai
-UPPER_ROWS = range(29, 37)
-UPPER_X = range(22, 31)
 
 
 def frame_w():
     sh = Image.open(os.path.join(ROOT, 'public', 'ui', 'hero_b_walk.png')).convert('RGBA')
     return sh.crop((6 * W, 2 * H, 7 * W, 3 * H))
+
+
+def hand_up(base):
+    """bàn tay gốc (x22-27, y41-45) lật dọc → ngón hướng lên"""
+    px = base.load()
+    pts = {}
+    for y in range(41, 46):
+        for x in range(22, 28):
+            r, g, b, a = px[x, y]
+            if a and r > 150 and r - b > 30:
+                pts[(x - 22, 45 - y)] = px[x, y]
+    return pts
 
 
 def refill(im, rows):
@@ -53,25 +58,21 @@ def refill(im, rows):
                 px[x, y] = PAL['2']
 
 
-def arm_overlay(n):
-    a = np.array(E.frame_e())
-    b = np.array(E.pose(n))
-    m = (a != b).any(2)
-    o = np.zeros_like(b)
-    o[m] = b[m]
-    ov = Image.fromarray(o).transpose(Image.FLIP_LEFT_RIGHT)
-    return ov.transform(ov.size, Image.AFFINE, (1, 0, -SHIFT, 0, 1, 0))
-
-
 def pose(n):
     im = frame_w()
+    hand = hand_up(im)
     refill(im, LOWER)
-    if n == 2:
+    if n == 1:
+        # khuỷu ở đáy bắp tay áo (25,37) → cổ tay trước cổ (20,30); bàn tay dựng trước cằm
+        NW.limb(im, [((25, 37), (20, 30), 1.6, NW.FORE)], (16, 25, hand))
+    else:
+        # bỏ bắp tay áo buông: lấp bằng vân thân áo ngay bên dưới, lật dọc qua hàng 36/37
         px = im.load()
-        for y in UPPER_ROWS:
-            for x in UPPER_X:
+        for y in range(29, 37):
+            for x in range(22, 31):
                 px[x, y] = px[x, 73 - y]
-    im.alpha_composite(arm_overlay(n))
+        # vai gần (26,30) → khuỷu (18,30) tay áo trắng; khuỷu → cổ tay (12,30) cẳng tay áo tối; bàn tay dựng ở đầu
+        NW.limb(im, [((26, 30), (18, 30), 2.6, NW.SLEEVE), ((18, 30), (12, 30), 1.6, NW.FORE)], (7, 25, hand))
     return im
 
 
