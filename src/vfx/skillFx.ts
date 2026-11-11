@@ -146,28 +146,44 @@ const nguKiem: Fx = (s, aw) => {
   }
 };
 
+/** vết chém vòng đao khí Bá Đao (ảnh gốc, 8 hướng — tools/art/ba_dao_hd.py): khóa ảnh theo hướng */
+export const BA_DAO_DIRS = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'] as const;
+export const baDaoKey = (d: string): string => `vx_badao_${d}`;
+const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+
+/** hiện vết chém vòng theo hướng `aa`, vòng rộng ~2r quanh nhân vật: bung nhanh → giữ → loãng dần */
+function baDaoRing(k: Stage['kit'], h: Pt, aa: number, r: number, dur = 380): void {
+  const key = baDaoKey(baDaoDir(aa));
+  if (!k.scene.textures.exists(key)) return;
+  const im = k.scene.add.image(h.x, h.y + 4, key).setDepth(9).setAlpha(0);
+  const w = (r * 2.35) / im.width;
+  im.setScale(w * 0.72);
+  k.scene.tweens.add({ targets: im, scale: w, alpha: 1, duration: 90, ease: 'Quad.easeOut' });
+  k.scene.tweens.add({ targets: im, scale: w * 1.08, alpha: 0, delay: 90 + dur * 0.35, duration: dur * 0.65, ease: 'Quad.easeIn', onComplete: () => im.destroy() });
+}
+
 const baDao: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 100, h.y);
   const a = ang(h, t);
   const cut = (aa: number, r: number) => {
-    k.slash(h.x, h.y, aa, r, 0xff8a3a, 300, { sweep: 1.4, width: 1.1, core: 0xfff0c0 });
-    k.burst(h.x + Math.cos(aa) * r * 0.8, h.y + Math.sin(aa) * r * 0.8, [0xffb070, 0xff6a2a], 14, { speed: [60, 260], life: 420, scale: [0.5, 0] });
-    for (const o of s.targets()) if (dist(h, o) < r + 10 && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - aa)) < 1.2) s.hit(o, 0xff9a50);
+    baDaoRing(k, h, aa, r);
+    k.burst(h.x + Math.cos(aa) * r * 0.8, h.y + Math.sin(aa) * r * 0.55, [0xf08aff, 0xb040ff, 0xffffff], 14, { speed: [60, 260], life: 420, scale: [0.5, 0] });
+    for (const o of s.targets()) if (dist(h, o) < r + 10 && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - aa)) < 1.2) s.hit(o, 0xe080ff);
   };
   if (aw) {
-    for (let i = 0; i < 4; i++) k.later(i * 40, () => cut(a + (i * Math.PI) / 2, 120));
-    k.ring(h.x, h.y, 0xff9a50, 40, 140, 380, true);
+    // Tu La Bá Đao: xoay một vòng 8 hướng thật nhanh (chém 360°) rồi phóng đao khí thẳng phía trước
+    for (let i = 0; i < 8; i++) k.later(i * 35, () => cut(a + (i * Math.PI) / 4, 120));
     k.later(120, () => {
       const end = polar(h, a, 300);
-      const w = k.img(VT.BLADE_WAVE, h.x, h.y, { tint: 0xff8a3a, scale: 0.9, rot: a });
+      const w = k.img(VT.BLADE_WAVE, h.x, h.y, { tint: 0xc060ff, scale: 0.9, rot: a });
       k.scene.tweens.add({ targets: w, x: end.x, y: end.y, alpha: 0.2, duration: 420, onComplete: () => w.destroy() });
-      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xffb070));
+      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
     });
     k.shake(160, 0.005);
   } else {
     cut(a, 105);
-    k.later(180, () => cut(a + Math.PI, 105));
+    k.later(220, () => cut(a + Math.PI, 105));
   }
 };
 
