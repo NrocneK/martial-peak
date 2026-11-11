@@ -63,14 +63,14 @@ class Pen:
 
 # bàn tay kết KIẾM ẤN (to, rõ như mẫu): 2 ngón trỏ + giữa duỗi thẳng lên (tách nhau bằng nét viền), 3 ngón nắm lại
 HAND = """
-.oo.oo..
-oabobco.
-oabobco.
-oabobco.
-oabbbbco
-obbccddo
-obcccddo
-.oddddo.
+..o.o...
+.oaobo..
+.oacbo..
+.oacbo..
+oaacbbo.
+oabbccdo
+obccddo.
+.odddo..
 """
 
 PAL = {'o': OL, 'O': OL2, 'a': SK1, 'b': SK2, 'c': SK3, 'd': SK4, 'w': SL1, 'x': SL2, 'y': SL3, 'z': SL4,
@@ -110,25 +110,34 @@ rrRo.
 rRo..
 """, PAL)
     if n == 1:
-        # kiếm ấn dựng trước ngực, đầu ngón ngang cằm: cẳng tay đứng (theo mẫu)
-        pen.rows(27, 18, HAND + """
-.ognnuo.
-.ounnuo.
-.owxxyo.
-.owxyyo.
-..oxyzo.
-..ozzo..
+        # kiếm ấn trước miệng (mẫu): cẳng tay chéo từ khuỷu (thấp, bên phải) lên tay ở cằm; tay áo trắng rủ dưới cẳng tay
+        pen.rows(32, 24, """
+.ognuo.....
+.ounnvo....
+..onnnvo...
+..owwnnvo..
+.owxxwnnvo.
+.owxxxyyvno
+.owxxyyyzoo
+..oxyyyyzzo
+..owxyyyzzo
+...oxyyzzzo
+...oyyzzzo.
+....ozzzo..
+.....ooo...
 """, PAL)
+        pen.rows(31, 16, HAND, PAL)
     else:
-        # tay trái duỗi thẳng ra trước (về phía người xem): bàn tay dựng đứng, 2 ngón chỉ lên; miệng ống tay áo rộng bên dưới
-        pen.rows(30, 19, HAND, PAL)
-        pen.rows(28, 27, """
-..ognnnuo...
-.owxxxxxyyo.
-owxxxyyyyzzo
-.oxyyyyzzzo.
-..ooooooo...
+        # tay trái chĩa thẳng về phía người xem: bàn tay dựng 2 ngón, vòng vàng + cổ tay xanh, miệng tay áo trắng
+        pen.rows(28, 28, """
+oggGgGo.
+ounnnno.
+owxxyyo.
+owxyyzzo
+.oyzzzo.
+..ooo...
 """, PAL)
+        pen.rows(28, 21, HAND, PAL)
     return im
 
 
@@ -138,29 +147,36 @@ def pose_e(n):
     pen = Pen(im)
     # tay phải (phía gần): giữ nguyên dáng đứng gốc
     if n == 1:
-        # kiếm ấn trước mặt: đầu ngón ngang mắt, lòng bàn tay ngang miệng, cẳng tay dựng đứng (theo mẫu)
-        pen.rows(34, 12, HAND + """
-.ognnuo.
-.ounnuo.
-.owxxyo.
-.owxyyo.
-.oxyyzo.
-..ozzo..
-...oo...
+        # theo mẫu: 2 ngón dựng trước miệng (đầu ngón ngang mũi), nắm tay ngang cằm;
+        # cẳng tay chéo xuống khuỷu phía trước, tay áo trắng rộng rủ dưới cẳng tay
+        pen.rows(33, 20, """
+..ognuo......
+..ounnvo.....
+...onnnvo....
+...owwnnvo...
+..owxxwnnnvo.
+..owxxxyyvnno
+..owxxyyyzooo
+...oxyyyyzzo.
+...owxyyyzzo.
+....oxyyzzzo.
+....oyyzzzo..
+.....ozzzo...
+......ooo....
 """, PAL)
+        pen.rows(34, 13, HAND, PAL)
     else:
-        # tay trái duỗi thẳng ra trước, song song mặt đất; bàn tay dựng đứng, 2 ngón chỉ lên trời;
-        # cổ tay áo xanh đậm viền vàng, tay áo trắng rộng rủ xuống dưới cánh tay
-        pen.rows(32, 25, """
-..........oo..
-oooooooooogno.
-owwwxxxxxygnuo
-owxxxxxyyygnuo
-oxyyyyyzzzgnuo
-oxyyyzzzzzoooo
-.oyyzzzzoo....
-..ozzzzo......
-...oooo.......
+        # theo mẫu: tay duỗi thẳng ngang ngực — bắp tay áo trắng phồng rủ, cẳng tay bó xanh đậm, vòng vàng ở cổ tay,
+        # bàn tay dựng đứng 2 ngón chỉ lên
+        pen.rows(30, 23, """
+.oooooooooooo
+owwxxxyuuuuug
+owxxxyyvvvvvG
+oxyyyzznnnnnG
+oxyyzzzoooooo
+.oyzzzzo.....
+..ozzzzo.....
+...oooo......
 """, PAL)
         pen.rows(43, 19, HAND, PAL)
     return im
