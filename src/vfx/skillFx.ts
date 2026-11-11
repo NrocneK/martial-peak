@@ -26,31 +26,115 @@ const polar = (c: Pt, a: number, r: number): Pt => ({ x: c.x + Math.cos(a) * r, 
 const H = (s: Stage): Pt => ({ x: s.hero.x, y: s.hero.y - 6 });
 
 // ---------------------------------------------------------------- VŨ KHÍ
+/** Ảnh kiếm khí ánh sáng (public/vfx/qi_sword_light.png, vẽ bằng tools/art/qi_sword_light.py) — nạp ở preload */
+export const QI_SWORD = 'vx_qisword';
+const QS = 0.34;            // cỡ kiếm khí trong trận
+
+/** Một thanh kiếm khí: hiện ra (ngưng tụ), có bóng kiếm + vệt sáng lavender bám theo */
+function qiSword(k: Stage['kit'], x: number, y: number, rot: number, delayIn = 0): { im: Phaser.GameObjects.Image; trail: Phaser.GameObjects.Particles.ParticleEmitter } {
+  const im = k.img(QI_SWORD, x, y, { scale: QS * 0.55, alpha: 0, rot, depth: 22 });
+  k.scene.tweens.add({ targets: im, scale: QS, alpha: 1, duration: 140, delay: delayIn, ease: 'Back.easeOut' });
+  // ngưng tụ: hạt sáng hút vào thân kiếm
+  k.later(delayIn, () => {
+    k.glow(x, y, 0xc8c4ff, 90, 260);
+    k.burst(x, y, [0xffffff, 0xd8d4ff], 10, { speed: [-160, -60], life: 220, scale: [0.5, 0] });
+  });
+  const trail = k.scene.add.particles(0, 0, VT.SOFT, {
+    follow: im, lifespan: 360, speed: 6, scale: { start: 0.22, end: 0 }, alpha: { start: 0.55, end: 0 },
+    tint: [0xc8c4ff, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 14, emitting: false,
+  }).setDepth(21);
+  return { im, trail };
+}
+
+/** Bay kiếm khí theo đường cong bậc 2 từ A tới B */
+function flyQi(k: Stage['kit'], q: ReturnType<typeof qiSword>, from: Pt, to: Pt, dur: number, arc: number, onDone: () => void, ease = 'Sine.easeIn'): void {
+  const mx = (from.x + to.x) / 2 - (to.y - from.y) * arc, my = (from.y + to.y) / 2 + (to.x - from.x) * arc;
+  let px = from.x, py = from.y;
+  let lastGhost = 0;
+  q.trail.start();
+  k.scene.tweens.addCounter({
+    from: 0, to: 1, duration: dur, ease,
+    onUpdate: (t) => {
+      const v = t.getValue() ?? 0, u = 1 - v;
+      const x = u * u * from.x + 2 * u * v * mx + v * v * to.x, y = u * u * from.y + 2 * u * v * my + v * v * to.y;
+      if (Math.hypot(x - px, y - py) > 0.5) q.im.setRotation(Math.atan2(y - py, x - px));
+      px = x;
+      py = y;
+      q.im.setPosition(x, y);
+      // bóng kiếm (dư ảnh) đúng góc, mờ dần
+      const now = k.scene.time.now;
+      if (now - lastGhost > 30) {
+        lastGhost = now;
+        const g = k.img(QI_SWORD, x, y, { scale: QS, rot: q.im.rotation, alpha: 0.32, depth: 21 });
+        k.tw(g, { alpha: 0 }, 170, 'Linear');
+      }
+    },
+    onComplete: onDone,
+  });
+}
+
+function endQi(k: Stage['kit'], q: ReturnType<typeof qiSword>): void {
+  q.trail.stop();
+  k.glow(q.im.x, q.im.y, 0xd8d4ff, 70, 260);
+  k.burst(q.im.x, q.im.y, [0xffffff, 0xc8c4ff], 12, { tex: VT.DOT, speed: [30, 120], life: 420, scale: [0.5, 0] });
+  k.tw(q.im, { alpha: 0, scale: QS * 1.15 }, 160);
+  k.later(450, () => q.trail.destroy());
+}
+
+function qiHit(s: Stage, t: Pt, a: number): void {
+  const k = s.kit;
+  s.hit(t, 0xd8d4ff);
+  k.glow(t.x, t.y, 0xffffff, 70, 200);
+  k.ring(t.x, t.y, 0xc8c4ff, 6, 46, 260);
+  k.burst(t.x, t.y, [0xffffff, 0xc8c4ff], 10, { tex: VT.SPARK, speed: [120, 300], life: 260, scale: [0.35, 0], angle: [(a * 180) / Math.PI - 35, (a * 180) / Math.PI + 35] });
+}
+
 const nguKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
-  const ts = s.targets().slice(0, aw ? 6 : 3);
-  ts.forEach((t, i) =>
-    k.later(i * 70, () => {
-      const a = ang(h, t);
-      const end = polar(h, a, dist(h, t) + 70);
-      k.glow(h.x, h.y, 0x9fd8ff, 40, 200);
-      k.fly(VT.SWORD, h, end, {
-        dur: 260, scale: 0.75, trail: aw ? 0xc8f0ff : 0x7ac8ff, trailScale: 0.9, add: false,
-        onArrive: () => {
-          if (aw) {
-            // tâm kiếm hợp nhất: đuổi sang mục tiêu kế
-            const nx = s.targets().find((o) => o !== t && dist(o, end) < 260) ?? t;
-            k.fly(VT.SWORD, end, nx, { dur: 220, scale: 0.75, trail: 0xc8f0ff, add: false, arc: 0.3, onArrive: () => { s.hit(nx, 0xc8f0ff); k.burst(nx.x, nx.y, 0xc8f0ff, 10, { tex: VT.SPARK, scale: [0.4, 0], speed: [80, 220] }); } });
-          } else k.fly(VT.SWORD, end, H(s), { dur: 300, scale: 0.7, trail: 0x7ac8ff, add: false, arc: 0.25 });
-        },
+  if (!aw) {
+    // bản thường: kiếm ngưng tụ cạnh tay → lao vào mục tiêu, xuyên qua → vòng về tay rồi tan
+    s.targets().slice(0, 3).forEach((t, i) =>
+      k.later(i * 130, () => {
+        const a = ang(h, t);
+        const start = polar(h, a, 26);
+        const q = qiSword(k, start.x, start.y, a);
+        k.later(150, () => {
+          const end = polar(h, a, dist(h, t) + 80);
+          flyQi(k, q, start, end, 260, 0, () => {
+            const back = H(s);
+            flyQi(k, q, end, back, 380, 0.35, () => endQi(k, q), 'Sine.easeInOut');
+          }, 'Quad.easeIn');
+          k.later(260 * Math.min(1, dist(start, t) / dist(start, end)), () => qiHit(s, t, a));
+        });
+      }),
+    );
+    return;
+  }
+  // bản thức tỉnh: 6 kiếm xòe nan quạt sau lưng, khói khí, lơ lửng → lần lượt lao đi đuổi mục tiêu kế tiếp
+  const ts = s.targets();
+  const smoke = k.scene.add.particles(h.x, h.y - 10, VT.SMOKE, {
+    lifespan: 1200, speed: { min: 10, max: 40 }, scale: { start: 0.6, end: 1.6 }, alpha: { start: 0.3, end: 0 }, tint: [0xc8c4ff, 0xe8e6ff],
+    blendMode: Phaser.BlendModes.ADD, frequency: 40, emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 60) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
+  }).setDepth(9);
+  k.later(900, () => smoke.stop());
+  k.later(2200, () => smoke.destroy());
+  for (let i = 0; i < 6; i++) {
+    const fa = -Math.PI / 2 + (i - 2.5) * 0.42;                 // xòe phía trên / sau lưng
+    const p = polar(h, fa, 96);
+    const q = qiSword(k, p.x, p.y, fa, i * 50);
+    k.scene.tweens.add({ targets: q.im, y: p.y - 6, duration: 300, yoyo: true, delay: 300, ease: 'Sine.easeInOut' });
+    k.later(650 + i * 90, () => {
+      const t1 = ts[i % ts.length];
+      if (!t1) return endQi(k, q);
+      const a1 = ang(p, t1);
+      flyQi(k, q, pt(q.im.x, q.im.y), t1, 220, 0.12, () => {
+        qiHit(s, t1, a1);
+        // tự đuổi sang mục tiêu kế tiếp chưa bị đánh gần đó
+        const t2 = s.targets().filter((o) => o !== t1).sort((x, y) => dist(x, t1) - dist(y, t1))[i % 3] ?? t1;
+        flyQi(k, q, t1, t2, 240, (i % 2 ? 1 : -1) * 0.35, () => { qiHit(s, t2, ang(t1, t2)); endQi(k, q); }, 'Sine.easeInOut');
       });
-      k.later(260 * (dist(h, t) / (dist(h, t) + 70)), () => {
-        s.hit(t, 0x9fd8ff);
-        k.burst(t.x, t.y, 0x9fd8ff, 8, { tex: VT.SPARK, scale: [0.35, 0], speed: [80, 200], life: 300 });
-        k.slash(t.x, t.y, a + Math.PI / 2, 26, 0x9fd8ff, 180, { sweep: 0.2 });
-      });
-    }),
-  );
+    });
+  }
 };
 
 const baDao: Fx = (s, aw) => {

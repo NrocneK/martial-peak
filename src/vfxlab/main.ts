@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { SKILLS, skillIcon, type SkillDef } from '../config/skills';
 import { makeVfxTextures, VT } from '../vfx/textures';
 import { VfxKit, type Pt } from '../vfx/VfxKit';
-import { SKILL_FX, type Stage } from '../vfx/skillFx';
+import { SKILL_FX, QI_SWORD, type Stage } from '../vfx/skillFx';
 
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
@@ -30,6 +30,7 @@ class LabScene extends Phaser.Scene {
 
   preload(): void {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
+    this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
   }
 
   create(): void {
