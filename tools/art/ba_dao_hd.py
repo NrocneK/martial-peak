@@ -41,7 +41,23 @@ def unblend(img):
     yy, xx = np.mgrid[0:h, 0:w].astype(float)
     r = np.hypot((xx - CX) / A, (yy - CY) / B)
     a *= np.clip((0.30 - np.abs(r - 0.97)) / 0.10, 0, 1)
+    # quầng sáng bên phải chạm biên ảnh gốc (bị cắt thẳng sẵn trong ảnh) → mờ dần về biên thay vì cắt thẳng
+    a *= np.clip(np.minimum.reduce([xx, yy, w - 1 - xx, h - 1 - yy]) / 22.0, 0, 1)
     out = np.dstack([np.clip(col, 0, 255), a * 255]).astype(np.uint8)
+    return out
+
+
+PAD = 80
+
+
+def pad(rgba):
+    """mở rộng khung thêm PAD mỗi phía: vòng gốc sát mép phải ảnh 400×400 nên khi cuộn hướng, mép phải bị xén.
+    Phần đệm trong suốt; tâm elip dời theo."""
+    global CX, CY
+    h, w = rgba.shape[:2]
+    out = np.zeros((h + 2 * PAD, w + 2 * PAD, 4), np.uint8)
+    out[PAD:PAD + h, PAD:PAD + w] = rgba
+    CX, CY = CX + PAD, CY + PAD
     return out
 
 
@@ -82,12 +98,13 @@ def roll(rgba, deg):
 def main():
     os.makedirs(OUT, exist_ok=True)
     src = np.array(Image.open(os.path.join(HERE, 'ref', 'ba_dao_ring_ref.png')).convert('RGB'))
-    rgba = unblend(src)
+    rgba = pad(unblend(src))
     outs = {}
     for name, deg in DIRS.items():
         im = Image.fromarray(rgba if deg == SRC_DEG else roll(rgba, deg), 'RGBA')
-        bb = im.getchannel('A').point(lambda a: 255 if a > 10 else 0).getbbox()
-        im = im.crop(bb)
+        # cắt khung CỐ ĐỊNH quanh tâm elip (không cắt theo đường bao) → tâm vòng luôn ở giữa ảnh, 8 hướng chồng khít
+        hw, hh = A * 1.45, B * 1.62
+        im = im.crop((round(CX - hw), round(CY - hh), round(CX + hw), round(CY + hh)))
         k = SIZE / max(im.size)
         im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
         im.save(os.path.join(ROOT, 'public', 'vfx', f'ba_dao_slash_{name}.png'))

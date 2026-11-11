@@ -156,7 +156,8 @@ function baDaoRing(k: Stage['kit'], h: Pt, aa: number, r: number, dur = 380): vo
   const key = baDaoKey(baDaoDir(aa));
   if (!k.scene.textures.exists(key)) return;
   const im = k.scene.add.image(h.x, h.y + 4, key).setDepth(9).setAlpha(0);
-  const w = (r * 2.35) / im.width;
+  // ảnh cắt khung cố định quanh tâm vòng: bề ngang vòng ≈ 69% bề ngang ảnh (phần còn lại là chỗ cho quầng sáng)
+  const w = (r * 2.2) / (im.width * 0.69);
   im.setScale(w * 0.72);
   k.scene.tweens.add({ targets: im, scale: w, alpha: 1, duration: 90, ease: 'Quad.easeOut' });
   k.scene.tweens.add({ targets: im, scale: w * 1.08, alpha: 0, delay: 90 + dur * 0.35, duration: dur * 0.65, ease: 'Quad.easeIn', onComplete: () => im.destroy() });
