@@ -1,6 +1,6 @@
 """
 NGỰ KIẾM — hướng E: giữ NGUYÊN thân + tay phải của khung đứng gốc (hero_b_walk.png, hàng E),
-chỉ vẽ lại tay trái theo đúng điểm ảnh của bản chép ảnh mẫu E (out/ngu_kiem_trace_e1/e2.png, chép bằng trace_ref.py).
+chỉ vẽ lại tay trái theo đúng điểm ảnh của bản chép ảnh mẫu E (trace/ngu_kiem_trace_e1/e2.png, chép bằng trace_ref.py).
 
 Nhìn ngang sang phải thì tay trái ở PHÍA XA, nên chỉ phần nhô ra khỏi mép ngực/mặt mới lộ ra:
   - lấy điểm ảnh tay trái của bản chép (cùng cỡ điểm ảnh với sprite), dời theo mặt (mặt mẫu ↔ mặt sprite)
@@ -71,7 +71,7 @@ def pose(n):
                     px[x0 + i, y] = PAL[ch]
         return im
     src_name, (x0, y0, x1, y1), dx, dy, hand = POSES[n]
-    src = Image.open(os.path.join(OUT, src_name)).convert('RGBA')
+    src = Image.open(os.path.join(HERE, 'trace', src_name)).convert('RGBA')
     sp = src.load()
     im = frame_e()
     px = im.load()

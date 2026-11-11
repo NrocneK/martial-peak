@@ -1,5 +1,5 @@
 """
-NGỰ KIẾM — hướng S, 2 khung, dựng từ bản chép ảnh mẫu (tools/art/out/ngu_kiem_trace_s.png, chép bằng trace_ref.py).
+NGỰ KIẾM — hướng S, 2 khung, dựng từ bản chép ảnh mẫu (tools/art/trace/ngu_kiem_trace_s.png, chép bằng trace_ref.py).
 
   khung 1 = bản chép mẫu (tay trái dựng trước ngực), bỏ bóng đổ dưới chân.
   khung 2 = tay trái duỗi thẳng về phía người xem (vẽ lại từng điểm ảnh trên khung 1):
@@ -21,7 +21,7 @@ CX2 = 66                     # trục đối xứng thân: x' = 66 - x  (giữa 
 
 
 def load():
-    im = Image.open(os.path.join(OUT, 'ngu_kiem_trace_s.png')).convert('RGBA')
+    im = Image.open(os.path.join(HERE, 'trace', 'ngu_kiem_trace_s.png')).convert('RGBA')
     px = im.load()
     # bỏ bóng đổ: các điểm màu bóng (xanh tối) ở dải chân trở xuống, nằm ngoài đôi giày
     shadow = {PAL['7'][:3], PAL['9'][:3], PAL['A'][:3]}
