@@ -18,3 +18,4 @@ tools/art/out*/
 
 # Vercel CLI (liên kết project cục bộ)
 .vercel
+__pycache__/
