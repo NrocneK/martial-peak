@@ -109,8 +109,9 @@ def pose(n):
         limb(im, [((20, 36), (17, 25), 1.6, FORE)], (15, 19, hand))
     else:
         refill(im, ERASE_UPPER)
-        # tay chĩa ra xa nên ngắn lại: vai (21,29) → khuỷu (17,25) tay áo trắng phồng; khuỷu → cổ tay (13,21) áo tối
-        limb(im, [((21, 29), (17, 25), 2.8, SLEEVE), ((17, 25), (13, 21), 1.6, FORE)], (9, 16, hand))
+        # tay GẦN (vai trái, bên trái người xem — đúng chỗ tay cũ) duỗi ra trước = chếch sang trái, hơi lên;
+        # nằm TRƯỚC thân, không đi ra sau đầu. Vai (20,31) → khuỷu (14,28) tay áo trắng; khuỷu → cổ tay (9,26) áo tối
+        limb(im, [((20, 31), (14, 28), 2.8, SLEEVE), ((14, 28), (9, 26), 1.6, FORE)], (4, 21, hand))
     return im
 
 
