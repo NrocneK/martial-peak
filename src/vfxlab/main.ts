@@ -32,7 +32,7 @@ class LabScene extends Phaser.Scene {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
     this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
     // tư thế thi triển: hàng = hướng (s,sw,w,nw,n,ne,e,se), cột = tư thế 1, 2
-    this.load.spritesheet('cast_ngu_kiem', '/ui/hero_cast_ngukiem.png', { frameWidth: 52, frameHeight: 68 });
+    this.load.spritesheet('cast_ngu_kiem', '/ui/hero_cast_ngukiem.png?v=0.15.1', { frameWidth: 52, frameHeight: 68 });
   }
 
   create(): void {
