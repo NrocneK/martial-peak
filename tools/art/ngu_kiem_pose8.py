@@ -38,53 +38,84 @@ ERASE = {
     'se': [(32, 33, '02..'), (33, 33, '02..'), (34, 33, '02..'), (35, 33, '02..'), (36, 33, '02..'), (37, 33, '02..')],
 }
 
-FIST_R = ['.222.', '2bbY2', '2bYV2', '2YVS2']          # nắm tay nhìn từ bên phải (sáng bên trái)
-FIST_L = ['.222.', '2Ybb2', '2VYb2', '2SVY2']          # lật cho hướng nhìn sang trái
+# ---------------------------------------------------------------- vẽ cánh tay theo khung xương
+# Kích thước lấy từ ảnh mẫu (ref/ngu_kiem_s_ref.webp, ngu_kiem_se_ref.webp) thu về cỡ sprite:
+# bàn tay cao ~7 điểm, bắp tay áo trắng dày ~5 điểm, cẳng tay áo xanh dày ~4 điểm.
+import math
+
+HAND_R = ['.222..', '2bbY2.', '2bbY22', '2bbbY2', '2YbbV2', '2SVVS2', '.2222.']   # bàn tay dựng, nhìn từ phải
+HAND_L = [r[::-1] for r in HAND_R]
+HAND_F = ['.2222..', '2bbbY2.', '2bbbY22', '2bbbbY2', '2YbbbV2', '2SYVVS2', '.22222.']  # lòng bàn tay hướng người xem
+SLEEVE = ['e', 'd', 'c', 'Z', 'U']      # tay áo trắng: sáng (trên) → tối (dưới)
+FORE = ['N', 'M', 'K', 'H']             # cẳng tay áo xanh
+CUFF = ['9', 'B', '1']
 
 
-def at(x, y, rows):
-    return [(y + j, x, r) for j, r in enumerate(rows)]
+def _dist(px, py, a, b):
+    (ax, ay), (bx, by) = a, b
+    dx, dy = bx - ax, by - ay
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy or 1)))
+    cx, cy = ax + t * dx, ay + t * dy
+    return math.hypot(px - cx, py - cy), py - cy
 
 
-def diag(x, y, n, dx, s='21B92'):
-    """cẳng tay chéo: mỗi hàng dời dx điểm"""
-    return [(y + j, x + j * dx, s) for j in range(n)]
+def arm(segs, hand=None):
+    """segs: [(điểm đầu, điểm cuối, bán kính, bảng màu)]; hand: (x, y, mẫu) — trả về danh sách điểm vẽ"""
+    fill, edge = {}, set()
+    for a, b, r, cols in segs:
+        x0, x1 = int(min(a[0], b[0]) - r - 2), int(max(a[0], b[0]) + r + 2)
+        y0, y1 = int(min(a[1], b[1]) - r - 2), int(max(a[1], b[1]) + r + 2)
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                d, off = _dist(x + 0.5, y + 0.5, (a[0] + 0.5, a[1] + 0.5), (b[0] + 0.5, b[1] + 0.5))
+                if d <= r:
+                    k = (off + r) / (2 * r)                 # 0 = mép trên (sáng) … 1 = mép dưới (tối)
+                    fill[(x, y)] = cols[min(len(cols) - 1, int(k * len(cols)))]
+                elif d <= r + 1:
+                    edge.add((x, y))
+    items = [(y, x, '2') for (x, y) in edge if (x, y) not in fill]
+    items += [(y, x, c) for (x, y), c in fill.items()]
+    if hand:
+        hx, hy, rows = hand
+        items += [(hy + j, hx, r.replace('.', ' ')) for j, r in enumerate(rows)]
+    return items
+
+
+def bent(elbow, wrist, hand):
+    """cánh tay gập: bắp tay áo (phồng) giữ ở vai, cẳng tay từ khuỷu lên cổ tay"""
+    return arm([(elbow, wrist, 1.6, FORE)], hand)
+
+
+def straight(shoulder, elbow, wrist, hand):
+    """cánh tay duỗi thẳng: bắp tay áo trắng → cẳng tay áo xanh → bàn tay"""
+    return arm([(shoulder, elbow, 2.2, SLEEVE), (elbow, wrist, 1.6, FORE)], hand)
 
 
 POSE = {
-    # ---- S: tay trái bên phải người xem; bắp tay áo (phồng) giữ ở vai
-    ('s', 1): at(29, 27, FIST_R) + diag(29, 31, 4, 1) + [(35, 33, '222')],
-    ('s', 2): at(32, 29, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82']) + [(34, 31, '21B99B12'), (35, 32, '222222')],
+    # ---- S: tay trái bên phải người xem (theo mẫu: bàn tay dựng trước ngực, khuỷu ra ngoài)
+    ('s', 1): bent((37, 34), (33, 30), (29, 23, HAND_R)),
+    ('s', 2): arm([((36, 33), (35, 33), 2.2, FORE)], (32, 27, HAND_F)),
     # ---- SW: tay trái gần, bên phải người xem
-    ('sw', 1): at(26, 27, FIST_R) + diag(26, 31, 5, 1) + [(36, 31, '222')],
-    ('sw', 2): [(31, 30, '21B9'), (32, 30, '1B99'), (33, 30, '21B9')]
-               + at(24, 30, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
+    ('sw', 1): bent((34, 36), (30, 31), (26, 24, HAND_R)),
+    ('sw', 2): arm([((32, 34), (29, 34), 2.0, FORE)], (23, 29, HAND_F)),
     # ---- W: nhìn sang trái, tay trái gần
-    ('w', 1): at(13, 26, FIST_L) + diag(13, 30, 7, 1, '29B12') + [(37, 20, '222')],
-    ('w', 2): [(27, 9, '2222222222222'), (28, 8, '2B99991deeedc2'), (29, 8, '2B99991ddccZU2'),
-               (30, 8, '22222222cZZUU2'), (31, 15, '2ZUUU2'), (32, 16, '2222')]
-              + at(3, 26, ['.2222.', '2Ybbb2', '2VYbb2', '2VVYb2', '2SVVY2', '.2222.']),
-    # ---- NW: lưng chéo, tay trái gần bên trái người xem
-    ('nw', 1): [(35, 16, '2192'), (36, 16, '2B92'), (37, 17, '22')],
-    ('nw', 2): [(27, 7, '22222222222222'), (28, 6, '2B999991dddcZZ2'), (29, 6, '2B999991dccZZU2'),
-                (30, 6, '222222222ZZUUU2'), (31, 15, '2UUU2'), (32, 16, '222')]
-               + at(2, 26, ['.222.', '2Ybb2', '2VYb2', '2SVY2', '.222.']),
+    ('w', 1): bent((23, 36), (18, 31), (13, 24, HAND_L)),
+    ('w', 2): straight((25, 30), (17, 30), (10, 30), (3, 24, HAND_L)),
+    # ---- NW: lưng chéo — gập tay thì cẳng tay khuất trước ngực, chỉ thấy khuỷu; duỗi thì cả cánh tay lộ ra
+    ('nw', 1): arm([((20, 36), (17, 33), 1.6, FORE)]),
+    ('nw', 2): straight((21, 31), (14, 29), (8, 27), (2, 21, HAND_L)),
     # ---- N: lưng — tay đưa ra trước bị thân che, chỉ thấy khuỷu khi gập tay
-    ('n', 1): [(35, 14, '2192'), (36, 15, '222')],
+    ('n', 1): arm([((16, 35), (15, 33), 1.6, FORE)]),
     ('n', 2): [],
     # ---- NE: tay trái khuất hẳn sau thân và đầu ở cả hai tư thế → giữ nguyên khung gốc
     ('ne', 1): [],
     ('ne', 2): [],
-    # ---- E: tay trái phía xa — chỉ phần ló ra trước ngực
-    ('e', 1): at(37, 22, FIST_R) + diag(37, 26, 2, 0) + diag(36, 28, 2, 0) + [(30, 35, '21B92'), (31, 35, '2B92')],
-    ('e', 2): [(27, 36, '2222222'), (28, 35, '2dcZB999'), (29, 35, '2cZUB999'), (30, 35, '2ZUU2222'),
-               (31, 36, '2UU2'), (32, 37, '22')]
-              + at(43, 26, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
-    # ---- SE: tay trái phía xa, bên phải người xem
-    ('se', 1): at(33, 22, FIST_R) + diag(33, 26, 2, 0) + diag(34, 28, 2, 0) + [(30, 35, '2B92'), (31, 35, '222')],
-    ('se', 2): [(27, 35, '222222'), (28, 34, '2dcZB999'), (29, 34, '2cZUB999'), (30, 34, '2ZUU2222'),
-                (31, 35, '2UU2'), (32, 36, '22')]
-               + at(42, 26, ['.2222.', '2bbbY2', '2bbYV2', '2YYVS2', '2VSS82', '.2222.']),
+    # ---- E: tay trái phía xa — phần ló ra trước ngực
+    ('e', 1): bent((37, 32), (38, 28), (36, 20, HAND_R)),
+    ('e', 2): straight((34, 28), (40, 28), (45, 28), (44, 22, HAND_R)),
+    # ---- SE: tay trái phía xa, bên phải người xem (theo mẫu)
+    ('se', 1): bent((35, 32), (36, 28), (33, 20, HAND_R)),
+    ('se', 2): straight((31, 28), (38, 28), (44, 27), (44, 21, HAND_R)),
 }
 
 
