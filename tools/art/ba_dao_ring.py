@@ -45,17 +45,25 @@ def frame(phase):
     """phase: góc quay (rad). Ở phase = 0 khớp bố cục ảnh mẫu: đầu vệt sáng ở phải-dưới."""
     cx, cy, a, b = FW / 2, FH / 2, FW * 0.44, FH * 0.38
     yy, xx = np.mgrid[0:FH, 0:FW].astype(float) + 0.5
-    u, v = (xx - cx) / a, (yy - cy) / b
-    r = np.hypot(u, v)
+    tilt = math.radians(-9)                                 # vòng hơi nghiêng như mẫu
+    X, Y = xx - cx, yy - cy
+    u = (X * math.cos(tilt) + Y * math.sin(tilt)) / a
+    v = (-X * math.sin(tilt) + Y * math.cos(tilt)) / b
     th = np.arctan2(v, u)                                   # 0 = phải, +π/2 = dưới (mép trước)
+    # vòng KHÔNG tròn đều: bán kính méo theo vài nhịp thấp (như dải khí bị xoắn) + phình ra ở mép trước-phải
+    warp = (0.05 * np.sin(2 * th + 0.8 + phase) + 0.035 * np.sin(3 * th - 1.3 - 2 * phase)
+            + 0.025 * np.sin(5 * th + 2.1 + 3 * phase) + 0.06 * _gauss(_wrap(th - math.radians(30) - phase), 0.6))
+    r = np.hypot(u, v) / (1 + warp)
     rel = _wrap(th - math.radians(45) - phase)              # so với chỗ sáng nhất (phải-dưới)
     # sáng rực từ phải (-30°) chạy dọc mép trước tới dưới-trái (~120°); tối dần thành khói ở trái-sau
     bright = 0.06 + 0.94 * _gauss(rel, 1.05)
     smoke_w = _gauss(_wrap(rel - math.radians(160)), 0.7)   # khúc khói đen dày ở trái
     front = np.clip(np.sin(th), 0, 1)                        # mép trước dày hơn (phối cảnh)
-    thick = 0.06 + 0.13 * _gauss(rel, 0.9) + 0.05 * front + 0.07 * smoke_w
+    thick = (0.06 + 0.13 * _gauss(rel, 0.9) + 0.05 * front + 0.07 * smoke_w) * (
+        1 + 0.25 * np.sin(4 * th + 1.7 - phase * 2) * np.sin(7 * th - 0.4 + phase))
     d = (r - 1.0) / thick                                   # -1 (mép trong) .. 1 (mép ngoài)
-    edge = 1.0 + 0.25 * np.sin(th * 31 + phase * 6) * (bright < 0.4)     # mép xơ ở phần khói tối
+    tongue = np.clip(np.sin(th * 13 - phase * 5) * np.sin(th * 7 + 1.1), 0, 1) ** 2   # lưỡi khí bung ra mép ngoài
+    edge = np.where(d > 0, 1.0 + 0.45 * tongue * bright, 1.0 + 0.3 * np.sin(th * 23 + phase * 6) * (bright < 0.4))
     on = np.abs(d) < edge
     core = np.clip(1 - np.abs(d + 0.15) ** 2, 0, 1)
     # vệt sáng mảnh chạy dọc vòng trong phần dày (như các sọc chém trong mẫu)
@@ -72,8 +80,8 @@ def frame(phase):
     img[on, :3] = PAL[idx[on]]
     img[on, 3] = 255
     # quầng hồng tím thưa quanh phần sáng
-    halo = (~on) & (np.abs(d) < edge + 0.9) & (bright > 0.45)
-    hd = BAYER[yy.astype(int) % 4, xx.astype(int) % 4] < (bright - 0.4) * 0.55
+    halo = (~on) & (np.abs(d) < edge + 0.6) & (bright > 0.5)
+    hd = BAYER[yy.astype(int) % 4, xx.astype(int) % 4] < (bright - 0.45) * 0.35
     img[halo & hd, :3] = PAL[4]
     img[halo & hd, 3] = 140
     # đốm xanh lơ lấp lánh trong phần khói
