@@ -1,22 +1,12 @@
-import { weaponById } from '../config/weapons';
-import { activeById } from '../config/activeSkills';
-import { passiveById } from '../config/passiveSkills';
+import { passiveById, skillById } from '../config/skills';
 
 export interface SkillInfo {
   name: string;
   color: number;
 }
 
-/** Tên + màu của một kỹ năng bất kỳ (vũ khí / chủ động / bị động) */
+/** Tên + màu của một kỹ năng bất kỳ (vũ khí / cảnh giới / bị động) */
 export function skillInfo(id: string): SkillInfo {
-  if (id.startsWith('wp_')) {
-    const d = weaponById(id);
-    return { name: d.name, color: d.color };
-  }
-  if (id.startsWith('ac_')) {
-    const d = activeById(id);
-    return { name: d.name, color: d.color };
-  }
-  const p = passiveById(id);
-  return { name: p.name, color: p.color };
+  const d = id.startsWith('p_') ? passiveById(id) : skillById(id);
+  return { name: d.name, color: d.color };
 }

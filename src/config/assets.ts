@@ -1,3 +1,5 @@
+import { skillIcon } from './skills';
+
 // =====================================================================
 // Khóa (key) của mọi hình ảnh dùng trong game.
 // Code chỉ gọi hình qua các key này. Khi có sprite thật, chỉ cần nạp ảnh
@@ -52,13 +54,8 @@ export const PLAYER_FRAME = { w: 52, h: 68 };
 /** Khóa hoạt ảnh đi theo hướng, vd. 'hero-walk-se' */
 export const playerWalkAnim = (d: PlayerDir, fan = false): string => `hero-${fan ? 'fan' : 'walk'}-${d}`;
 
-/** Phiên bản bộ icon kỹ năng (đổi khi vẽ lại để trình duyệt tải ảnh mới) */
-export const SKILL_ICON_V = 2;
-/** Icon kỹ năng 64x64 (vẽ trong tools/art/skills.px.js): vũ khí wp_*, chủ động ac_*, bị động p_* */
-export function skillIcon(id: string): string {
-  return `/skills/${id}.png?v=${SKILL_ICON_V}`;
+/** Kiểu nền CSS cho một ô hiển thị icon kỹ năng (icon 128px vẽ sẵn khung; awakened = icon bản thức tỉnh) */
+export function skillIconStyle(id: string, awakened = false): Record<string, string> {
+  return { background: `url('${skillIcon(id, awakened)}') center / 100% 100% no-repeat transparent` };
 }
-/** Kiểu nền CSS cho một ô hiển thị icon kỹ năng (khung + nền đã vẽ sẵn trong ảnh, phần ngoài khung trong suốt) */
-export function skillIconStyle(id: string): Record<string, string> {
-  return { background: `url('${skillIcon(id)}') center / 100% 100% no-repeat transparent` };
-}
+

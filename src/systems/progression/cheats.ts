@@ -4,7 +4,7 @@
 import { GEAR_TIERS, type ItemInst } from '../../config/items';
 import { MAX_TIER, TIERS, tierCap } from '../../config/realms';
 import { SLOT_IDS } from '../../config/types';
-import { WEAPONS } from '../../config/weapons';
+import { WEAPON_IDS } from '../../config/skills';
 import { ALL_STAGES } from '../../config/worlds';
 import { addItem, makeItem } from './inventory';
 import { data, ok, save, type Result } from './save';
@@ -48,7 +48,7 @@ export function unlockAll(): Result {
   // đủ bộ sưu tập: 6 vũ khí + y phục, giày, trang sức × 6 cấp (phẩm cao nhất của cấp) — để xem hết hình
   for (let tier = 0; tier <= 5; tier++) {
     const q = { tier, quality: GEAR_TIERS[tier].grades - 1 }
-    for (const w of WEAPONS) give(makeItem('weapon', 6, w.id, q));
+    for (const w of WEAPON_IDS) give(makeItem('weapon', 6, w, q));
     for (const slot of SLOT_IDS) if (slot !== 'weapon' && slot !== 'bibao') give(makeItem(slot, 6, undefined, q));
   }
 

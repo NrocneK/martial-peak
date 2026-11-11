@@ -3,7 +3,7 @@
 import { TIER_POWER } from '../../config/balance';
 import { itemStats, type ItemInst } from '../../config/items';
 import { SLOT_IDS, type ItemStats, type SlotId } from '../../config/types';
-import { WEAPONS } from '../../config/weapons';
+import { WEAPON_IDS } from '../../config/skills';
 import { data } from './save';
 
 export interface MetaStats {
@@ -50,6 +50,6 @@ export function computeMeta(): MetaStats {
     area: 1 + sum.area,
     xpGain: 1 + sum.xpGain,
     linhGain: 1 + sum.linhGain,
-    weaponId: weapon?.weaponId ?? WEAPONS[0].id,
+    weaponId: weapon?.weaponId ?? WEAPON_IDS[0],
   };
 }

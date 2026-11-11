@@ -3,7 +3,7 @@
 import { econScale } from '../../config/balance';
 import { MAX_ITEM_LEVEL, affixCount, itemRank, rollAffix, rollTierQuality, type ItemInst, type RolledAffix } from '../../config/items';
 import { type SlotId } from '../../config/types';
-import { WEAPONS } from '../../config/weapons';
+import { WEAPON_IDS } from '../../config/skills';
 import { data, fail, MAX_ITEMS, ok, save, type Result } from './save';
 import { computeMeta } from './stats';
 import { highestWorld } from './worldProgress';
@@ -19,7 +19,7 @@ function findItem(uid: number): ItemInst | undefined {
 export function makeItem(slot: SlotId, world: number, weaponId?: string, force?: { tier: number; quality: number }): ItemInst {
   const { tier, quality } = force ?? rollTierQuality(world);
   const it: ItemInst = { uid: data.nextUid++, slot, tier, quality, level: 0 };
-  if (slot === 'weapon') it.weaponId = weaponId ?? WEAPONS[Math.floor(Math.random() * WEAPONS.length)].id;
+  if (slot === 'weapon') it.weaponId = weaponId ?? WEAPON_IDS[Math.floor(Math.random() * WEAPON_IDS.length)];
   const aff: RolledAffix[] = [];
   for (let i = 0; i < affixCount(it); i++) {
     const a = rollAffix(slot, aff.map((x) => x.id));

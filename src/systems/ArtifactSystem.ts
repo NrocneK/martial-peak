@@ -1,4 +1,4 @@
-import { weaponById } from '../config/weapons';
+import { ATK_BASE } from '../config/skills';
 import type { Enemy } from '../entities/Enemy';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
@@ -49,8 +49,7 @@ export class ArtifactSystem {
 
   /** Sát thương cơ sở của kỹ năng vũ khí hiện tại (dùng cho đòn phụ của bí bảo) */
   private baseDmg(): number {
-    const w = this.run.skills.find((s) => s.kind === 'weapon');
-    return (w ? weaponById(w.id).base.damage : 10) * this.player.stats.damage;
+    return ATK_BASE * this.player.stats.damage;
   }
 
   private heal(frac: number): void {

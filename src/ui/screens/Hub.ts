@@ -5,9 +5,7 @@ import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
 import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
-import { ACTIVES } from '../../config/activeSkills';
-import { WEAPONS, weaponById } from '../../config/weapons';
-import { PASSIVES, passiveById, passiveValueText } from '../../config/passiveSkills';
+import { PASSIVES, REALM_SKILLS, WEAPON_IDS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
 import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
@@ -433,37 +431,43 @@ export class Hub {
   private vSkill(): HTMLElement {
     const s = P.getSave();
     const loadout = P.currentLoadout();
-    const w = weaponById(P.computeMeta().weaponId);
-    const head = h('div', { class: 'skill-head' },
+    const w = weaponSkillOf(P.computeMeta().weaponId);
+    const head = h('button', { class: 'skill-head', onclick: () => this.openSkill(w.id) },
       h('div', { class: 'swatch skico', style: skillIconStyle(w.id) }),
-      h('div', { class: 'grow' }, h('b', { text: `Vũ khí: ${w.name}` }), h('div', { class: 'dim', text: 'Tự động, không chiếm chỗ mang theo.' })),
+      h('div', { class: 'grow' }, h('b', { text: `Kỹ năng vũ khí: ${w.name}` }), h('div', { class: 'dim', text: `${w.type} · tự động, không chiếm chỗ mang theo.` })),
       h('div', { class: 'gold', text: `Mang theo ${loadout.length}/3` }),
     );
-    return h('div', null, head, this.paged(this.fit('active', 66, 56 + 70, 230), ACTIVES, (a) => {
+    return h('div', null, head, this.paged(this.fit('active', 66, 56 + 70, 230), REALM_SKILLS, (a) => {
       const un = a.unlockTier <= s.tier;
       const on = loadout.includes(a.id);
-      return h('button', { class: 'sk-tile' + (on ? ' on' : '') + (un ? '' : ' lock'), onclick: () => this.openActive(a.id) },
+      return h('button', { class: 'sk-tile' + (on ? ' on' : '') + (un ? '' : ' lock'), onclick: () => this.openSkill(a.id) },
         h('i', { class: 'swatch skico', style: skillIconStyle(a.id) }),
         h('span', { class: 'sk-name', text: a.name }),
-        h('span', { class: 'sk-sub', text: on ? 'Đang mang' : un ? 'Chưa mang' : `🔒 ${tierName(a.unlockTier)}` }),
+        h('span', { class: 'sk-sub', text: on ? 'Đang mang' : un ? 'Chưa mang' : `🔒 ${a.unlock}` }),
       );
     }));
   }
 
-  private openActive(id: string): void {
+  /** Bảng chi tiết kỹ năng: 5 cấp + thức tỉnh + bị động liên kết */
+  private openSkill(id: string): void {
     audio.play('click');
-    const a = ACTIVES.find((x) => x.id === id)!;
+    const a = skillById(id);
     this.detail(a.name, () => {
       const un = a.unlockTier <= P.getSave().tier;
       const on = P.currentLoadout().includes(a.id);
+      const pv = passiveById(a.passive);
       return h('div', null,
-        h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(a.id) }), h('p', { text: a.desc })),
-        h('div', { class: 'stat-list' },
-          h('div', null, h('span', { class: 'dim', text: 'Thức tỉnh' }), h('b', { text: a.awaken?.name ?? '—' })),
-          h('div', null, h('span', { class: 'dim', text: 'Bị động liên kết' }), h('b', { text: passiveById(a.linkedPassive).name })),
-          h('div', null, h('span', { class: 'dim', text: 'Mở khóa' }), h('b', { text: tierName(a.unlockTier) })),
+        h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(a.id) }),
+          h('div', null, h('div', { class: 'gold', text: a.type }), h('p', { text: a.desc }))),
+        h('div', { class: 'sk-levels' },
+          ...a.levels.map((L, i) => h('div', null, h('b', { text: `Cấp ${i + 1}` }), h('span', { class: 'dim', text: ` ${L.damage} · ${L.cooldown}` }), h('div', { text: L.effect }))),
         ),
-        h('button', { class: 'btn wide' + (on ? '' : ' primary'), text: on ? 'Bỏ mang theo' : 'Mang theo vào trận', disabled: un ? null : 'disabled', onclick: () => this.act(P.toggleLoadout(a.id)) }),
+        h('div', { class: 'sk-detail-head sk-aw' }, h('i', { class: 'swatch skico big', style: skillIconStyle(a.id, true) }),
+          h('div', null, h('b', { class: 'gold', text: `Thức tỉnh: ${a.awaken.name} (${a.awaken.damage})` }), h('div', { text: a.awaken.effect }),
+            h('div', { class: 'dim', text: `Điều kiện: cấp 5 + bị động ${pv.name}` }))),
+        a.source === 'realm'
+          ? h('button', { class: 'btn wide' + (on ? '' : ' primary'), text: un ? (on ? 'Bỏ mang theo' : 'Mang theo vào trận') : `🔒 Mở ở ${a.unlock}`, disabled: un ? null : 'disabled', onclick: () => this.act(P.toggleLoadout(a.id)) })
+          : h('p', { class: 'dim note', text: 'Kỹ năng vũ khí đổi theo loại vũ khí đang trang bị.' }),
       );
     });
   }
@@ -473,16 +477,14 @@ export class Hub {
       h('p', { class: 'dim note', text: `Bị động tự xuất hiện dưới dạng thẻ khi lên cấp trong màn. Tối đa ${RUN.maxSkills} kỹ năng mỗi màn (tính cả kỹ năng vũ khí).` }),
       this.paged(this.fit('passive', 66, 56 + 34, 230), PASSIVES, (p) => h('button', { class: 'sk-tile', onclick: () => {
         audio.play('click');
-        const linked = [...WEAPONS, ...ACTIVES].filter((k) => k.linkedPassive === p.id).map((k) => k.name);
         this.detail(p.name, () => h('div', null,
-          h('p', { text: p.desc }),
+          h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(p.id) }), h('p', { text: p.stat })),
           h('div', { class: 'stat-list' },
-            h('div', null, h('span', { class: 'dim', text: 'Mỗi cấp' }), h('b', { text: passiveValueText(p, 1) })),
-            h('div', null, h('span', { class: 'dim', text: 'Tối đa (cấp 5)' }), h('b', { text: passiveValueText(p, 5) })),
-            h('div', null, h('span', { class: 'dim', text: 'Thức tỉnh cho' }), h('b', { text: linked.length ? linked.join(', ') : '—' })),
+            ...p.levels.map((v, i) => h('div', null, h('span', { class: 'dim', text: `Cấp ${i + 1}` }), h('b', { text: v }))),
+            h('div', null, h('span', { class: 'dim', text: 'Mở thức tỉnh cho' }), h('b', { text: p.awakens.map((k) => skillById(k).name).join(', ') })),
           ),
         ));
-      } }, h('i', { class: 'swatch skico', style: skillIconStyle(p.id) }), h('span', { class: 'sk-name', text: p.name }), h('span', { class: 'sk-sub', text: passiveValueText(p, 1) + ' / cấp' }))),
+      } }, h('i', { class: 'swatch skico', style: skillIconStyle(p.id) }), h('span', { class: 'sk-name', text: p.name }), h('span', { class: 'sk-sub', text: `${p.stat}: ${p.levels[0]} / cấp` }))),
     );
   }
 
@@ -567,7 +569,7 @@ export class Hub {
         h('div', { class: 'gold hd' }, ic('hero'), 'Chỉ số'),
         h('div', { class: 'stat-list' },
           stat('Máu', fmt(m.maxHp)), stat('Sát thương', `×${m.damage.toFixed(2)}`), stat('Giáp', String(Math.round(m.armor))),
-          stat('Tốc chạy', String(Math.round(m.moveSpeed))), stat('Chí mạng', `${Math.round(m.crit * 100)}%`), stat('Kỹ năng vũ khí', weaponById(m.weaponId).name),
+          stat('Tốc chạy', String(Math.round(m.moveSpeed))), stat('Chí mạng', `${Math.round(m.crit * 100)}%`), stat('Kỹ năng vũ khí', weaponSkillOf(m.weaponId).name),
         ),
         h('div', { class: 'gold hd' }, ic('ore'), 'Nguyên liệu'),
         h('div', { class: 'mats' },
@@ -721,7 +723,7 @@ export class Hub {
       };
       if (slot === 'weapon') {
         // Chọn loại vũ khí muốn chế tạo (hoặc ngẫu nhiên)
-        const sel = h('select', { class: 'btn small sel' }, h('option', { value: '', text: 'Loại: ngẫu nhiên' }), ...WEAPONS.map((w) => h('option', { value: w.id, text: WEAPON_ITEM_NAMES[w.id] })));
+        const sel = h('select', { class: 'btn small sel' }, h('option', { value: '', text: 'Loại: ngẫu nhiên' }), ...WEAPON_IDS.map((w) => h('option', { value: w, text: WEAPON_ITEM_NAMES[w] })));
         card.append(h('div', { class: 'row' }, sel, h('button', { class: 'btn small primary', text: 'Luyện khí', onclick: () => forge((sel as HTMLSelectElement).value || undefined) })));
       } else card.append(h('button', { class: 'btn small primary', text: 'Luyện khí', onclick: () => forge() }));
       grid.append(card);

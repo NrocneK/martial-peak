@@ -113,9 +113,18 @@ export class Pickups {
     }
   }
 
+  /** Gọi mỗi lần nhặt một viên kinh nghiệm (Linh Khí Đạn thức tỉnh nạp linh khí) */
+  onXp: (() => void) | null = null;
+
+  /** Hút mọi vật phẩm trong vòng tròn về phía người chơi (Hư Không Liệt Phùng cấp 5) */
+  attract(x: number, y: number, r: number): void {
+    for (const p of this.pool) if (p.active && (p.x - x) ** 2 + (p.y - y) ** 2 < r * r) p.magnet = true;
+  }
+
   private collect(p: Pickup): void {
     p.active = false;
     p.img.setVisible(false).setActive(false);
+    if (p.type === 'xp') this.onXp?.();
     if (p.type === 'xp') this.run.addXp(p.value);
     else if (p.type === 'coin') this.run.linh += p.value * this.player.stats.linhGain;
     else this.player.heal(this.player.stats.maxHp * 0.25);

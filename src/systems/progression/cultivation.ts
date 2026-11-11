@@ -1,6 +1,6 @@
 // Tu luyện (cảnh giới, tu vi, đột phá, "cắn đá"), luyện đan, và kỹ năng chủ động mang theo.
 
-import { ACTIVES } from '../../config/activeSkills';
+import { REALM_SKILLS as ACTIVES } from '../../config/skills';
 import { PILLS, type PillId } from '../../config/items';
 import { MAX_TIER, TIERS, isPerfect, nextStep, nextTierNeed } from '../../config/realms';
 import { ALL_STAGES } from '../../config/worlds';
@@ -107,7 +107,7 @@ export function toggleLoadout(id: string): Result {
   if (i >= 0) {
     data.loadout.splice(i, 1);
   } else {
-    if (data.loadout.length >= 3) return fail('Chỉ mang được tối đa 3 kỹ năng chủ động.');
+    if (data.loadout.length >= 3) return fail('Chỉ mang được tối đa 3 kỹ năng cảnh giới.');
     data.loadout.push(id);
   }
   save();

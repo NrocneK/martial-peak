@@ -32,6 +32,22 @@ export class Player extends Phaser.GameObjects.Sprite {
   /** Gọi mỗi khi thật sự nhận sát thương (cho bí bảo) */
   onHit: (() => void) | null = null;
 
+  // ---- buff tạm thời do kỹ năng (SkillSystem đặt lại mỗi khung qua resetBuffs)
+  /** Nhân sát thương gây ra (Bất Diệt Kim Thân...) */
+  buffDmg = 1;
+  /** Nhân sát thương nhận vào */
+  dmgTaken = 1;
+  /** Giáp cộng thêm tạm thời (Băng Sơn Quyền, Hoàng Chung...) */
+  armorBonus = 0;
+  /** Phản lại bao nhiêu phần sát thương cận chiến */
+  reflect = 0;
+  /** Miễn sát thương (giây) — không nhấp nháy như bất tử sau khi trúng đòn */
+  guardT = 0;
+  /** Các "phao cứu mạng": gọi lần lượt khi nhận đòn chí tử; trả về true = đã cứu (không chết) */
+  readonly lethalGuards: (() => boolean)[] = [];
+  /** Sát thương thật sự nhận gần nhất (để khiên / phản đòn tính) */
+  lastHit = 0;
+
   /** Hướng sprite đang quay (8 hướng) */
   private face: PlayerDir = 's';
   /** Tư thế cầm quạt (tay phải trước ngực) — đổi bộ hình nhân vật + bảng vị trí tay */
@@ -254,6 +270,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     if (this.dead) return;
     if (this.atk.type) this.atk.t += dt;
     if (this.shieldT > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
+    if (this.guardT > 0) this.guardT -= dt;
     if (this.invuln > 0) {
       this.invuln -= dt;
       this.setAlpha(Math.floor(this.invuln * 20) % 2 === 0 ? 0.45 : 1);
@@ -264,9 +281,9 @@ export class Player extends Phaser.GameObjects.Sprite {
 
   /** Nhận sát thương. Trả về lượng máu thực sự bị trừ (0 nếu đang bất tử). */
   takeDamage(raw: number): number {
-    if (this.dead || this.invuln > 0 || this.god) return 0;
-    const a = this.stats.armor;
-    let dmg = Math.max(1, raw * (1 - a / (a + 100)));
+    if (this.dead || this.invuln > 0 || this.god || this.guardT > 0) return 0;
+    const a = this.stats.armor + this.armorBonus;
+    let dmg = Math.max(1, raw * (1 - a / (a + 100)) * this.dmgTaken);
     if (this.shield > 0) {
       const absorb = Math.min(this.shield, dmg);
       this.shield -= absorb;
@@ -279,8 +296,9 @@ export class Player extends Phaser.GameObjects.Sprite {
     this.scene.time.delayedCall(90, () => this.clearTint());
     if (this.hp <= 0) {
       this.hp = 0;
-      this.dead = true;
+      if (!this.lethalGuards.some((g) => g())) this.dead = true;
     }
+    this.lastHit = dmg;
     this.onHit?.();
     return dmg;
   }

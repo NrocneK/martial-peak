@@ -1,5 +1,15 @@
 # Lịch sử phiên bản
 
+## v0.15.0 — Thiết kế lại hệ thống kỹ năng (theo van-gioi-skill-icons.zip)
+- **6 kỹ năng vũ khí** mới theo loại vũ khí: Ngự Kiếm Thuật, Bá Đao Trảm, Phá Trận Thương, Băng Sơn Quyền, Truy Tinh Tiễn, Thanh Phong Phiến.
+- **17 kỹ năng cảnh giới**: mỗi đại cảnh giới mở 1 kỹ năng (Hổ Khiếu Chấn → Đại Đạo Quy Nhất); trước màn mang theo 3.
+- **12 bị động** mới; thêm chỉ số sát thương bạo kích, giảm hồi chiêu, thời gian hiệu ứng (đốt / chậm / băng / choáng).
+- Mỗi kỹ năng 5 cấp với hiệu ứng riêng từng cấp + bản thức tỉnh, bám đúng bảng trong skills.json (`src/config/skills.ts`, hành vi `src/systems/skills/`).
+- Engine: trạng thái quái (thiêu đốt cộng dồn, chảy máu, Kiếm Thương, Thần Hồn Chấn Động, Chấn Nhiếp, lĩnh vực, trấn áp, đóng băng + vỡ băng), hành quyết, buff nhân vật (khiên, giảm sát thương nhận, miễn sát thương, phản đòn, giáp tạm, hồi sinh), đạn đuổi mục tiêu / nảy / hút quái, ngưng đọng thời gian, xóa đạn địch.
+- Icon kỹ năng theo bộ trong file (128px; icon riêng cho bản thức tỉnh); bỏ bộ icon cũ.
+- Thẻ lên cấp hiện "Sát thương · Hồi chiêu" + hiệu ứng mới của cấp; Tu Luyện → Kỹ Năng có bảng 5 cấp + thức tỉnh.
+- Save cũ: kỹ năng mang theo cũ được thay bằng các kỹ năng cảnh giới đã mở.
+
 ## v0.14.2 — Icon kỹ năng vẽ lại 64x64 (bản 32px không được duyệt)
 - `tools/art/skills.px.js` viết lại: icon 64x64 cùng phong cách khung sảnh — nền xanh đậm ánh màu kỹ năng ở giữa, khung kim loại 2 nét + nút góc (thép = vũ khí, vàng = chủ động, ngọc + nút hình thoi = bị động).
 - Bộ tô khối tự động: mỗi chi tiết là mặt nạ hình + dải 5 tông; mép hướng sáng (trên-trái) sáng lên, mép khuất tối đi, chuyển tông trong lòng hòa ô cờ, viền ngoài lấy tông tối của chính chi tiết; quầng sáng 3 nấc cho lửa / sét / kiếm khí / băng...

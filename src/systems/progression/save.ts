@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { BIBAOS, DAO_TIER, GEAR_TIERS, MAX_ITEM_LEVEL, type ItemInst } from '../../config/items';
+import { REALM_SKILLS } from '../../config/skills';
 import { MAX_TIER, TIERS, legacyCumTuVi } from '../../config/realms';
 import { SLOT_IDS, type MatId, type SlotId } from '../../config/types';
 
@@ -63,7 +64,7 @@ function defaultSave(): SaveData {
     mats: { herb: 0, core: 0, ore: 0, essence: 0 },
     items: [sword],
     equipped: { weapon: 1, clothes: null, shoes: null, accessory: null, bibao: null },
-    loadout: ['ac_fire'],
+    loadout: ['ho_khieu'],
     cleared: {},
     pills: { hp: 0, dmg: 0, def: 0 },
     nextUid: 2,
@@ -136,6 +137,10 @@ function sanitize(d: SaveData): SaveData {
       return true;
     });
   d.items = clean(d.items);
+  // Hệ kỹ năng mới (v0.15): kỹ năng mang theo cũ (ac_*) không còn → thay bằng các kỹ năng cảnh giới đã mở
+  if (!Array.isArray(d.loadout)) d.loadout = [];
+  d.loadout = d.loadout.filter((id) => REALM_SKILLS.some((s) => s.id === id));
+  if (!d.loadout.length) d.loadout = REALM_SKILLS.filter((s) => s.unlockTier <= (d.tier || 0)).slice(-3).map((s) => s.id);
   d.inbox = clean(d.inbox).slice(0, MAX_INBOX);
   for (const k of Object.keys(d.mats) as MatId[]) if (!Number.isFinite(d.mats[k]) || d.mats[k] < 0) d.mats[k] = 0;
   if (!Number.isFinite(d.linh) || d.linh < 0) d.linh = 0;

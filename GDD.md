@@ -89,7 +89,7 @@ Chỉ số **XP trong màn độc lập với tu vi cảnh giới** (XP chỉ đ
 |---|---|
 | **Kỹ năng vũ khí** | Mỗi loại vũ khí có 1 kỹ năng riêng, là đòn đánh thường **tự động thi triển**. Vũ khí chiếm 1 trong 5 ô trang bị. |
 | **Kỹ năng chủ động** | Mở khóa theo **cảnh giới**. Trước màn chọn **3 kỹ năng mang theo**. Trong màn, kỹ năng chỉ xuất hiện dưới dạng thẻ khi lên cấp, sau khi chọn thì **tự động thi triển**. |
-| **Kỹ năng bị động** | Tăng chỉ số hoặc hiệu ứng. Mỗi kỹ năng vũ khí / chủ động **liên kết** với 1 bị động. |
+| **Kỹ năng bị động** | Tăng chỉ số hoặc hiệu ứng. Mỗi kỹ năng vũ khí / cảnh giới **liên kết** với 1 bị động (điều kiện thức tỉnh). |
 
 ### 5.2 Giới hạn trong màn
 - Tổng số kỹ năng sở hữu trong một màn tối đa **7**, tính cả kỹ năng vũ khí, **không phân biệt chủ động hay bị động** (v0.14: nâng từ 6 lên 7).
@@ -116,11 +116,24 @@ Khi **kỹ năng chủ động đạt cấp 5** và người chơi **đã sở h
 
 **Theo code hiện tại (v0.14):** kỹ năng đạt cấp 5 + sở hữu bị động liên kết (bất kỳ cấp). Cả kỹ năng vũ khí lẫn chủ động đều thức tỉnh được. Thức tỉnh có thể thêm xuyên quái (`pierceAdd`) và kéo dài khống chế (`ctrlMul`).
 
-### 5.5 Bảng kỹ năng (v0.14)
-Nguyên tắc: sức mạnh nhân vật đã tăng theo cảnh giới, nên kỹ năng mở sau **không chỉ là bản số to hơn** — mỗi kỹ năng có cơ chế riêng để kỹ năng cũ vẫn đáng mang.
+### 5.5 Bảng kỹ năng (v0.15 — theo van-gioi-skill-icons.zip)
+Dữ liệu + chữ mô tả từng cấp: `src/config/skills.ts`. Hành vi: `src/systems/skills/weapon.ts`, `realm.ts`.
+Sát thương ghi theo % lực đánh (`ATK_BASE` = 20 × hệ số sát thương nhân vật). Tốc đánh chỉ rút hồi chiêu kỹ năng vũ khí; giảm hồi chiêu áp cho mọi kỹ năng.
 
-| Kỹ năng | Mở | Cơ chế | Bị động liên kết |
-|---|---|---|---|
+| Nhóm | Kỹ năng (mở ở) | Bị động liên kết |
+|---|---|---|
+| Vũ khí | Ngự Kiếm Thuật (kiếm) · Bá Đao Trảm (đao) · Phá Trận Thương (thương) · Băng Sơn Quyền (quyền sáo) · Truy Tinh Tiễn (cung) · Thanh Phong Phiến (quạt) | Kiếm Tâm · Sát Phạt · Tiêu Dao · Bá Thể · Tật Phong · Tật Phong |
+| Cảnh giới | Hổ Khiếu Chấn (Luyện Thể) · Linh Khí Đạn (Luyện Khí) · Liệt Hỏa Phù (Trúc Cơ) · Kim Đan Hộ Luân (Kim Đan) · Nguyên Anh Xuất Khiếu (Nguyên Anh) · Thần Thức Trảm (Hóa Thần) · Hư Không Liệt Phùng (Luyện Hư) · Pháp Tướng Thiên Địa (Hợp Thể) · Vạn Kiếm Quy Tông (Đại Thừa) · Cửu Tiêu Thần Lôi (Độ Kiếp) · Tiên Nguyên Liên Hoa (Chân Tiên) · Ngân Hà Hàn Lưu (Thiên Tiên) · Huyền Hoàng Chung (Huyền Tiên) · Bất Diệt Kim Thân (Kim Tiên) · Tiên Vương Lĩnh Vực (Đại La Kim Tiên) · Đế Ấn Trấn Thiên (Tiên Đế) · Đại Đạo Quy Nhất (Đạo Tổ) | xem `passive` trong skills.ts |
+| Bị động (12) | Kiếm Tâm Thông Minh, Sát Phạt Chi Ý, Tiêu Dao Du, Bá Thể Quyết, Tật Phong Quyết, Tụ Linh Trận, Ngũ Hành Chân Quyết, Trường Sinh Quyết, Thần Hồn Ngưng Luyện, Pháp Thiên Tượng Địa, Huyền Vũ Giáp, Thiên Đạo Cảm Ngộ | — |
+
+Cách hiểu đã chốt khi cài đặt (khác / chưa rõ trong bản thiết kế):
+- "Tiên Vương" chưa có trong hệ cảnh giới của game → Tiên Vương Lĩnh Vực mở ở Đại La Kim Tiên (cùng vị trí thứ 15).
+- Nguyên Anh "dùng lại kỹ năng vũ khí": bắn thêm một đạn linh quang bằng % sát thương kỹ năng vũ khí × 40% / 60% / 100%, theo nhịp hồi chiêu vũ khí.
+- Thông Thiên Pháp Tướng: hồi chiêu 12 giây (pháp tướng tồn tại 8 giây).
+- "Miễn khống chế" / "xóa hiệu ứng xấu": nhân vật hiện chưa bị khống chế nên chưa có tác dụng; "bỏ qua giáp": quái chưa có giáp.
+- Boss bị choáng / đóng băng chỉ chậm 30%.
+
+---|---|---|---|
 | Kiếm Khí Trảm (kiếm) | — | Kiếm khí bay thẳng, xuyên 1 quái | Cương Khí Công |
 | Liệt Đao Trảm (đao) | — | Chém quạt rộng, cấp cao chém liền nhiều nhát | Cường Thể Quyết |
 | Phá Không Thương (thương) | — | Đâm đường thẳng xuyên mọi quái | Đạo Vận Ấn |

@@ -45,6 +45,39 @@ export class Enemy {
   phase = 0;
   readonly tick: number[] = new Array(MAX_TICK_SLOTS).fill(0);
 
+  // ---- trạng thái do kỹ năng người chơi gây ra (xem EnemyManager.strike / updateStatus)
+  /** Thiêu đốt: thời gian còn lại, sát thương mỗi giây, số tầng (Phần Thiên Hỏa Phù cộng dồn 3) */
+  burnT = 0;
+  burnDps = 0;
+  burnStacks = 0;
+  /** Chảy máu (kiếm cắm đất) */
+  bleedT = 0;
+  bleedDps = 0;
+  /** Bộ đếm nhịp gây sát thương theo thời gian (0.5 giây / lần) */
+  dotTick = 0;
+  /** Kiếm Thương: số tầng (mỗi tầng nhận +10% sát thương) */
+  markKiem = 0;
+  markKiemT = 0;
+  /** Thần Hồn Chấn Động / dấu ấn khác: nhận thêm sát thương */
+  shockAmt = 0;
+  shockT = 0;
+  /** Chấn Nhiếp: quái gây ít sát thương hơn */
+  weakAmt = 0;
+  weakT = 0;
+  /** Trong Lĩnh Vực: nhận thêm sát thương / gây ít sát thương / bị chậm (làm mới mỗi khung khi còn đứng trong vực) */
+  domainT = 0;
+  domainVuln = 0;
+  domainWeak = 0;
+  /** Bị trấn áp (Đế Ấn): không được hồi máu */
+  suppressT = 0;
+  /** Số lần trúng luồng hàn lưu gần đây (đủ số thì đóng băng) */
+  chillHits = 0;
+  chillT = 0;
+  /** Đang đóng băng (giây) — dùng chung slow = 1 */
+  frozenT = 0;
+  /** Kỹ năng gây đòn cuối gần nhất (để biết quái chết vì kỹ năng nào) */
+  lastSrc = '';
+
   constructor(readonly img: Phaser.GameObjects.Image) {
     img.setVisible(false).setActive(false);
   }

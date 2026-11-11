@@ -21,6 +21,7 @@ import { econScale } from '../config/balance';
 import { mixColor } from '../utils/format';
 import { audio } from '../systems/Audio';
 import { ArtifactSystem } from '../systems/ArtifactSystem';
+import { weaponSkillOf } from '../config/skills';
 
 export type RunStatus = 'running' | 'levelup' | 'paused' | 'ended';
 
@@ -94,7 +95,7 @@ export class GameScene extends Phaser.Scene {
     // --- Dữ liệu lượt chơi ---
     const meta = computeMeta();
     this.run = new RunState(meta, currentLoadout());
-    this.run.add(meta.weaponId, 'weapon');
+    this.run.add(weaponSkillOf(meta.weaponId).id, 'weapon');
 
     // --- Thực thể và hệ thống ---
     this.player = new Player(this, 0, 0);
@@ -106,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.pickups = new Pickups(this, this.player, this.run);
     this.enemies.setLinks({ proj: this.proj, pickups: this.pickups, fx: this.fx, texts: this.texts, run: this.run });
     this.enemies.coinValue = Math.max(1, Math.round(2 * econScale(WORLD_FIRST_TIER[this.stage.world])));
-    this.skills = new SkillSystem(this, this.player, this.enemies, this.proj, this.fx, this.run);
+    this.skills = new SkillSystem(this, this.player, this.enemies, this.proj, this.fx, this.run, this.pickups);
     this.spawner = new Spawner(this.stage, this.enemies, this.player, () => this.viewRadius());
 
     // Ngoại hình vũ khí đang cầm (màu theo phẩm chất)
@@ -150,6 +151,7 @@ export class GameScene extends Phaser.Scene {
     st.pickupRange *= b.pickup;
     this.player.applyStats(st);
     this.enemies.crit = st.crit;
+    this.enemies.critMul = st.critDmg;
   }
 
   // ------------------------------------------------------------------ vòng lặp
@@ -225,7 +227,7 @@ export class GameScene extends Phaser.Scene {
       case 'awaken': {
         const own = run.find(c.id);
         if (own) own.awakened = true;
-        if (c.id.startsWith('ac_')) run.lastActive = c.id;
+        if (own?.kind === 'active') run.lastActive = c.id;
         break;
       }
       case 'heal':

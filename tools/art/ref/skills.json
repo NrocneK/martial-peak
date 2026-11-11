@@ -1,0 +1,1313 @@
+{
+  "passives": [
+    {
+      "id": "kiem_tam",
+      "name": "Kiếm Tâm Thông Minh",
+      "stat": "Tỉ lệ bạo kích",
+      "levels": [
+        "+4%",
+        "+8%",
+        "+12%",
+        "+16%",
+        "+20%"
+      ],
+      "icon": "p_kiem_tam.png",
+      "awakens": [
+        "ngu_kiem",
+        "van_kiem"
+      ]
+    },
+    {
+      "id": "sat_phat",
+      "name": "Sát Phạt Chi Ý",
+      "stat": "Sát thương",
+      "levels": [
+        "+8%",
+        "+16%",
+        "+24%",
+        "+32%",
+        "+40%"
+      ],
+      "icon": "p_sat_phat.png",
+      "awakens": [
+        "ba_dao",
+        "linh_vuc"
+      ]
+    },
+    {
+      "id": "tieu_dao",
+      "name": "Tiêu Dao Du",
+      "stat": "Tốc độ di chuyển",
+      "levels": [
+        "+6%",
+        "+12%",
+        "+18%",
+        "+24%",
+        "+30%"
+      ],
+      "icon": "p_tieu_dao.png",
+      "awakens": [
+        "pha_thuong"
+      ]
+    },
+    {
+      "id": "ba_the",
+      "name": "Bá Thể Quyết",
+      "stat": "HP tối đa",
+      "levels": [
+        "+10%",
+        "+20%",
+        "+30%",
+        "+40%",
+        "+50%"
+      ],
+      "icon": "p_ba_the.png",
+      "awakens": [
+        "bang_quyen",
+        "ho_khieu"
+      ]
+    },
+    {
+      "id": "tat_phong",
+      "name": "Tật Phong Quyết",
+      "stat": "Tốc độ đánh",
+      "levels": [
+        "+6%",
+        "+12%",
+        "+18%",
+        "+24%",
+        "+30%"
+      ],
+      "icon": "p_tat_phong.png",
+      "awakens": [
+        "truy_tien",
+        "thanh_phien"
+      ]
+    },
+    {
+      "id": "tu_linh",
+      "name": "Tụ Linh Trận",
+      "stat": "Phạm vi nhặt / Kinh nghiệm nhận",
+      "levels": [
+        "+20% / +3%",
+        "+40% / +6%",
+        "+60% / +9%",
+        "+80% / +12%",
+        "+100% / +15%"
+      ],
+      "icon": "p_tu_linh.png",
+      "awakens": [
+        "linh_dan",
+        "hu_khong"
+      ]
+    },
+    {
+      "id": "ngu_hanh",
+      "name": "Ngũ Hành Chân Quyết",
+      "stat": "Thời gian hiệu ứng (đốt, chậm, băng, choáng)",
+      "levels": [
+        "+10%",
+        "+20%",
+        "+30%",
+        "+40%",
+        "+50%"
+      ],
+      "icon": "p_ngu_hanh.png",
+      "awakens": [
+        "hoa_phu",
+        "ngan_ha"
+      ]
+    },
+    {
+      "id": "truong_sinh",
+      "name": "Trường Sinh Quyết",
+      "stat": "Hồi HP mỗi giây (theo HP tối đa)",
+      "levels": [
+        "+0,2%",
+        "+0,4%",
+        "+0,6%",
+        "+0,8%",
+        "+1,0%"
+      ],
+      "icon": "p_truong_sinh.png",
+      "awakens": [
+        "kim_dan",
+        "lien_hoa"
+      ]
+    },
+    {
+      "id": "than_hon",
+      "name": "Thần Hồn Ngưng Luyện",
+      "stat": "Sát thương bạo kích",
+      "levels": [
+        "+10%",
+        "+20%",
+        "+30%",
+        "+40%",
+        "+50%"
+      ],
+      "icon": "p_than_hon.png",
+      "awakens": [
+        "nguyen_anh",
+        "than_thuc"
+      ]
+    },
+    {
+      "id": "phap_thien",
+      "name": "Pháp Thiên Tượng Địa",
+      "stat": "Phạm vi kỹ năng",
+      "levels": [
+        "+8%",
+        "+16%",
+        "+24%",
+        "+32%",
+        "+40%"
+      ],
+      "icon": "p_phap_thien.png",
+      "awakens": [
+        "phap_tuong",
+        "de_an"
+      ]
+    },
+    {
+      "id": "huyen_vu",
+      "name": "Huyền Vũ Giáp",
+      "stat": "Giáp",
+      "levels": [
+        "+4",
+        "+8",
+        "+12",
+        "+16",
+        "+20"
+      ],
+      "icon": "p_huyen_vu.png",
+      "awakens": [
+        "hoang_chung",
+        "kim_than"
+      ]
+    },
+    {
+      "id": "thien_dao",
+      "name": "Thiên Đạo Cảm Ngộ",
+      "stat": "Giảm hồi chiêu",
+      "levels": [
+        "−5%",
+        "−10%",
+        "−15%",
+        "−20%",
+        "−25%"
+      ],
+      "icon": "p_thien_dao.png",
+      "awakens": [
+        "than_loi",
+        "dai_dao"
+      ]
+    }
+  ],
+  "actives": [
+    {
+      "id": "ngu_kiem",
+      "name": "Ngự Kiếm Thuật",
+      "source": "weapon",
+      "unlock": "Kiếm",
+      "type": "Phi kiếm truy đuổi, xuyên mục tiêu",
+      "desc": "Phóng phi kiếm vào kẻ địch gần nhất; kiếm xuyên qua mục tiêu rồi bay về tay.",
+      "icon": "ngu_kiem.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "100%",
+          "cooldown": "1,2s",
+          "effect": "1 phi kiếm, xuyên 2 mục tiêu"
+        },
+        {
+          "level": 2,
+          "damage": "120%",
+          "cooldown": "1,2s",
+          "effect": "2 phi kiếm"
+        },
+        {
+          "level": 3,
+          "damage": "140%",
+          "cooldown": "1,1s",
+          "effect": "Xuyên 4 mục tiêu; lượt bay về gây 50% sát thương"
+        },
+        {
+          "level": 4,
+          "damage": "165%",
+          "cooldown": "1,1s",
+          "effect": "3 phi kiếm"
+        },
+        {
+          "level": 5,
+          "damage": "190%",
+          "cooldown": "1,0s",
+          "effect": "4 phi kiếm; lượt về gây 100%; trúng đích gắn Kiếm Thương (nhận +10% sát thương, 3s)"
+        }
+      ],
+      "passive": "kiem_tam",
+      "awaken": {
+        "name": "Tâm Kiếm Hợp Nhất",
+        "damage": "260%",
+        "effect": "6 phi kiếm không bay về mà tự đuổi mục tiêu kế tiếp trong 4s. Đòn vào mục tiêu có Kiếm Thương luôn bạo kích; Kiếm Thương cộng dồn 3 tầng.",
+        "icon": "ngu_kiem_aw.png"
+      }
+    },
+    {
+      "id": "ba_dao",
+      "name": "Bá Đao Trảm",
+      "source": "weapon",
+      "unlock": "Đao",
+      "type": "Chém bán nguyệt cận chiến, đẩy lùi",
+      "desc": "Chém một đường bán nguyệt rộng trước mặt, sát thương lớn, đẩy lùi quái.",
+      "icon": "ba_dao.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "160%",
+          "cooldown": "1,6s",
+          "effect": "Cung chém 120°, tầm 90px, đẩy lùi nhẹ"
+        },
+        {
+          "level": 2,
+          "damage": "190%",
+          "cooldown": "1,6s",
+          "effect": "Tầm 105px"
+        },
+        {
+          "level": 3,
+          "damage": "220%",
+          "cooldown": "1,5s",
+          "effect": "Cung chém 160°; quái dưới 20% máu nhận gấp đôi sát thương"
+        },
+        {
+          "level": 4,
+          "damage": "255%",
+          "cooldown": "1,5s",
+          "effect": "Tầm 120px"
+        },
+        {
+          "level": 5,
+          "damage": "290%",
+          "cooldown": "1,4s",
+          "effect": "Chém 2 nhát (trước rồi sau); mỗi quái bị hạ +2% sát thương Bá Đao trong 5s (tối đa 10 tầng)"
+        }
+      ],
+      "passive": "sat_phat",
+      "awaken": {
+        "name": "Tu La Bá Đao",
+        "damage": "400%",
+        "effect": "Chém 360° quanh thân và phóng đao khí bay 300px xuyên mọi mục tiêu (60% sát thương). Hành quyết quái thường dưới 15% máu; cộng dồn tối đa 20 tầng.",
+        "icon": "ba_dao_aw.png"
+      }
+    },
+    {
+      "id": "pha_thuong",
+      "name": "Phá Trận Thương",
+      "source": "weapon",
+      "unlock": "Thương",
+      "type": "Đâm thẳng tầm dài, xuyên cả hàng",
+      "desc": "Đâm thẳng theo hướng di chuyển, xuyên mọi kẻ địch trên đường thương.",
+      "icon": "pha_thuong.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "130%",
+          "cooldown": "1,4s",
+          "effect": "Dài 140px, rộng 24px"
+        },
+        {
+          "level": 2,
+          "damage": "155%",
+          "cooldown": "1,4s",
+          "effect": "Dài 165px"
+        },
+        {
+          "level": 3,
+          "damage": "180%",
+          "cooldown": "1,3s",
+          "effect": "Đâm 2 lần liên tiếp; 30% cuối mũi thương gây +50%"
+        },
+        {
+          "level": 4,
+          "damage": "210%",
+          "cooldown": "1,3s",
+          "effect": "Dài 190px, rộng 32px"
+        },
+        {
+          "level": 5,
+          "damage": "240%",
+          "cooldown": "1,2s",
+          "effect": "Đâm 3 lần; lần cuối hất tung, choáng 0,5s"
+        }
+      ],
+      "passive": "tieu_dao",
+      "awaken": {
+        "name": "Du Long Phá Trận",
+        "damage": "340%",
+        "effect": "Nhân vật lướt theo mũi thương 120px, miễn sát thương khi lướt, để lại vệt long khí 2s gây 80%/giây. Mỗi 1% tốc chạy cộng thêm cho +1% sát thương thương.",
+        "icon": "pha_thuong_aw.png"
+      }
+    },
+    {
+      "id": "bang_quyen",
+      "name": "Băng Sơn Quyền",
+      "source": "weapon",
+      "unlock": "Quyền sáo",
+      "type": "Liên hoàn cận thân, tốc độ cao",
+      "desc": "Đấm liên hoàn cực nhanh ở cự ly gần; đòn thứ 3 tạo chấn động vùng nhỏ.",
+      "icon": "bang_quyen.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "60%",
+          "cooldown": "0,5s",
+          "effect": "Tầm 60px; đòn thứ 3 chấn động 150%"
+        },
+        {
+          "level": 2,
+          "damage": "72%",
+          "cooldown": "0,5s",
+          "effect": "Tầm 70px"
+        },
+        {
+          "level": 3,
+          "damage": "84%",
+          "cooldown": "0,45s",
+          "effect": "Chấn động gây choáng 0,4s; mỗi đòn trúng +1 Giáp trong 2s (tối đa 5)"
+        },
+        {
+          "level": 4,
+          "damage": "98%",
+          "cooldown": "0,45s",
+          "effect": "Chấn động 200%"
+        },
+        {
+          "level": 5,
+          "damage": "112%",
+          "cooldown": "0,4s",
+          "effect": "Chấn động ở mỗi đòn thứ 2; hút 1% máu từ sát thương chấn động"
+        }
+      ],
+      "passive": "ba_the",
+      "awaken": {
+        "name": "Băng Sơn Liệt Địa",
+        "damage": "160%",
+        "effect": "Chấn động xé đất thành 3 vết nứt lan 200px. Mỗi đòn gây thêm sát thương bằng 2% HP tối đa; khi máu dưới 50%, tốc đánh quyền +30%.",
+        "icon": "bang_quyen_aw.png"
+      }
+    },
+    {
+      "id": "truy_tien",
+      "name": "Truy Tinh Tiễn",
+      "source": "weapon",
+      "unlock": "Cung",
+      "type": "Bắn xa đơn mục tiêu",
+      "desc": "Bắn tên tầm xa vào kẻ địch gần nhất; càng xa càng đau.",
+      "icon": "truy_tien.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "110%",
+          "cooldown": "1,0s",
+          "effect": "1 mũi tên, tầm 420px"
+        },
+        {
+          "level": 2,
+          "damage": "130%",
+          "cooldown": "1,0s",
+          "effect": "2 mũi tên bắn liên tiếp"
+        },
+        {
+          "level": 3,
+          "damage": "150%",
+          "cooldown": "0,95s",
+          "effect": "Tên xuyên 1 mục tiêu; +30% lên mục tiêu xa hơn 250px"
+        },
+        {
+          "level": 4,
+          "damage": "175%",
+          "cooldown": "0,95s",
+          "effect": "3 mũi tên"
+        },
+        {
+          "level": 5,
+          "damage": "200%",
+          "cooldown": "0,9s",
+          "effect": "Tên nảy sang 2 mục tiêu kế; mỗi mũi thứ 5 là tinh tiễn nổ vùng 150%"
+        }
+      ],
+      "passive": "tat_phong",
+      "awaken": {
+        "name": "Lạc Tinh Thần Tiễn",
+        "damage": "280%",
+        "effect": "5 mũi tên tỏa hình quạt, mũi nào cũng là tinh tiễn nổ. Cứ 10 lần bắn gọi 1 sao băng 600% rơi vào cụm địch đông nhất.",
+        "icon": "truy_tien_aw.png"
+      }
+    },
+    {
+      "id": "thanh_phien",
+      "name": "Thanh Phong Phiến",
+      "source": "weapon",
+      "unlock": "Phiến",
+      "type": "Phong nhận hình nón, khống chế",
+      "desc": "Quạt ra chùm phong nhận hình nón, làm chậm kẻ địch trúng đòn.",
+      "icon": "thanh_phien.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "70%",
+          "cooldown": "1,1s",
+          "effect": "3 phong nhận, nón 60°; làm chậm 15% trong 1,5s"
+        },
+        {
+          "level": 2,
+          "damage": "84%",
+          "cooldown": "1,1s",
+          "effect": "4 phong nhận"
+        },
+        {
+          "level": 3,
+          "damage": "98%",
+          "cooldown": "1,0s",
+          "effect": "5 phong nhận, nón 90°; phong nhận bay vòng về, trúng lần 2"
+        },
+        {
+          "level": 4,
+          "damage": "114%",
+          "cooldown": "1,0s",
+          "effect": "Làm chậm 25%"
+        },
+        {
+          "level": 5,
+          "damage": "130%",
+          "cooldown": "0,95s",
+          "effect": "7 phong nhận; quái bị chậm nhận +15% sát thương từ mọi nguồn"
+        }
+      ],
+      "passive": "tat_phong",
+      "awaken": {
+        "name": "Cửu Thiên Cuồng Phong",
+        "damage": "190%",
+        "effect": "Quạt 360° ra 12 phong nhận. Mỗi 4 lần quạt sinh 1 lốc xoáy tồn tại 4s, tự đuổi địch, hút nhẹ và gây 120%/giây.",
+        "icon": "thanh_phien_aw.png"
+      }
+    },
+    {
+      "id": "ho_khieu",
+      "name": "Hổ Khiếu Chấn",
+      "source": "realm",
+      "unlock": "Luyện Thể",
+      "type": "Sóng chấn quanh thân, đẩy lùi",
+      "desc": "Gầm một tiếng hổ khiếu, phát sóng chấn quanh thân đẩy lùi quái.",
+      "icon": "ho_khieu.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "120%",
+          "cooldown": "6s",
+          "effect": "Bán kính 110px, đẩy lùi"
+        },
+        {
+          "level": 2,
+          "damage": "145%",
+          "cooldown": "6s",
+          "effect": "Bán kính 125px"
+        },
+        {
+          "level": 3,
+          "damage": "170%",
+          "cooldown": "5,5s",
+          "effect": "Gắn Chấn Nhiếp: quái gây −20% sát thương trong 3s"
+        },
+        {
+          "level": 4,
+          "damage": "200%",
+          "cooldown": "5,5s",
+          "effect": "Bán kính 140px"
+        },
+        {
+          "level": 5,
+          "damage": "230%",
+          "cooldown": "5s",
+          "effect": "Phát 2 đợt sóng; đợt 2 choáng 0,8s"
+        }
+      ],
+      "passive": "ba_the",
+      "awaken": {
+        "name": "Bạch Hổ Phá Quân",
+        "damage": "350%",
+        "effect": "Hư ảnh Bạch Hổ vồ vào cụm địch đông nhất trước khi phát sóng. Sóng chấn gây thêm sát thương bằng 4% HP tối đa; Chấn Nhiếp lên −35%.",
+        "icon": "ho_khieu_aw.png"
+      }
+    },
+    {
+      "id": "linh_dan",
+      "name": "Linh Khí Đạn",
+      "source": "realm",
+      "unlock": "Luyện Khí",
+      "type": "Đạn truy đuổi",
+      "desc": "Ngưng linh khí thành đạn tự tìm mục tiêu.",
+      "icon": "linh_dan.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "80%",
+          "cooldown": "2,0s",
+          "effect": "2 đạn truy đuổi"
+        },
+        {
+          "level": 2,
+          "damage": "96%",
+          "cooldown": "2,0s",
+          "effect": "3 đạn"
+        },
+        {
+          "level": 3,
+          "damage": "112%",
+          "cooldown": "1,8s",
+          "effect": "Đạn nổ vùng nhỏ 60px"
+        },
+        {
+          "level": 4,
+          "damage": "130%",
+          "cooldown": "1,8s",
+          "effect": "4 đạn"
+        },
+        {
+          "level": 5,
+          "damage": "150%",
+          "cooldown": "1,6s",
+          "effect": "6 đạn; hạ quái bằng đạn có 20% rơi thêm 1 linh châu kinh nghiệm"
+        }
+      ],
+      "passive": "tu_linh",
+      "awaken": {
+        "name": "Vạn Linh Triều Nguyên",
+        "damage": "210%",
+        "effect": "9 đạn mỗi lượt. Mỗi viên kinh nghiệm nhặt được nạp 1 điểm linh khí (tối đa 30); lượt bắn kế tiêu hết, mỗi điểm thêm 1 đạn nhỏ 40%.",
+        "icon": "linh_dan_aw.png"
+      }
+    },
+    {
+      "id": "hoa_phu",
+      "name": "Liệt Hỏa Phù",
+      "source": "realm",
+      "unlock": "Trúc Cơ",
+      "type": "Ném nổ vùng, thiêu đốt",
+      "desc": "Ném hỏa phù vào cụm địch, nổ và thiêu đốt.",
+      "icon": "hoa_phu.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "140%",
+          "cooldown": "4,5s",
+          "effect": "1 bùa, nổ bán kính 70px; thiêu đốt 20%/giây trong 3s"
+        },
+        {
+          "level": 2,
+          "damage": "165%",
+          "cooldown": "4,5s",
+          "effect": "2 bùa"
+        },
+        {
+          "level": 3,
+          "damage": "190%",
+          "cooldown": "4,2s",
+          "effect": "Để lại biển lửa 3s gây 40%/giây"
+        },
+        {
+          "level": 4,
+          "damage": "220%",
+          "cooldown": "4,2s",
+          "effect": "3 bùa, bán kính 85px"
+        },
+        {
+          "level": 5,
+          "damage": "250%",
+          "cooldown": "3,8s",
+          "effect": "Quái chết khi đang cháy sẽ nổ lan 80% (bán kính 50px)"
+        }
+      ],
+      "passive": "ngu_hanh",
+      "awaken": {
+        "name": "Phần Thiên Hỏa Phù",
+        "damage": "360%",
+        "effect": "5 bùa rơi thành vòng quanh thân, biển lửa nối thành tường lửa 6s. Thiêu đốt cộng dồn 3 tầng và không tắt khi quái còn đứng trong lửa.",
+        "icon": "hoa_phu_aw.png"
+      }
+    },
+    {
+      "id": "kim_dan",
+      "name": "Kim Đan Hộ Luân",
+      "source": "realm",
+      "unlock": "Kim Đan",
+      "type": "Vật thể xoay quanh thân",
+      "desc": "Kim đan hóa thành các viên đan xoay quanh thân, va vào quái gây sát thương.",
+      "icon": "kim_dan.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "50%/lần chạm",
+          "cooldown": "bật 5s, nghỉ 3s",
+          "effect": "2 viên đan, quỹ đạo 80px"
+        },
+        {
+          "level": 2,
+          "damage": "60%/lần chạm",
+          "cooldown": "bật 5s, nghỉ 3s",
+          "effect": "3 viên đan"
+        },
+        {
+          "level": 3,
+          "damage": "70%/lần chạm",
+          "cooldown": "bật 6s, nghỉ 2,5s",
+          "effect": "Đan chặn được đạn thường của địch"
+        },
+        {
+          "level": 4,
+          "damage": "82%/lần chạm",
+          "cooldown": "bật 6s, nghỉ 2,5s",
+          "effect": "4 viên đan, quỹ đạo 95px"
+        },
+        {
+          "level": 5,
+          "damage": "95%/lần chạm",
+          "cooldown": "luôn bật",
+          "effect": "5 viên đan; mỗi lần chạm hồi 0,2% HP tối đa (trần 2%/giây)"
+        }
+      ],
+      "passive": "truong_sinh",
+      "awaken": {
+        "name": "Cửu Chuyển Kim Đan",
+        "damage": "140%/lần chạm",
+        "effect": "9 viên đan chia 2 vòng quay ngược chiều (80px và 140px). Mỗi 9 lần chạm, 1 viên phóng ra nổ 300%; lượng hồi máu từ đan gấp đôi.",
+        "icon": "kim_dan_aw.png"
+      }
+    },
+    {
+      "id": "nguyen_anh",
+      "name": "Nguyên Anh Xuất Khiếu",
+      "source": "realm",
+      "unlock": "Nguyên Anh",
+      "type": "Triệu hồi",
+      "desc": "Nguyên anh rời thân, tự bay quanh và bắn linh quang vào kẻ địch.",
+      "icon": "nguyen_anh.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "70%/phát",
+          "cooldown": "12s (tồn tại 6s)",
+          "effect": "1 nguyên anh, bắn 1 phát/giây"
+        },
+        {
+          "level": 2,
+          "damage": "84%/phát",
+          "cooldown": "12s (tồn tại 7s)",
+          "effect": "Tồn tại lâu hơn"
+        },
+        {
+          "level": 3,
+          "damage": "98%/phát",
+          "cooldown": "11s (tồn tại 7s)",
+          "effect": "Nguyên anh dùng lại kỹ năng vũ khí của bạn với 40% sát thương"
+        },
+        {
+          "level": 4,
+          "damage": "115%/phát",
+          "cooldown": "11s (tồn tại 8s)",
+          "effect": "Bắn 1,5 phát/giây"
+        },
+        {
+          "level": 5,
+          "damage": "130%/phát",
+          "cooldown": "10s (tồn tại 8s)",
+          "effect": "2 nguyên anh; kế thừa kỹ năng vũ khí 60%"
+        }
+      ],
+      "passive": "than_hon",
+      "awaken": {
+        "name": "Thân Ngoại Hóa Thân",
+        "damage": "200%/phát",
+        "effect": "Nguyên anh tồn tại vĩnh viễn, kế thừa 100% kỹ năng vũ khí và tỉ lệ bạo kích. Khi bạn nhận đòn chí tử, nguyên anh hy sinh thay và hồi 30% máu (60s một lần).",
+        "icon": "nguyen_anh_aw.png"
+      }
+    },
+    {
+      "id": "than_thuc",
+      "name": "Thần Thức Trảm",
+      "source": "realm",
+      "unlock": "Hóa Thần",
+      "type": "Đơn mục tiêu, bỏ qua giáp",
+      "desc": "Lưỡi thần thức vô hình chém kẻ địch nhiều máu nhất, bỏ qua giáp.",
+      "icon": "than_thuc.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "300%",
+          "cooldown": "5s",
+          "effect": "1 mục tiêu máu cao nhất trong 400px"
+        },
+        {
+          "level": 2,
+          "damage": "360%",
+          "cooldown": "5s",
+          "effect": "Choáng 0,5s (boss: chậm 30%)"
+        },
+        {
+          "level": 3,
+          "damage": "420%",
+          "cooldown": "4,6s",
+          "effect": "Chém 2 mục tiêu; +50% lên tinh anh và boss"
+        },
+        {
+          "level": 4,
+          "damage": "490%",
+          "cooldown": "4,6s",
+          "effect": "Tầm toàn màn hình"
+        },
+        {
+          "level": 5,
+          "damage": "560%",
+          "cooldown": "4,2s",
+          "effect": "3 mục tiêu; gắn Thần Hồn Chấn Động (nhận +15% sát thương, 4s)"
+        }
+      ],
+      "passive": "than_hon",
+      "awaken": {
+        "name": "Trảm Thần Diệt Hồn",
+        "damage": "800%",
+        "effect": "Luôn bạo kích, gây thêm 3% máu hiện tại (boss 0,5%). Mục tiêu chết phát nổ hồn 200% lan 120px; Chấn Động lên +25%.",
+        "icon": "than_thuc_aw.png"
+      }
+    },
+    {
+      "id": "hu_khong",
+      "name": "Hư Không Liệt Phùng",
+      "source": "realm",
+      "unlock": "Luyện Hư",
+      "type": "Hút gom quái, sát thương theo giây",
+      "desc": "Xé một khe nứt không gian hút quái vào tâm và nghiền chúng.",
+      "icon": "hu_khong.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "60%/giây",
+          "cooldown": "9s (tồn tại 3s)",
+          "effect": "Hút trong bán kính 130px"
+        },
+        {
+          "level": 2,
+          "damage": "72%/giây",
+          "cooldown": "9s (tồn tại 3,5s)",
+          "effect": "Tồn tại lâu hơn"
+        },
+        {
+          "level": 3,
+          "damage": "85%/giây",
+          "cooldown": "8,5s (tồn tại 3,5s)",
+          "effect": "Khi khép lại nổ 200%"
+        },
+        {
+          "level": 4,
+          "damage": "100%/giây",
+          "cooldown": "8,5s (tồn tại 4s)",
+          "effect": "Bán kính 160px"
+        },
+        {
+          "level": 5,
+          "damage": "115%/giây",
+          "cooldown": "8s (tồn tại 4s)",
+          "effect": "2 khe nứt; hút cả vật phẩm và kinh nghiệm trong vùng về phía bạn"
+        }
+      ],
+      "passive": "tu_linh",
+      "awaken": {
+        "name": "Thôn Thiên Hư Động",
+        "damage": "180%/giây",
+        "effect": "Một hố đen bán kính 240px thay cho khe nứt, tồn tại 6s, lực hút gấp đôi. Mỗi quái thường chết trong hố +2% sát thương vụ nổ cuối 500% (tối đa +200%).",
+        "icon": "hu_khong_aw.png"
+      }
+    },
+    {
+      "id": "phap_tuong",
+      "name": "Pháp Tướng Thiên Địa",
+      "source": "realm",
+      "unlock": "Hợp Thể",
+      "type": "Đòn giáng vùng lớn, có trễ",
+      "desc": "Pháp tướng khổng lồ giáng một chưởng xuống cụm địch đông nhất.",
+      "icon": "phap_tuong.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "350%",
+          "cooldown": "8s",
+          "effect": "Bán kính 100px, rơi sau 0,6s"
+        },
+        {
+          "level": 2,
+          "damage": "420%",
+          "cooldown": "8s",
+          "effect": "Bán kính 115px"
+        },
+        {
+          "level": 3,
+          "damage": "490%",
+          "cooldown": "7,5s",
+          "effect": "Choáng 1s; để lại dấu chưởng 3s làm chậm 30%"
+        },
+        {
+          "level": 4,
+          "damage": "570%",
+          "cooldown": "7,5s",
+          "effect": "Bán kính 130px"
+        },
+        {
+          "level": 5,
+          "damage": "650%",
+          "cooldown": "7s",
+          "effect": "Giáng 2 chưởng (trái rồi phải); +30% lên quái đang choáng"
+        }
+      ],
+      "passive": "phap_thien",
+      "awaken": {
+        "name": "Thông Thiên Pháp Tướng",
+        "damage": "900%",
+        "effect": "Pháp tướng hiện sau lưng 8s: tự giáng chưởng mỗi 2s (bán kính 160px), giẫm chân mỗi 4s chấn toàn màn hình 150%. Trong lúc đó mọi kỹ năng +20% phạm vi.",
+        "icon": "phap_tuong_aw.png"
+      }
+    },
+    {
+      "id": "van_kiem",
+      "name": "Vạn Kiếm Quy Tông",
+      "source": "realm",
+      "unlock": "Đại Thừa",
+      "type": "Mưa đạn vùng rộng",
+      "desc": "Vạn kiếm từ trời rơi xuống vùng quanh nhân vật.",
+      "icon": "van_kiem.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "45%/kiếm",
+          "cooldown": "10s (kéo dài 3s)",
+          "effect": "12 kiếm rơi ngẫu nhiên trong bán kính 180px"
+        },
+        {
+          "level": 2,
+          "damage": "54%/kiếm",
+          "cooldown": "10s",
+          "effect": "16 kiếm"
+        },
+        {
+          "level": 3,
+          "damage": "63%/kiếm",
+          "cooldown": "9,5s",
+          "effect": "Kiếm cắm đất 2s; quái chạm vào chảy máu 15%/giây"
+        },
+        {
+          "level": 4,
+          "damage": "74%/kiếm",
+          "cooldown": "9,5s",
+          "effect": "22 kiếm, bán kính 210px"
+        },
+        {
+          "level": 5,
+          "damage": "85%/kiếm",
+          "cooldown": "9s",
+          "effect": "30 kiếm; kết bằng 1 cự kiếm 400% vào mục tiêu mạnh nhất"
+        }
+      ],
+      "passive": "kiem_tam",
+      "awaken": {
+        "name": "Tru Tiên Kiếm Trận",
+        "damage": "130%/kiếm",
+        "effect": "4 cự kiếm cắm 4 hướng dựng trận 6s (bán kính 260px), trong trận rơi 10 kiếm/giây. Bạo kích trong trận nổ kiếm khí 60%; quái không thể rời trận.",
+        "icon": "van_kiem_aw.png"
+      }
+    },
+    {
+      "id": "than_loi",
+      "name": "Cửu Tiêu Thần Lôi",
+      "source": "realm",
+      "unlock": "Độ Kiếp",
+      "type": "Sét lan chuỗi",
+      "desc": "Dẫn kiếp lôi đánh ngẫu nhiên, sét lan sang các quái lân cận.",
+      "icon": "than_loi.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "180%",
+          "cooldown": "5s",
+          "effect": "2 tia sét; mỗi tia lan 2 mục tiêu, mỗi lần lan −20%"
+        },
+        {
+          "level": 2,
+          "damage": "215%",
+          "cooldown": "5s",
+          "effect": "3 tia sét"
+        },
+        {
+          "level": 3,
+          "damage": "250%",
+          "cooldown": "4,6s",
+          "effect": "Lan 4 mục tiêu; tê liệt 0,5s"
+        },
+        {
+          "level": 4,
+          "damage": "290%",
+          "cooldown": "4,6s",
+          "effect": "4 tia sét"
+        },
+        {
+          "level": 5,
+          "damage": "330%",
+          "cooldown": "4,2s",
+          "effect": "6 tia sét; lan không giảm sát thương; 15% đánh thêm 1 tia"
+        }
+      ],
+      "passive": "thien_dao",
+      "awaken": {
+        "name": "Tử Tiêu Diệt Thế Lôi",
+        "damage": "480%",
+        "effect": "9 tia tử lôi. Mỗi 3 lần thi triển giáng 1 kiếp lôi 1500% vào mục tiêu máu cao nhất; mỗi 1% giảm hồi chiêu cho +1% sát thương sét.",
+        "icon": "than_loi_aw.png"
+      }
+    },
+    {
+      "id": "lien_hoa",
+      "name": "Tiên Nguyên Liên Hoa",
+      "source": "realm",
+      "unlock": "Chân Tiên",
+      "type": "Vùng hồi máu kiêm sát thương",
+      "desc": "Một đóa tiên liên nở dưới chân: hồi máu cho bạn, thiêu luyện quái trong vùng.",
+      "icon": "lien_hoa.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "50%/giây",
+          "cooldown": "14s (tồn tại 5s)",
+          "effect": "Bán kính 120px; đứng trong sen hồi 1% HP/giây"
+        },
+        {
+          "level": 2,
+          "damage": "60%/giây",
+          "cooldown": "14s",
+          "effect": "Hồi 1,3% HP/giây"
+        },
+        {
+          "level": 3,
+          "damage": "70%/giây",
+          "cooldown": "13s",
+          "effect": "Xóa hiệu ứng xấu; quái trong sen bị chậm 20%"
+        },
+        {
+          "level": 4,
+          "damage": "82%/giây",
+          "cooldown": "13s (tồn tại 6s)",
+          "effect": "Bán kính 145px"
+        },
+        {
+          "level": 5,
+          "damage": "95%/giây",
+          "cooldown": "12s (tồn tại 6s)",
+          "effect": "Hồi 2% HP/giây; máu hồi dư thành khiên (tối đa 20% HP)"
+        }
+      ],
+      "passive": "truong_sinh",
+      "awaken": {
+        "name": "Cửu Phẩm Tịnh Thế Liên",
+        "damage": "150%/giây",
+        "effect": "Sen đi theo nhân vật, tồn tại 8s; khi tàn bắn 9 cánh sen 250%. Khiên tối đa 40% HP; 30% lượng máu hồi chuyển thành sát thương cộng thêm.",
+        "icon": "lien_hoa_aw.png"
+      }
+    },
+    {
+      "id": "ngan_ha",
+      "name": "Ngân Hà Hàn Lưu",
+      "source": "realm",
+      "unlock": "Thiên Tiên",
+      "type": "Luồng quét xoay, đóng băng",
+      "desc": "Dẫn một luồng hàn lưu ngân hà quét tròn quanh thân.",
+      "icon": "ngan_ha.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "90%/lần quét",
+          "cooldown": "7s (1 vòng 2s)",
+          "effect": "1 luồng dài 200px; làm chậm 30% trong 2s"
+        },
+        {
+          "level": 2,
+          "damage": "108%/lần quét",
+          "cooldown": "7s",
+          "effect": "Dài 230px"
+        },
+        {
+          "level": 3,
+          "damage": "126%/lần quét",
+          "cooldown": "6,5s",
+          "effect": "2 luồng đối xứng; trúng 3 lần thì đóng băng 1,5s"
+        },
+        {
+          "level": 4,
+          "damage": "147%/lần quét",
+          "cooldown": "6,5s (2 vòng)",
+          "effect": "Quay 2 vòng mỗi lần thi triển"
+        },
+        {
+          "level": 5,
+          "damage": "168%/lần quét",
+          "cooldown": "6s (2 vòng)",
+          "effect": "3 luồng; quái đóng băng bị vỡ gây 150% lan"
+        }
+      ],
+      "passive": "ngu_hanh",
+      "awaken": {
+        "name": "Thiên Hà Băng Phong",
+        "damage": "250%/lần quét",
+        "effect": "4 luồng dài 300px quay liên tục không nghỉ. Đóng băng sau 2 lần trúng, kéo dài 2,5s; quái thường dưới 25% máu đang đóng băng vỡ tan ngay.",
+        "icon": "ngan_ha_aw.png"
+      }
+    },
+    {
+      "id": "hoang_chung",
+      "name": "Huyền Hoàng Chung",
+      "source": "realm",
+      "unlock": "Huyền Tiên",
+      "type": "Khiên hộ thể, phản công",
+      "desc": "Chuông Huyền Hoàng úp lên thân làm khiên; khi vỡ hoặc hết giờ phát sóng âm.",
+      "icon": "hoang_chung.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "250% (sóng âm)",
+          "cooldown": "16s (tồn tại 5s)",
+          "effect": "Khiên hấp thụ 15% HP tối đa"
+        },
+        {
+          "level": 2,
+          "damage": "300%",
+          "cooldown": "16s",
+          "effect": "Khiên 20% HP"
+        },
+        {
+          "level": 3,
+          "damage": "350%",
+          "cooldown": "15s",
+          "effect": "Phản 30% sát thương cận chiến; sóng âm đẩy lùi mạnh"
+        },
+        {
+          "level": 4,
+          "damage": "410%",
+          "cooldown": "15s (tồn tại 6s)",
+          "effect": "Khiên 25% HP"
+        },
+        {
+          "level": 5,
+          "damage": "470%",
+          "cooldown": "14s (tồn tại 6s)",
+          "effect": "Khiên 30% HP; sóng âm xóa đạn địch và choáng 1,2s"
+        }
+      ],
+      "passive": "huyen_vu",
+      "awaken": {
+        "name": "Hỗn Độn Thần Chung",
+        "damage": "700%",
+        "effect": "Khiên 50% HP cộng thêm 10 lần Giáp. Chuông ngân 3 hồi, mỗi 2s một sóng âm 250%; phản 60%; khi vỡ hoàn lại 50% hồi chiêu.",
+        "icon": "hoang_chung_aw.png"
+      }
+    },
+    {
+      "id": "kim_than",
+      "name": "Bất Diệt Kim Thân",
+      "source": "realm",
+      "unlock": "Kim Tiên",
+      "type": "Biến thân cường hóa",
+      "desc": "Hóa kim thân: tăng sát thương, giảm sát thương nhận, kim quang đốt quái quanh thân.",
+      "icon": "kim_than.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "40%/giây",
+          "cooldown": "20s (tồn tại 6s)",
+          "effect": "Kim quang 90px; +15% sát thương, −20% sát thương nhận"
+        },
+        {
+          "level": 2,
+          "damage": "48%/giây",
+          "cooldown": "20s",
+          "effect": "+20% sát thương, −25% sát thương nhận"
+        },
+        {
+          "level": 3,
+          "damage": "56%/giây",
+          "cooldown": "19s",
+          "effect": "Miễn khống chế; miễn sát thương 1s đầu"
+        },
+        {
+          "level": 4,
+          "damage": "66%/giây",
+          "cooldown": "19s (tồn tại 7s)",
+          "effect": "+25% sát thương, −30% sát thương nhận"
+        },
+        {
+          "level": 5,
+          "damage": "76%/giây",
+          "cooldown": "18s (tồn tại 7s)",
+          "effect": "+30% / −35%; miễn sát thương 2s đầu; kim quang 120px"
+        }
+      ],
+      "passive": "huyen_vu",
+      "awaken": {
+        "name": "Vạn Kiếp Bất Diệt Thân",
+        "damage": "150%/giây",
+        "effect": "Tồn tại 10s, +50% sát thương, −50% sát thương nhận. Kim quang gây thêm 5 lần Giáp mỗi giây; một lần mỗi trận, chết khi có kim thân sẽ hồi sinh 50% máu.",
+        "icon": "kim_than_aw.png"
+      }
+    },
+    {
+      "id": "linh_vuc",
+      "name": "Tiên Vương Lĩnh Vực",
+      "source": "realm",
+      "unlock": "Tiên Vương",
+      "type": "Hào quang suy yếu",
+      "desc": "Mở lĩnh vực quanh thân: quái bước vào bị chậm, yếu đi và bị bào mòn.",
+      "icon": "linh_vuc.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "35%/giây",
+          "cooldown": "luôn bật",
+          "effect": "Bán kính 150px; quái chậm 15%, nhận +10% sát thương"
+        },
+        {
+          "level": 2,
+          "damage": "42%/giây",
+          "cooldown": "luôn bật",
+          "effect": "Bán kính 165px"
+        },
+        {
+          "level": 3,
+          "damage": "50%/giây",
+          "cooldown": "luôn bật",
+          "effect": "Nhận +18% sát thương; quái trong vùng gây −15% sát thương"
+        },
+        {
+          "level": 4,
+          "damage": "58%/giây",
+          "cooldown": "luôn bật",
+          "effect": "Bán kính 185px; chậm 25%"
+        },
+        {
+          "level": 5,
+          "damage": "68%/giây",
+          "cooldown": "luôn bật",
+          "effect": "Nhận +25%; mỗi quái hạ trong vùng +1% sát thương (tối đa 30%, tan sau 5s không hạ quái)"
+        }
+      ],
+      "passive": "sat_phat",
+      "awaken": {
+        "name": "Sát Lục Đế Vực",
+        "damage": "120%/giây",
+        "effect": "Bán kính 240px, quái nhận +40% sát thương. Cộng dồn tới 60% và không tan; mỗi 10 quái hạ trong vực phóng 1 huyết kiếm 500% vào tinh anh hoặc boss gần nhất.",
+        "icon": "linh_vuc_aw.png"
+      }
+    },
+    {
+      "id": "de_an",
+      "name": "Đế Ấn Trấn Thiên",
+      "source": "realm",
+      "unlock": "Tiên Đế",
+      "type": "Đòn giáng cực mạnh, hành quyết",
+      "desc": "Đế ấn khổng lồ từ trời giáng xuống trấn áp một vùng.",
+      "icon": "de_an.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "900%",
+          "cooldown": "18s",
+          "effect": "Bán kính 170px, rơi sau 1s; hành quyết quái thường dưới 20% máu"
+        },
+        {
+          "level": 2,
+          "damage": "1080%",
+          "cooldown": "18s",
+          "effect": "Bán kính 185px"
+        },
+        {
+          "level": 3,
+          "damage": "1260%",
+          "cooldown": "17s",
+          "effect": "Choáng 1,5s; hành quyết 25%; boss nhận +30%"
+        },
+        {
+          "level": 4,
+          "damage": "1470%",
+          "cooldown": "17s",
+          "effect": "Bán kính 205px"
+        },
+        {
+          "level": 5,
+          "damage": "1700%",
+          "cooldown": "16s",
+          "effect": "2 ấn (ấn sau 60%); vùng trấn áp 4s: quái chậm 50%, không hồi máu"
+        }
+      ],
+      "passive": "phap_thien",
+      "awaken": {
+        "name": "Cửu Long Đế Tỉ",
+        "damage": "2600%",
+        "effect": "Ấn che 60% màn hình; 9 kim long bay ra đuổi 9 mục tiêu, mỗi long 400%. Hành quyết quái thường dưới 35% và tinh anh dưới 10%; trấn áp 8s.",
+        "icon": "de_an_aw.png"
+      }
+    },
+    {
+      "id": "dai_dao",
+      "name": "Đại Đạo Quy Nhất",
+      "source": "realm",
+      "unlock": "Đạo Tổ",
+      "type": "Tuyệt kỹ toàn màn hình",
+      "desc": "Ngưng đọng thời gian rồi quy mọi đạo về một điểm, nổ toàn màn hình.",
+      "icon": "dai_dao.png",
+      "levels": [
+        {
+          "level": 1,
+          "damage": "1500%",
+          "cooldown": "45s",
+          "effect": "Ngưng đọng thời gian 2s rồi nổ toàn màn hình"
+        },
+        {
+          "level": 2,
+          "damage": "1800%",
+          "cooldown": "45s",
+          "effect": "Ngưng đọng 2,5s"
+        },
+        {
+          "level": 3,
+          "damage": "2100%",
+          "cooldown": "42s",
+          "effect": "Sát thương bạn gây trong lúc ngưng đọng được tích lại, nổ thêm 50% khi kết thúc"
+        },
+        {
+          "level": 4,
+          "damage": "2450%",
+          "cooldown": "42s",
+          "effect": "Ngưng đọng 3s"
+        },
+        {
+          "level": 5,
+          "damage": "2800%",
+          "cooldown": "40s",
+          "effect": "Tích 100%; sau vụ nổ mọi kỹ năng khác hồi chiêu ngay"
+        }
+      ],
+      "passive": "thien_dao",
+      "awaken": {
+        "name": "Hỗn Nguyên Đại Đạo Lô",
+        "damage": "4500%",
+        "effect": "Mở Đại Đạo Lô luyện hóa toàn màn hình 5s: quái thường hóa thành linh thạch và kinh nghiệm, boss mất 8% máu tối đa. Sau đó 10s mọi kỹ năng −50% hồi chiêu.",
+        "icon": "dai_dao_aw.png"
+      }
+    }
+  ]
+}

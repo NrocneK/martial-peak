@@ -43,6 +43,16 @@ export class EnemyManager {
   slowBonus = 1;
   /** Hook khi quái bị hạ (bí bảo) */
   onKillHook: ((e: Enemy) => void) | null = null;
+  /** Các kỹ năng lắng nghe sự kiện quái bị hạ (nổ lan, cộng tầng...) */
+  readonly killListeners: ((e: Enemy) => void)[] = [];
+  /** Hệ số sát thương bạo kích (2 = gấp đôi) */
+  critMul = 2;
+  /** Quái đang bị chậm nhận thêm sát thương từ mọi nguồn (Thanh Phong Phiến cấp 5) */
+  slowVuln = 0;
+  /** Ngưng đọng thời gian (Đại Đạo Quy Nhất): quái + đạn quái đứng im */
+  timeStop = 0;
+  /** Tổng sát thương người chơi đã gây (Đại Đạo tích sát thương lúc ngưng đọng) */
+  dealt = 0;
 
   // Các hệ thống phụ thuộc lẫn nhau → gán sau khi tạo (setLinks)
   proj!: Projectiles;
@@ -102,6 +112,7 @@ export class EnemyManager {
     e.flash = 0;
     e.phase = Math.random() * 6.28;
     e.tick.fill(0);
+    this.resetStatus(e);
     const sz = (b.r * 2) / 58;
     e.img
       .setTexture(TEX.SHAPE + b.shape)
@@ -138,6 +149,7 @@ export class EnemyManager {
     e.fuse = -1;
     e.flash = 0;
     e.tick.fill(0);
+    this.resetStatus(e);
     e.img
       .setTexture(TEX.SHAPE + 'hex')
       .setTint(def.color)
@@ -190,22 +202,55 @@ export class EnemyManager {
   }
 
   // ------------------------------------------------------------------ sát thương
-  /** slow: 0..1 (1 = đứng yên); slowTime: số giây khống chế */
+  /** Xóa mọi trạng thái do kỹ năng gây ra (khi quái được tái sử dụng) */
+  private resetStatus(e: Enemy): void {
+    e.burnT = e.burnDps = e.burnStacks = e.bleedT = e.bleedDps = e.dotTick = 0;
+    e.markKiem = e.markKiemT = e.shockAmt = e.shockT = e.weakAmt = e.weakT = 0;
+    e.domainT = e.domainVuln = e.domainWeak = e.suppressT = e.chillHits = e.chillT = e.frozenT = 0;
+    e.lastSrc = '';
+  }
+
+  /** Hệ số sát thương quái nhận (dấu ấn, lĩnh vực, bị chậm...) */
+  vulnOf(e: Enemy): number {
+    return 1 + e.markKiem * 0.1 + (e.shockT > 0 ? e.shockAmt : 0) + (e.domainT > 0 ? e.domainVuln : 0) + (e.slow > 0 ? this.slowVuln : 0);
+  }
+
+  /** Hệ số sát thương quái gây ra (Chấn Nhiếp, lĩnh vực) */
+  dmgOutOf(e: Enemy): number {
+    return 1 - Math.max(e.weakT > 0 ? e.weakAmt : 0, e.domainT > 0 ? e.domainWeak : 0);
+  }
+
+  /** Sát thương cũ (bí bảo, đạn đơn giản): tự tung bạo kích */
   hurt(e: Enemy, raw: number, slow = 0, noText = false, slowTime = 2): void {
-    if (!e.active) return;
-    let dmg = raw * (e.slow > 0 ? this.slowBonus : 1);
-    const crit = Math.random() < this.crit;
-    if (crit) dmg *= 2;
+    this.strike(e, raw * (e.slow > 0 ? this.slowBonus : 1), { slow, slowTime, noText });
+  }
+
+  /**
+   * Gây sát thương lên quái. amount = sát thương gốc (đã nhân lực đánh). Trả về sát thương thực gây ra.
+   * crit: undefined = tung theo tỉ lệ bạo kích; true = luôn bạo kích; false = không bạo kích.
+   * slow: 0..1 (1 = đứng yên / choáng); boss chỉ nhận một nửa (BossAI).
+   */
+  strike(e: Enemy, amount: number, o: { crit?: boolean; slow?: number; slowTime?: number; noText?: boolean; src?: string } = {}): number {
+    if (!e.active) return 0;
+    let dmg = amount * this.vulnOf(e);
+    const crit = o.crit ?? Math.random() < this.crit;
+    if (crit) dmg *= this.critMul;
     e.hp -= dmg;
+    this.dealt += dmg;
     e.flash = 0.08;
-    if (slow > 0) {
-      // khống chế mạnh hơn thì thay; cùng mức thì giữ thời gian dài hơn
-      if (slow >= e.slow) e.slowT = slow > e.slow ? slowTime : Math.max(e.slowT, slowTime);
-      e.slow = Math.max(e.slow, slow);
-    }
-    if (!noText) this.texts.show(e.x, e.y - e.r, fmt(dmg), crit ? '#ffd24a' : '#ffffff', crit ? 18 : 14);
+    if (o.src) e.lastSrc = o.src;
+    const slow = o.slow ?? 0;
+    if (slow > 0) this.applySlow(e, slow, o.slowTime ?? 2);
+    if (!o.noText) this.texts.show(e.x, e.y - e.r, fmt(dmg), crit ? '#ffd24a' : '#ffffff', crit ? 18 : 14);
     audio.play('hit');
     if (e.hp <= 0) this.kill(e, true);
+    return dmg;
+  }
+
+  /** Làm chậm / choáng: khống chế mạnh hơn thì thay; cùng mức giữ thời gian dài hơn */
+  applySlow(e: Enemy, slow: number, time: number): void {
+    if (slow >= e.slow) e.slowT = slow > e.slow ? time : Math.max(e.slowT, time);
+    e.slow = Math.max(e.slow, slow);
   }
 
   kill(e: Enemy, drops: boolean): void {
@@ -216,6 +261,7 @@ export class EnemyManager {
     if (drops) {
       this.run.kills++;
       this.onKillHook?.(e);
+      for (const f of this.killListeners) f(e);
       this.pickups.spawn('xp', e.x, e.y, e.xp);
       const isElite = e.behavior === 'elite' && !e.isBoss;
       if (e.isBoss) {
@@ -252,7 +298,9 @@ export class EnemyManager {
     this.grid.clear();
     for (const e of this.list) if (e.active) this.grid.insert(e);
 
-    if (this.bossAI) this.bossAI.update(dt);
+    const frozen = this.timeStop > 0;
+    if (frozen) this.timeStop -= dt;
+    if (this.bossAI && !frozen) this.bossAI.update(dt);
 
     const px = pl.x;
     const py = pl.y;
@@ -263,6 +311,12 @@ export class EnemyManager {
       if (e.slowT > 0) {
         e.slowT -= dt;
         if (e.slowT <= 0) e.slow = 0;
+      }
+      this.updateStatus(e, dt);
+      if (!e.active) continue;
+      if (frozen) {
+        e.img.setPosition(e.x, e.y).setTint(0xb8b0ff);
+        continue;
       }
       const dx = px - e.x;
       const dy = py - e.y;
@@ -290,7 +344,10 @@ export class EnemyManager {
 
       // Chạm người chơi
       const rr = e.r + pl.r * 0.8;
-      if (e.behavior !== 'exploder' && dist < rr) pl.takeDamage(e.dmg);
+      if (e.behavior !== 'exploder' && dist < rr) {
+        const got = pl.takeDamage(e.dmg * this.dmgOutOf(e));
+        if (got > 0 && pl.reflect > 0) this.strike(e, got * pl.reflect, { crit: false, src: 'reflect' });   // phản sát thương cận chiến
+      }
 
       e.img.setPosition(e.x, e.y);
       if (e.flash > 0) {
@@ -301,6 +358,28 @@ export class EnemyManager {
       } else {
         e.img.setTint(e.color);
       }
+    }
+  }
+
+  /** Đếm ngược trạng thái + sát thương theo thời gian (đốt, chảy máu) mỗi 0.5 giây */
+  private updateStatus(e: Enemy, dt: number): void {
+    if (e.markKiemT > 0 && (e.markKiemT -= dt) <= 0) e.markKiem = 0;
+    if (e.shockT > 0) e.shockT -= dt;
+    if (e.weakT > 0) e.weakT -= dt;
+    if (e.domainT > 0) e.domainT -= dt;
+    if (e.suppressT > 0) e.suppressT -= dt;
+    if (e.chillT > 0 && (e.chillT -= dt) <= 0) e.chillHits = 0;
+    if (e.frozenT > 0) e.frozenT -= dt;
+    if (e.burnT <= 0 && e.bleedT <= 0) return;
+    e.dotTick -= dt;
+    if (e.burnT > 0 && (e.burnT -= dt) <= 0) e.burnStacks = 0;
+    if (e.bleedT > 0) e.bleedT -= dt;
+    if (e.dotTick > 0) return;
+    e.dotTick = 0.5;
+    const d = (e.burnT > 0 ? e.burnDps * Math.max(1, e.burnStacks) : 0) + (e.bleedT > 0 ? e.bleedDps : 0);
+    if (d > 0) {
+      this.strike(e, d * 0.5, { crit: false, noText: true, src: e.burnT > 0 ? 'burn' : 'bleed' });
+      if (e.active) this.texts.show(e.x, e.y - e.r, fmt(d * 0.5 * this.vulnOf(e)), e.burnT > 0 ? '#ff9a40' : '#ff5a5a', 12);
     }
   }
 
@@ -342,7 +421,7 @@ export class EnemyManager {
         e.cd -= dt;
         if (e.cd <= 0 && dist < 520) {
           e.cd = 2.4;
-          this.proj.fireEnemy(e.x, e.y, Math.atan2(ny, nx), 200, e.dmg * 1.1, 0xd070ff, 7);
+          this.proj.fireEnemy(e.x, e.y, Math.atan2(ny, nx), 200, e.dmg * 1.1 * this.dmgOutOf(e), 0xd070ff, 7);
         }
         break;
       }
@@ -380,7 +459,7 @@ export class EnemyManager {
           this.grid.query(e.x, e.y, 160, this.near);
           for (const o of this.near) {
             if (!o.active || o === e) continue;
-            if ((o.x - e.x) ** 2 + (o.y - e.y) ** 2 < 160 * 160) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.15);
+            if (o.suppressT <= 0 && (o.x - e.x) ** 2 + (o.y - e.y) ** 2 < 160 * 160) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.15);
           }
           this.fx.ring(e.x, e.y, 160, 0x50d080, 0.4);
         }
@@ -403,7 +482,7 @@ export class EnemyManager {
           e.cd = 4;
           const n = 10;
           const off = Math.random() * 6.28;
-          for (let i = 0; i < n; i++) this.proj.fireEnemy(e.x, e.y, off + (i / n) * 6.28, 170, e.dmg * 0.5, 0xffc040, 8);
+          for (let i = 0; i < n; i++) this.proj.fireEnemy(e.x, e.y, off + (i / n) * 6.28, 170, e.dmg * 0.5 * this.dmgOutOf(e), 0xffc040, 8);
         }
         break;
       }

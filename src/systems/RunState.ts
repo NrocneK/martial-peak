@@ -1,6 +1,6 @@
 import { RUN, xpForLevel } from '../config/balance';
 import { newRunMods, type RunMods } from '../config/types';
-import { PASSIVES } from '../config/passiveSkills';
+import { PASSIVES } from '../config/skills';
 import type { PlayerStats } from '../config/game';
 import type { MetaStats } from './progression';
 
@@ -77,7 +77,9 @@ export class RunState {
     for (const s of this.skills) {
       if (s.kind !== 'passive') continue;
       const def = PASSIVES.find((p) => p.id === s.id);
-      if (def) m[def.stat] += def.per * s.level;
+      if (!def) continue;
+      m[def.key] += def.per * s.level;
+      if (def.id === 'p_tu_linh') m.xpGain += 0.03 * s.level;          // Tụ Linh Trận: kèm +3% kinh nghiệm mỗi cấp
     }
     this.mods = m;
     const b = this.meta;
@@ -90,6 +92,9 @@ export class RunState {
       armor: b.armor + m.armor,
       regen: b.regen + m.regen,
       crit: Math.min(0.95, b.crit + m.crit),
+      critDmg: 2 + m.critDmg,
+      cdr: Math.min(0.6, m.cdr),
+      ctrlTime: m.ctrlTime,
       area: b.area * m.area,
       xpGain: b.xpGain * m.xpGain,
       linhGain: b.linhGain * m.linhGain,

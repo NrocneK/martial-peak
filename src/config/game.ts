@@ -19,8 +19,14 @@ export interface PlayerStats {
   armor: number;
   /** Hồi máu mỗi giây (tỉ lệ máu tối đa) */
   regen: number;
-  /** Tỉ lệ chí mạng 0..1 (chí mạng gấp đôi sát thương) */
+  /** Tỉ lệ bạo kích 0..1 */
   crit: number;
+  /** Sát thương bạo kích (2 = gấp đôi) */
+  critDmg: number;
+  /** Giảm hồi chiêu mọi kỹ năng (0..0.6) */
+  cdr: number;
+  /** Hệ số thời gian hiệu ứng (đốt, chậm, băng, choáng) */
+  ctrlTime: number;
   /** Hệ số phạm vi kỹ năng */
   area: number;
   /** Hệ số XP nhận được */
@@ -38,6 +44,9 @@ export const BASE_PLAYER_STATS: PlayerStats = {
   armor: 0,
   regen: 0,
   crit: 0.05,
+  critDmg: 2,
+  cdr: 0,
+  ctrlTime: 1,
   area: 1,
   xpGain: 1,
   linhGain: 1,

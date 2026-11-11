@@ -35,6 +35,20 @@ export class Proj {
   /** Lốc xoáy: chậm dần về phía quái gần nhất, không quay đầu như boomerang */
   drift = false;
   slowTime = 2;
+  /** Xử lý trúng đòn riêng của kỹ năng (thay cho sát thương mặc định) */
+  hitFn: ((e: Enemy, p: Proj) => void) | null = null;
+  /** Gọi khi đạn biến mất (hết giờ / hết xuyên / về tay) */
+  endFn: ((p: Proj) => void) | null = null;
+  /** Sau mỗi lần trúng: tự đuổi sang quái kế tiếp chưa trúng */
+  chase = false;
+  /** Số lần nảy sang quái khác */
+  bounce = 0;
+  /** Lực hút quái về phía đạn (lốc xoáy) */
+  pull = 0;
+  /** Số lần đã trúng */
+  hits = 0;
+  /** Dữ liệu tự do cho kỹ năng */
+  tag = 0;
   /** Những quái đã bị trúng (để xuyên mà không đánh trùng) */
   readonly hit: Enemy[] = [];
   constructor(readonly img: Phaser.GameObjects.Image) {
@@ -95,9 +109,16 @@ export class Projectiles {
     rehit?: number;
     drift?: boolean;
     slowTime?: number;
-  }): void {
-    const p = this.take(this.mine, TEX.PROJ, 220);
-    if (!p) return;
+    hit?: (e: Enemy, p: Proj) => void;
+    end?: (p: Proj) => void;
+    chase?: boolean;
+    bounce?: number;
+    pull?: number;
+    tint?: number;
+    tag?: number;
+  }): Proj | null {
+    const p = this.take(this.mine, TEX.PROJ, 260);
+    if (!p) return null;
     p.x = o.x;
     p.y = o.y;
     p.vx = Math.cos(o.angle) * o.speed;
@@ -121,8 +142,29 @@ export class Projectiles {
     p.rehitT = p.rehit;
     p.drift = !!o.drift;
     p.slowTime = o.slowTime ?? 2;
+    p.hitFn = o.hit ?? null;
+    p.endFn = o.end ?? null;
+    p.chase = !!o.chase;
+    p.bounce = o.bounce ?? 0;
+    p.pull = o.pull ?? 0;
+    p.hits = 0;
+    p.tag = o.tag ?? 0;
     if (o.tex) p.img.setTexture(o.tex).clearTint().setScale(o.texScale ?? 1).setRotation(o.angle).setPosition(p.x, p.y);
     else p.img.setTexture(TEX.PROJ).setTint(o.color).setScale(Math.max(0.6, o.r / 9)).setRotation(o.angle).setPosition(p.x, p.y);
+    if (o.tex && o.tint !== undefined) p.img.setTint(o.tint);
+    return p;
+  }
+
+  /** Xóa đạn của quái trong vòng tròn; trả về số đạn đã xóa (chuông âm, kim đan chặn đạn) */
+  clearEnemy(x: number, y: number, r: number): number {
+    let n = 0;
+    for (const p of this.theirs) {
+      if (p.active && (p.x - x) ** 2 + (p.y - y) ** 2 < (r + p.r) ** 2) {
+        this.kill(p);
+        n++;
+      }
+    }
+    return n;
   }
 
   /** Bắn đạn của quái / boss. */
@@ -150,6 +192,15 @@ export class Projectiles {
         continue;
       }
       if (p.homing) this.steer(p, dt);
+      if (p.chase && p.hits > 0) this.steer(p, dt, 9);
+      if (p.pull > 0) {
+        this.enemies.grid.query(p.x, p.y, p.r * 2.5, this.tmp);
+        for (const e of this.tmp) {
+          if (!e.active || e.isBoss) continue;
+          const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+          if (d < p.r * 2.5) { e.x += (dx / d) * p.pull * dt; e.y += (dy / d) * p.pull * dt; }
+        }
+      }
       if (p.rehit > 0 && (p.rehitT -= dt) <= 0) {
         p.rehitT = p.rehit;
         p.hit.length = 0;
@@ -192,8 +243,22 @@ export class Projectiles {
         const dy = e.y - p.y;
         if (dx * dx + dy * dy > rr * rr) continue;
         p.hit.push(e);
-        this.enemies.hurt(e, p.dmg, p.slow, false, p.slowTime);
+        p.hits++;
+        if (p.hitFn) p.hitFn(e, p);
+        else this.enemies.hurt(e, p.dmg, p.slow, false, p.slowTime);
         if (p.spark && this.fx) this.fx.spark(e.x, e.y, Math.atan2(p.vy, p.vx), p.trail || p.color);
+        if (p.bounce > 0) {
+          // nảy sang quái gần nhất chưa trúng
+          const nx = this.enemies.nearest(e.x, e.y, 220, p.hit);
+          if (nx) {
+            p.bounce--;
+            const a = Math.atan2(nx.y - e.y, nx.x - e.x);
+            p.vx = Math.cos(a) * p.speed;
+            p.vy = Math.sin(a) * p.speed;
+            p.life = Math.max(p.life, 1);
+            continue;
+          }
+        }
         if (!p.boomerang && !p.drift) {
           if (p.pierce <= 0) {
             this.kill(p);
@@ -204,8 +269,10 @@ export class Projectiles {
       }
     }
     // --- Đạn của quái ---
+    const stopped = this.enemies.timeStop > 0;
     for (const p of this.theirs) {
       if (!p.active) continue;
+      if (stopped) continue;
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
@@ -234,12 +301,20 @@ export class Projectiles {
   }
 
   private kill(p: Proj): void {
+    if (p.active && p.endFn) {
+      const f = p.endFn;
+      p.endFn = null;
+      f(p);
+    }
     p.active = false;
     p.img.setVisible(false).setActive(false);
   }
 
   clear(): void {
-    for (const p of this.mine) this.kill(p);
+    for (const p of this.mine) {
+      p.endFn = null;
+      this.kill(p);
+    }
     for (const p of this.theirs) this.kill(p);
   }
 

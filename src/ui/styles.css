@@ -336,6 +336,11 @@
 .sk-tile .swatch.skico, .skill-head .swatch.skico { width: 40px; height: 40px; image-rendering: auto; }
 .swatch.skico.big { width: 64px; height: 64px; }
 .sk-detail-head { display: flex; align-items: center; gap: 12px; }
+.sk-detail-head p { margin: 4px 0 0; }
+.sk-levels { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; font-size: 13px; line-height: 1.35; }
+.sk-levels > div { padding: 6px 8px; border-radius: 6px; background: rgba(10, 16, 48, 0.5); border: 1px solid #2c3766; }
+.sk-aw { padding: 8px; border-radius: 8px; border: 1px solid #b08a2a; background: rgba(60, 40, 10, 0.35); margin-bottom: 10px; font-size: 13px; line-height: 1.35; }
+button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 
 /* ---------- Thẻ lên cấp / tạm dừng / kết quả ---------- */
 .overlay { background: rgba(6, 4, 12, 0.78); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; }
