@@ -310,7 +310,7 @@ const phaThuong: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 100, h.y);
   const a = ang(h, t);
-  const thrust = (i: number, last: boolean) =>
+  const thrust = (i: number) =>
     k.later(i * 240, () => {
       const L = aw ? 260 : 190;
       const hitAt = spearThrust(k, h, a, L);
@@ -319,14 +319,13 @@ const phaThuong: Fx = (s, aw) => {
           const d = dist(h, o), da = Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a));
           if (d < L + 10 && Math.cos(da) > 0 && Math.sin(da) * d < 22) s.hit(o, SPEAR_COL);   // chỉ phía trước mũi thương
         }
-        if (last) k.debris(polar(h, a, L).x, polar(h, a, L).y, 6);
       });
     });
   if (aw) {
     // Du Long Phá Trận: đâm 1 đòn dài; lúc mũi giáo vừa vụt ra (trước khi tan) từ chỗ nhân vật bung một quầng sáng
     // XOÁY nhanh quanh trục đâm, tiến về trước tới mũi thương thì NỔ thêm 1 lần (không còn vệt sáng dưới đất)
     const L = 260;
-    thrust(0, true);
+    thrust(0);
     k.later(240, () => spearVortex(s, h, a, L));
     // lướt theo mũi thương 120px (miễn sát thương khi lướt) — giữ như thiết kế, chỉ bỏ vệt sáng dưới đất
     const hero = s.hero;
@@ -336,9 +335,9 @@ const phaThuong: Fx = (s, aw) => {
       k.scene.tweens.add({ targets: hero, x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120, duration: 150, yoyo: true, hold: 500, ease: 'Quad.easeOut' });
     });
   } else {
-    thrust(0, false);
-    thrust(1, false);
-    thrust(2, true);
+    thrust(0);
+    thrust(1);
+    thrust(2);
   }
 };
 
