@@ -152,6 +152,8 @@ export const baDaoKey = (d: string): string => `vx_badao_${d}`;
 /** đao khí bay (thức tỉnh) — lưỡi liềm đổi màu từ mẫu, dựng sẵn 8 hướng đúng phối cảnh mặt đất
  *  (tools/art/ba_dao_wave.py); tâm ảnh = chỗ nhân vật đứng → đặt ảnh tại nhân vật rồi cho trượt thẳng theo hướng bay */
 export const baDaoWaveKey = (d: string): string => `vx_badao_wave_${d}`;
+/** độ đục tối đa của vòng đao khí + đao khí bay (làm mờ bớt để không che quái / nhân vật) */
+const BA_DAO_ALPHA = 0.72;
 const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
 
 /** hiện vết chém vòng theo hướng `aa`, vòng rộng ~2r quanh nhân vật: bung nhanh → giữ → loãng dần */
@@ -162,7 +164,7 @@ function baDaoRing(k: Stage['kit'], h: Pt, aa: number, r: number, dur = 380): vo
   // ảnh cắt khung cố định quanh tâm vòng: bề ngang vòng ≈ 69% bề ngang ảnh (phần còn lại là chỗ cho quầng sáng)
   const w = (r * 2.2) / (im.width * 0.69);
   im.setScale(w * 0.72);
-  k.scene.tweens.add({ targets: im, scale: w, alpha: 1, duration: 90, ease: 'Quad.easeOut' });
+  k.scene.tweens.add({ targets: im, scale: w, alpha: BA_DAO_ALPHA, duration: 90, ease: 'Quad.easeOut' });
   k.scene.tweens.add({ targets: im, scale: w * 1.08, alpha: 0, delay: 90 + dur * 0.35, duration: dur * 0.65, ease: 'Quad.easeIn', onComplete: () => im.destroy() });
 }
 
@@ -184,7 +186,7 @@ const baDao: Fx = (s, aw) => {
       const w = k.scene.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0);
       const sc = 0.8;
       w.setScale(sc * 0.75);
-      k.scene.tweens.add({ targets: w, alpha: 1, scale: sc, duration: 90, ease: 'Quad.easeOut' });
+      k.scene.tweens.add({ targets: w, alpha: BA_DAO_ALPHA, scale: sc, duration: 90, ease: 'Quad.easeOut' });
       k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
       k.scene.tweens.add({ targets: w, alpha: 0, delay: 320, duration: 160, onComplete: () => w.destroy() });
       for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
