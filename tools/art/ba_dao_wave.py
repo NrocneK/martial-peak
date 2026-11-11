@@ -1,38 +1,35 @@
 """
-BÁ ĐAO (thức tỉnh) — đao khí bay: lấy vết chém trong ảnh mẫu tools/art/ref/ba_dao_wave_ref.png (vệt chém lưỡi liềm xanh
-trên nền sàn), tách khỏi nền + nhân vật, ĐỔI MÀU sang tông tím hồng của vòng đao khí Bá Đao.
+BÁ ĐAO (thức tỉnh) — đao khí bay, VẼ MỚI bằng công thức (không lấy từ ảnh mẫu nữa để khỏi nghiêng lệch).
 
-1) Tách: hiệu ứng là màu xanh tự phát sáng → độ đục = (độ sáng kênh xanh lam vượt nền) × (độ "xanh" so với đỏ);
-   bỏ vùng nhân vật (tóc vàng, áo, thanh kiếm dựng đứng) — trừ lõi trắng của vệt chém mảnh chạy ngang qua người.
-2) Đổi màu: lấy độ sáng làm chỉ số, ánh xạ qua dải tím đen → tím → hồng tím → trắng hồng (cùng bảng với vòng Bá Đao).
-3) 8 HƯỚNG đúng phối cảnh: lưỡi liềm nằm PHẲNG trên mặt đất (nhìn chéo, trục dọc co còn K = 0,7) nên không xoay
-   ảnh trên mặt phẳng màn hình. Mỗi hướng: duỗi trục dọc về mặt đất (chia K) → xoay trên mặt đất cho phía lồi của
-   lưỡi liềm hướng đúng đường bay → co lại (nhân K). Tâm xoay = chỗ nhân vật đứng trong ảnh mẫu, đặt ở GIỮA ảnh ra,
-   nên trong game chỉ cần đặt ảnh tại vị trí nhân vật rồi cho bay thẳng theo hướng đó — không xoay gì thêm.
-   → public/vfx/ba_dao_wave_<hướng>.png (e, se, s, sw, w, nw, n, ne)
+Hình lưỡi liềm dựng trên MẶT ĐẤT, đối xứng tuyệt đối quanh hướng bay (+x):
+  - mép trước = cung tròn bán kính R_OUT quanh chỗ nhân vật (gốc toạ độ)
+  - mép sau   = cung tròn bán kính R_IN, tâm lùi về sau D → lưỡi dày ở giữa, nhọn dần ở hai mũi
+  - mép trước: viền hồng trắng rực + quầng tím; thân: dải tím chuyển dần, các sọc gió chạy ngược về sau;
+    mép sau: lượn sóng mềm như đuôi khí; hai mũi mờ dần
+  - một vệt chém mảnh (cung nhỏ) chạy sau lưỡi chính — như vệt kiếm trong ảnh mẫu
+Mỗi hướng: điểm đích → trải về mặt đất (chia K) → xoay ngược theo hướng bay → tính trực tiếp công thức (không lấy mẫu
+lại ảnh nên không vỡ / lệch) → khử răng cưa 3×3. Tâm ảnh = chỗ nhân vật.
 
-  python3 -I tools/art/ba_dao_wave.py → public/vfx/ba_dao_wave_*.png + tools/art/out/ba_dao_wave_preview.png
+  python3 -I tools/art/ba_dao_wave.py → public/vfx/ba_dao_wave_<hướng>.png (e, se, s, sw, w, nw, n, ne)
+                                        + tools/art/out/ba_dao_wave_preview.png
 """
 import math
 import os
-import sys
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
-SIZE = 384
-K = 0.7                         # mặt đất nhìn chéo: trục dọc co còn 70% (như vòng đao khí)
-PIVOT = (300.0, 285.0)          # chỗ nhân vật đứng trong ảnh mẫu = tâm xoay
-R_OUT = 380                     # bán kính khung ra (đơn vị điểm ảnh mẫu, trên mặt đất)
+K = 0.7                       # phối cảnh mặt đất (trục dọc co còn 70%, như vòng đao khí)
+HALF = 380.0                  # nửa bề ngang khung (đơn vị mặt đất)
+SIZE = 384                    # bề ngang ảnh ra (px)
+SS = 3                        # khử răng cưa
+R_OUT, R_IN, D = 300.0, 292.0, 105.0
 DIRS = {'e': 0, 'se': 45, 's': 90, 'sw': 135, 'w': 180, 'nw': 225, 'n': 270, 'ne': 315}
-sys.path.insert(0, HERE)
-from ba_dao_hd import sample  # noqa: E402
 
-# dải màu đích (độ sáng 0 → 1)
-STOPS = [(0.00, (40, 10, 70)), (0.30, (100, 28, 170)), (0.55, (176, 52, 232)), (0.75, (236, 100, 246)),
-         (0.90, (255, 180, 252)), (1.00, (255, 246, 255))]
+STOPS = [(0.00, (40, 10, 70)), (0.25, (92, 26, 160)), (0.50, (160, 46, 224)), (0.70, (226, 92, 246)),
+         (0.86, (255, 170, 252)), (1.00, (255, 248, 255))]
 
 
 def ramp(t):
@@ -45,68 +42,62 @@ def ramp(t):
     return out
 
 
+def crescent(gx, gy):
+    """màu + độ đục của lưỡi liềm tại toạ độ mặt đất (gx, gy), hướng bay = +x"""
+    r = np.hypot(gx, gy)
+    phi = np.arctan2(gy, gx)
+    r_in = np.hypot(gx + D, gy)
+    wav = 7 * np.sin(phi * 17) ** 2 + 4 * np.sin(phi * 41 + 1.3)                # mép sau lượn sóng (đuôi khí)
+    inner = R_IN + wav
+    depth = np.clip((R_OUT - r) / np.maximum(R_OUT - (inner - D * np.cos(phi)), 1), 0, 1.5)   # 0 = mép trước … 1 = mép sau
+    body = (r <= R_OUT) & (r_in >= inner)
+    span = np.clip(1 - (np.abs(phi) / math.radians(70)) ** 4, 0, 1)            # hai mũi mờ dần
+    streak = 0.88 + 0.12 * np.sin(phi * 64 + depth * 2.5) * np.sin(phi * 23 - 0.7)
+    inten = np.where(depth < 0.07, 1.0, (0.88 - 0.55 * depth) * streak)
+    a_body = body * span * np.clip(1.15 - depth ** 1.6, 0, 1)
+    glow = np.clip(1 - (r - R_OUT) / 26, 0, 1) * (r > R_OUT) * span * 0.55     # quầng tím ngoài mép trước
+    r2 = np.hypot(gx + 150, gy)                                                 # vệt chém mảnh sau lưỡi chính
+    thin = np.clip(1 - np.abs(r2 - 270) / 4, 0, 1) * np.clip(1 - (np.abs(phi) / math.radians(48)) ** 2, 0, 1) * (gx > 0)
+    tot = a_body + glow + thin
+    col = (ramp(inten) * a_body[..., None] + np.array([196, 70, 240]) * glow[..., None]
+           + np.array([255, 220, 255]) * thin[..., None]) / np.maximum(tot, 1e-3)[..., None]
+    return col, np.clip(tot, 0, 1)
+
+
+def render(deg):
+    w, h = SIZE * SS, int(SIZE * K) * SS
+    Y, X = np.mgrid[0:h, 0:w].astype(float)
+    gx0 = (X + 0.5) / w * 2 * HALF - HALF
+    gy0 = ((Y + 0.5) / h * 2 * HALF * K - HALF * K) / K                       # trải trục dọc về mặt đất
+    sa = math.radians(deg)
+    ga = math.atan2(math.sin(sa) / K, math.cos(sa))                             # hướng bay trên màn hình → mặt đất
+    c, s = math.cos(-ga), math.sin(-ga)
+    gx, gy = gx0 * c - gy0 * s, gx0 * s + gy0 * c                               # xoay về hệ lưỡi liềm (bay = +x)
+    col, a = crescent(gx, gy)
+    rgba = np.dstack([col, a[..., None] * 255]).reshape(h // SS, SS, w // SS, SS, 4)
+    al = rgba[..., 3:4]
+    prem = (rgba[..., :3] * al).mean((1, 3))
+    am = al.mean((1, 3))
+    out = np.dstack([prem / np.maximum(am, 1e-3), am])
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    src = Image.open(os.path.join(HERE, 'ref', 'ba_dao_wave_ref.png')).convert('RGB')
-    im = np.array(src).astype(float)
-    R, G, B = im[..., 0], im[..., 1], im[..., 2]
-    alpha = np.clip((B - 88) / 100, 0, 1) * np.clip((B - R - 40) / 60, 0, 1)
-    # lõi trắng xanh (R, G, B đều cao) cũng là hiệu ứng — không để thành lỗ đen ở mép sáng
-    alpha = np.maximum(alpha, np.clip((np.minimum(np.minimum(R, G), B) - 140) / 60, 0, 1) * (B > 200))
-    # bỏ nhân vật + thanh kiếm dựng đứng (giữ lõi rất sáng của vệt chém mảnh băng ngang qua người)
-    mk = Image.new('L', src.size, 0)
-    dr = ImageDraw.Draw(mk)
-    dr.polygon([(238, 180), (300, 168), (352, 205), (350, 250), (300, 262), (240, 262)], fill=255)   # chỉ phần người phía trên lưỡi liềm
-    dr.rectangle((252, 108, 272, 200), fill=255)
-    person = np.array(mk) > 0
-    bright = (R > 170) & (G > 220) & (B > 235)
-    alpha[person & ~bright] = 0
-    alpha = np.clip((alpha - 0.22) / 0.78, 0, 1)
-    # vân gạch sàn còn lẫn trong quầng sáng mờ → ở vùng mờ dùng độ đục đã làm nhòe (mất đường gạch), vùng đặc giữ nguyên
-    blur = np.array(Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6))) / 255.0
-    alpha = np.where(alpha > 0.6, alpha, np.minimum(alpha, blur) * 0.85)
-    lum = np.clip((G - 70) / 190, 0, 1) ** 1.35             # kênh lục tách lõi sáng (xanh trắng) với thân (xanh lam); thân giữ tím
-    col = ramp(lum ** 0.9)
-    rgba = np.dstack([col, alpha * 255]).astype(np.uint8)
-    # hướng "phía trước" của lưỡi liềm trên mặt đất = trọng tâm độ đục so với chỗ nhân vật
-    hh, ww = alpha.shape
-    yy, xx = np.mgrid[0:hh, 0:ww].astype(float)
-    wgt = alpha * (alpha > 0.3)
-    gx = ((xx - PIVOT[0]) * wgt).sum() / wgt.sum()
-    gy = ((yy - PIVOT[1]) / K * wgt).sum() / wgt.sum()
-    fwd = math.atan2(gy, gx)
-    print('huong phia truoc tren mat dat:', round(math.degrees(fwd), 1))
-    n = 2 * R_OUT
-    Y, X = np.mgrid[0:int(n * K), 0:n].astype(float)
-    X -= R_OUT
-    Y -= n * K / 2
     outs = {}
     for name, deg in DIRS.items():
-        sa = math.radians(deg)
-        ga = math.atan2(math.sin(sa) / K, math.cos(sa))            # hướng bay trên màn hình → trên mặt đất
-        rot = ga - fwd
-        gxd, gyd = X, Y / K                                          # điểm đích → mặt đất
-        c, s_ = math.cos(-rot), math.sin(-rot)
-        sxg, syg = gxd * c - gyd * s_, gxd * s_ + gyd * c            # xoay ngược về mặt đất của ảnh mẫu
-        out = sample(rgba, PIVOT[0] + sxg, PIVOT[1] + syg * K)
-        im = Image.fromarray(out, 'RGBA')
-        k = SIZE / im.width
-        im = im.resize((SIZE, round(im.height * k)), Image.LANCZOS)
+        im = render(deg)
         im.save(os.path.join(ROOT, 'public', 'vfx', f'ba_dao_wave_{name}.png'))
         outs[name] = im
-    old = os.path.join(ROOT, 'public', 'vfx', 'ba_dao_wave.png')
-    if os.path.exists(old):
-        os.remove(old)
-    # xem thử: lưới 3×3 theo hướng, chấm trắng = chỗ nhân vật
     cw, ch = outs['e'].size
     pv = Image.new('RGBA', (cw * 3, ch * 3), (26, 24, 40, 255))
     pos = {'nw': (0, 0), 'n': (1, 0), 'ne': (2, 0), 'w': (0, 1), 'e': (2, 1), 'sw': (0, 2), 's': (1, 2), 'se': (2, 2)}
+    dr = ImageDraw.Draw(pv)
     for name, (i, j) in pos.items():
         pv.alpha_composite(outs[name], (i * cw, j * ch))
-        ImageDraw.Draw(pv).ellipse((i * cw + cw / 2 - 3, j * ch + ch / 2 - 3, i * cw + cw / 2 + 3, j * ch + ch / 2 + 3), fill=(255, 255, 255, 255))
+        dr.ellipse((i * cw + cw / 2 - 3, j * ch + ch / 2 - 3, i * cw + cw / 2 + 3, j * ch + ch / 2 + 3), fill=(255, 210, 90, 255))
     pv.save(os.path.join(OUT, 'ba_dao_wave_preview.png'))
-    img = outs['e']
-    print('ok', img.size)
+    print('ok', outs['e'].size)
 
 
 if __name__ == '__main__':

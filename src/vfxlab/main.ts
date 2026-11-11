@@ -33,7 +33,7 @@ class LabScene extends Phaser.Scene {
   preload(): void {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
     this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
-    for (const d of BA_DAO_DIRS) this.load.image(baDaoKey(d), `/vfx/ba_dao_slash_${d}.png?v=2`), this.load.image(baDaoWaveKey(d), `/vfx/ba_dao_wave_${d}.png?v=1`);
+    for (const d of BA_DAO_DIRS) this.load.image(baDaoKey(d), `/vfx/ba_dao_slash_${d}.png?v=2`), this.load.image(baDaoWaveKey(d), `/vfx/ba_dao_wave_${d}.png?v=2`);
     // tư thế thi triển: hàng = hướng (s,sw,w,nw,n,ne,e,se), cột = tư thế 1, 2
     this.load.spritesheet('cast_ngu_kiem', '/ui/hero_cast_ngukiem.png?v=0.15.1', { frameWidth: 52, frameHeight: 68 });
   }

@@ -182,7 +182,7 @@ const baDao: Fx = (s, aw) => {
       const end = polar(h, a, 300);
       // lưỡi liềm đao khí (ảnh đúng hướng, không xoay) bung ra trước mặt rồi trượt thẳng 300px theo hướng bay
       const w = k.scene.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0);
-      const sc = 0.62;
+      const sc = 0.8;
       w.setScale(sc * 0.75);
       k.scene.tweens.add({ targets: w, alpha: 1, scale: sc, duration: 90, ease: 'Quad.easeOut' });
       k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
