@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
-CROP = (60, 170, 1065, 1330)          # vùng đầu hổ trong ảnh mẫu (1125×2000)
+CROP = (215, 395, 915, 1275)          # chỉ phần đầu hổ (bỏ dải mực xoáy quanh)
 SIZE = 320
 
 
@@ -41,7 +41,7 @@ def main():
     hh, ww = al.shape
     yy, xx = np.mgrid[0:hh, 0:ww].astype(float)
     rr = np.hypot((xx - ww / 2) / (ww / 2), (yy - hh * 0.47) / (hh * 0.53))
-    al *= np.clip((1.0 - rr) / 0.45, 0, 1) ** 1.5           # mờ dần rất rộng → không thấy rìa
+    al *= np.clip((1.0 - rr) / 0.3, 0, 1) ** 1.2           # mờ dần rất rộng → không thấy rìa
     img.putalpha(Image.fromarray(al.astype(np.uint8)))
     k = SIZE / max(img.size)
     img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
