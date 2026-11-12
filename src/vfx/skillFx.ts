@@ -413,38 +413,100 @@ const bangQuyen: Fx = (s, aw) => {
   if (aw) k.later(480, () => fistQuake(s, foot, 200));
 };
 
+/** Truy Tinh Tiễn — mũi tên năng lượng đỏ (đầu: tools/art/arrow_fx.py theo ảnh mẫu; đuôi vẽ theo đường bay thật) */
+export const ARROW_HEAD = 'vx_arrow_head';
+const ARROW_COL = 0xff4058;
+
+/** bắn 1 mũi tên năng lượng bay theo đường CONG (bezier, lệch sang bên `bend`) từ `from` tới `to`.
+ *  Đuôi là dải sáng vẽ lại mỗi khung theo chính quãng đường vừa bay → uốn cong theo đường bay; 2 sợi khí đỏ sẫm
+ *  xoắn quanh đuôi. `big` = tinh tiễn (to + sáng hơn). */
+function arrowBolt(k: Stage['kit'], from: Pt, to: Pt, bend: number, big: boolean, onArrive: () => void): void {
+  const sc = k.scene;
+  const D = dist(from, to);
+  const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2;
+  const nx = -(to.y - from.y) / (D || 1), ny = (to.x - from.x) / (D || 1);
+  const cx = mx + nx * bend * D, cy = my + ny * bend * D;
+  const dur = (D / 760) * 1000;
+  const sz = big ? 1.25 : 0.9;
+  const head = sc.add.image(from.x, from.y, ARROW_HEAD).setBlendMode(Phaser.BlendModes.ADD).setDepth(12).setScale(0.5 * sz).setOrigin(0.62, 0.5);
+  const glow = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(11);
+  const smoke = sc.add.graphics().setDepth(10);
+  const hist: Pt[] = [];
+  const N = big ? 26 : 20;
+  let el = 0, done = false, fade = 1;
+  const at = (u: number): Pt => ({ x: (1 - u) ** 2 * from.x + 2 * (1 - u) * u * cx + u * u * to.x, y: (1 - u) ** 2 * from.y + 2 * (1 - u) * u * cy + u * u * to.y });
+  const step = (_t: number, dms: number) => {
+    el += dms * sc.time.timeScale;
+    const u = Math.min(1, el / dur);
+    if (!done) {
+      const p = at(u), q = at(Math.min(1, u + 0.02));
+      head.setPosition(p.x, p.y).setRotation(Math.atan2(q.y - p.y, q.x - p.x) || head.rotation);
+      hist.push(p);
+      if (hist.length > N) hist.shift();
+      if (u >= 1) {
+        done = true;
+        head.destroy();
+        onArrive();
+      }
+    } else {
+      fade -= dms * sc.time.timeScale / 160;                             // đuôi rút ngắn + tắt sau khi trúng
+      if (hist.length > 1) hist.shift();
+      if (fade <= 0) { sc.events.off('update', step); glow.destroy(); smoke.destroy(); return; }
+    }
+    glow.clear();
+    smoke.clear();
+    const n = hist.length;
+    for (let i = 1; i < n; i++) {
+      const f = i / (N - 1);                                            // 0 ở đuôi → 1 sát đầu
+      const p0 = hist[i - 1], p1 = hist[i];
+      const w = (big ? 9 : 6) * f ** 1.3;
+      glow.lineStyle(w + 7, ARROW_COL, 0.16 * f * fade).lineBetween(p0.x, p0.y, p1.x, p1.y);
+      glow.lineStyle(w, f > 0.75 ? 0xff9aa6 : ARROW_COL, 0.75 * f * fade).lineBetween(p0.x, p0.y, p1.x, p1.y);
+      // 2 sợi khí đỏ sẫm xoắn quanh đuôi (biên độ lớn dần về phía đuôi)
+      const dx = p1.x - p0.x, dy = p1.y - p0.y, L = Math.hypot(dx, dy) || 1;
+      const ox = -dy / L, oy = dx / L;
+      for (const sgn of [1, -1]) {
+        const ph0 = (i - 1) * 0.55 + el * 0.02 * sgn, ph1 = i * 0.55 + el * 0.02 * sgn;
+        const amp0 = 7 * (1 - (i - 1) / (N - 1)) * sz, amp1 = 7 * (1 - f) * sz;
+        smoke.lineStyle(1.6, 0x7a0c1c, 0.75 * fade * Math.min(1, f * 3))
+          .lineBetween(p0.x + ox * Math.sin(ph0) * amp0 * sgn, p0.y + oy * Math.sin(ph0) * amp0 * sgn, p1.x + ox * Math.sin(ph1) * amp1 * sgn, p1.y + oy * Math.sin(ph1) * amp1 * sgn);
+      }
+    }
+  };
+  sc.events.on('update', step);
+}
+
 const truyTien: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const ts = s.targets();
   const t = ts[ts.length - 1] ?? pt(h.x + 300, h.y);
+  let side = 1;
   const shoot = (to: Pt, star: boolean, delay: number) =>
-    k.later(delay, () =>
-      k.fly(VT.ARROW, h, to, {
-        dur: (dist(h, to) / 900) * 1000, scale: star ? 1.3 : 1, add: false, trail: star ? 0xffe080 : 0xb8ffc0, trailTex: star ? VT.SPARK : VT.DOT, trailScale: star ? 0.35 : 0.5,
-        onArrive: () => {
-          s.hit(to, 0x9affb0);
-          if (star) {
-            k.glow(to.x, to.y, 0xffe080, 90, 300);
-            k.ring(to.x, to.y, 0xffe080, 10, 70, 300);
-            k.burst(to.x, to.y, [0xffe080, 0xffffff], 16, { tex: VT.SPARK, scale: [0.4, 0], speed: [100, 260] });
-            for (const o of near(s, to, 70)) s.hit(o, 0xffe080);
-          } else k.burst(to.x, to.y, 0xb8ffc0, 6, { speed: [60, 160], life: 220 });
-        },
-      }),
-    );
+    k.later(delay, () => {
+      side = -side;
+      arrowBolt(k, h, to, side * (0.12 + Math.random() * 0.12), star, () => {
+        s.hit(to, ARROW_COL);
+        if (star) {
+          k.glow(to.x, to.y, ARROW_COL, 90, 300);
+          k.ring(to.x, to.y, 0xff8090, 10, 70, 300);
+          k.burst(to.x, to.y, [ARROW_COL, 0xffc0c8, 0xffffff], 16, { tex: VT.SPARK, scale: [0.4, 0], speed: [100, 260] });
+          for (const o of near(s, to, 70)) s.hit(o, ARROW_COL);
+        } else k.burst(to.x, to.y, [ARROW_COL, 0xffb0b8], 7, { tex: VT.SPARK, speed: [60, 180], scale: [0.3, 0], life: 240 });
+      });
+    });
   if (aw) {
     const a = ang(h, t);
-    for (let i = 0; i < 5; i++) shoot(polar(h, a + (i - 2) * 0.18, dist(h, t)), true, 0);
+    for (let i = 0; i < 5; i++) shoot(polar(h, a + (i - 2) * 0.18, dist(h, t)), true, i * 30);
     k.later(500, () => {
       const c = ts[Math.floor(ts.length / 2)] ?? t;
-      k.ring(c.x, c.y, 0xffe080, 90, 70, 500, false, { alpha: 0.6 });
+      k.ring(c.x, c.y, ARROW_COL, 90, 70, 500, false, { alpha: 0.6 });
       k.later(500, () => {
-        k.streak(c.x - 160, c.y - 320, c.x, c.y, 0xffe080, 40, 260);
-        k.glow(c.x, c.y, 0xffd060, 220, 500);
-        k.ring(c.x, c.y, 0xffe080, 20, 140, 500, true);
-        k.burst(c.x, c.y, [0xffe080, 0xffffff, 0xffa040], 30, { tex: VT.SPARK, speed: [120, 380], scale: [0.5, 0] });
+        k.streak(c.x - 160, c.y - 320, c.x, c.y, ARROW_COL, 40, 260);
+        k.glow(c.x, c.y, 0xff3048, 220, 500);
+        k.ring(c.x, c.y, 0xff8090, 20, 140, 500, true);
+        k.burst(c.x, c.y, [ARROW_COL, 0xffffff, 0xff9040], 30, { tex: VT.SPARK, speed: [120, 380], scale: [0.5, 0] });
         k.shake(220, 0.008);
-        for (const o of near(s, c, 120)) s.hit(o, 0xffe080);
+        for (const o of near(s, c, 120)) s.hit(o, ARROW_COL);
       });
     });
   } else {
