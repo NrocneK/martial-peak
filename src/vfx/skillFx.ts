@@ -778,23 +778,26 @@ const linhDan: Fx = (s, aw) => {
 /** Liệt Hỏa Phù — lá bùa nhỏ vẽ mới + vụ nổ cầu lửa cuộn khói + vòng sóng lửa sát đất + biển lửa (tools/art/fire_fx.py) */
 export const FIRE_TEX = { talisman: 'vx_fire_talisman', blast: 'vx_fire_blast', ring: 'vx_fire_ring' } as const;
 export const BURN_TEX = { in: 'vx_burn_in', loop: 'vx_burn_loop', out: 'vx_burn_out' } as const;
+export const FIRE_SWIRL = 'vx_fire_swirl_blue';
 /** số khung có hình của từng đoạn (theo tools/art/burn_ground.py) */
 const BURN_FRAMES = { in: 27, loop: 30, out: 23 };
-function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
+function fireBlast(s: Stage, p: Pt, R: number, burn: number, blue = false): void {
   const k = s.kit, sc = k.scene;
+  const B = (key: string) => (blue ? key + '_blue' : key);
   // lóe sáng + vòng sóng lửa loang sát đất
-  k.glow(p.x, p.y, 0xffb040, R * 1.6, 260);
-  const rg = sc.add.image(p.x, p.y + 4, FIRE_TEX.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale(0.15);
+  k.glow(p.x, p.y, blue ? 0x50a0ff : 0xffb040, R * 1.6, 260);
+  const rg = sc.add.image(p.x, p.y + 4, B(FIRE_TEX.ring)).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale(0.15);
   sc.tweens.add({ targets: rg, scale: (R * 2.3) / 256, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => rg.destroy() });
   // cầu lửa cuộn bốc khói
-  if (!sc.anims.exists('vx_fire_blast_play')) sc.anims.create({ key: 'vx_fire_blast_play', frames: sc.anims.generateFrameNumbers(FIRE_TEX.blast, {}), frameRate: 28 });
-  const bl = sc.add.sprite(p.x, p.y - R * 0.35, FIRE_TEX.blast, 0).setDepth(18).setScale((R * 2.2) / 192);
-  bl.play('vx_fire_blast_play');
+  const blk = B(FIRE_TEX.blast);
+  if (!sc.anims.exists(blk + '_play')) sc.anims.create({ key: blk + '_play', frames: sc.anims.generateFrameNumbers(blk, {}), frameRate: 28 });
+  const bl = sc.add.sprite(p.x, p.y - R * 0.35, blk, 0).setDepth(18).setScale((R * 2.2) / 192);
+  bl.play(blk + '_play');
   bl.once('animationcomplete', () => bl.destroy());
   // tàn lửa văng lên + rơi
-  k.burst(p.x, p.y - 10, [0xffe080, 0xff8a20, 0xff4a10], 22, { tex: VT.SPARK, speed: [120, 340], angle: [200, 340], gravity: 420, scale: [0.4, 0], life: 700 });
+  k.burst(p.x, p.y - 10, blue ? [0xc8f0ff, 0x60b0ff, 0x2060ff] : [0xffe080, 0xff8a20, 0xff4a10], 22, { tex: VT.SPARK, speed: [120, 340], angle: [200, 340], gravity: 420, scale: [0.4, 0], life: 700 });
   k.shake(140, 0.005);
-  for (const o of near(s, p, R)) s.hit(o, 0xff7a30);
+  for (const o of near(s, p, R)) s.hit(o, blue ? 0x60b0ff : 0xff7a30);
   // biển lửa — mặt đất cháy lấy từ video mẫu (tools/art/burn_ground.py): bùng cháy → vòng lửa cuộn LẶP tới hết
   // thời gian cháy → tàn dần. Vòng lửa trong khung rộng ≈ 78% bề ngang khung.
   // CHỈ lấy đúng số khung có hình — lưới 8 cột còn ô trống ở cuối, đọc cả ô trống làm vùng cháy tắt một nhịp
@@ -803,22 +806,36 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
     if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(key, { start: 0, end: count - 1 }), frameRate: 15, repeat: rep });
     return ak;
   };
-  const aIn = mk(BURN_TEX.in, BURN_FRAMES.in, 0), aLoop = mk(BURN_TEX.loop, BURN_FRAMES.loop, -1), aOut = mk(BURN_TEX.out, BURN_FRAMES.out, 0);
-  const bg = sc.add.sprite(p.x, p.y - R * 0.22, BURN_TEX.in, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale((R * 2.3) / (256 * 0.78));
+  const aIn = mk(B(BURN_TEX.in), BURN_FRAMES.in, 0), aLoop = mk(B(BURN_TEX.loop), BURN_FRAMES.loop, -1), aOut = mk(B(BURN_TEX.out), BURN_FRAMES.out, 0);
+  const bg = sc.add.sprite(p.x, p.y - R * 0.22, B(BURN_TEX.in), 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale((R * 2.3) / (256 * 0.78));
   bg.play(aIn);
   bg.once('animationcomplete', () => bg.play(aLoop));
   k.later(burn, () => {
     bg.play(aOut);
     bg.once('animationcomplete', () => bg.destroy());
+    if (blue) fireSwirl(s, p, R * 1.25);                                   // thức tỉnh: nổ xoáy trước khi tắt lửa
   });
 }
 
+/** vụ nổ xoáy lửa xanh (tools/art/fire_blue.py, theo ảnh mẫu): khối lửa cuộn xoáy dẹt trên mặt đất + vòng sóng + tia */
+function fireSwirl(s: Stage, p: Pt, R: number): void {
+  const k = s.kit, sc = k.scene;
+  if (!sc.anims.exists('vx_fire_swirl_play')) sc.anims.create({ key: 'vx_fire_swirl_play', frames: sc.anims.generateFrameNumbers(FIRE_SWIRL, {}), frameRate: 24 });
+  const sw = sc.add.sprite(p.x, p.y - R * 0.12, FIRE_SWIRL, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(18).setScale((R * 2.1) / (256 * 0.84));
+  sw.play('vx_fire_swirl_play');
+  sw.once('animationcomplete', () => sw.destroy());
+  k.glow(p.x, p.y, 0x60b0ff, R * 1.8, 320);
+  k.burst(p.x, p.y - 8, [0xe0f8ff, 0x70c0ff, 0x3070ff], 24, { tex: VT.SPARK, speed: [140, 380], angle: [190, 350], gravity: 380, scale: [0.4, 0], life: 600 });
+  k.shake(200, 0.008);
+  for (const o of near(s, p, R)) s.hit(o, 0x9fd8ff);
+}
+
 /** ném 1 lá bùa nhỏ: bay vòng cung, xoay lật, có vệt tàn lửa; tới nơi bùa bùng cháy rồi nổ */
-function throwTalisman(s: Stage, from: Pt, to: Pt, delay: number, R: number, burn: number): void {
+function throwTalisman(s: Stage, from: Pt, to: Pt, delay: number, R: number, burn: number, blue = false): void {
   const k = s.kit, sc = k.scene;
   k.later(delay, () => {
     const tl = sc.add.image(from.x, from.y - 10, FIRE_TEX.talisman).setDepth(19).setScale(0.45);
-    const trail = sc.add.particles(0, 0, VT.SPARK, { follow: tl, lifespan: 260, speed: 10, scale: { start: 0.22, end: 0 }, alpha: { start: 0.9, end: 0 }, tint: [0xffc060, 0xff6a20], blendMode: Phaser.BlendModes.ADD, frequency: 18 }).setDepth(18);
+    const trail = sc.add.particles(0, 0, VT.SPARK, { follow: tl, lifespan: 260, speed: 10, scale: { start: 0.22, end: 0 }, alpha: { start: 0.9, end: 0 }, tint: blue ? [0xa0e0ff, 0x4090ff] : [0xffc060, 0xff6a20], blendMode: Phaser.BlendModes.ADD, frequency: 18 }).setDepth(18);
     const D = dist(from, to);
     const dur = 300 + D * 0.9;
     const st = { u: 0 };
@@ -835,7 +852,7 @@ function throwTalisman(s: Stage, from: Pt, to: Pt, delay: number, R: number, bur
         tl.setRotation(0).setScale(0.5).setTint(0xffd080);
         sc.tweens.add({ targets: tl, scale: 0.7, alpha: 0, duration: 120, onComplete: () => tl.destroy() });
         k.glow(to.x, to.y - 6, 0xffd060, 40, 120);
-        k.later(90, () => fireBlast(s, to, R, burn));
+        k.later(90, () => fireBlast(s, to, R, burn, blue));
       },
     });
   });
@@ -843,13 +860,17 @@ function throwTalisman(s: Stage, from: Pt, to: Pt, delay: number, R: number, bur
 
 const hoaPhu: Fx = (s, aw) => {
   const h = H(s);
-  const ts = s.targets();
   if (aw) {
-    // Phần Thiên: 5 bùa rơi thành vòng quanh thân, biển lửa nối thành tường lửa
-    for (let i = 0; i < 5; i++) throwTalisman(s, h, polar(h, (i / 5) * Math.PI * 2 - Math.PI / 2, 120), i * 70, 80, 3000);
+    // Phần Thiên: 5 bùa LỬA XANH rơi ĐỀU trên vòng elip quanh thân (đúng phối cảnh mặt đất), cùng kích thước;
+    // cháy 3s rồi nổ xoáy trước khi tắt
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      throwTalisman(s, h, { x: h.x + Math.cos(a) * 140, y: h.y + 8 + Math.sin(a) * 140 * 0.58 }, i * 70, 72, 3000, true);
+    }
   } else {
-    throwTalisman(s, h, ts[1] ?? pt(h.x + 140, h.y), 0, 70, 1800);
-    throwTalisman(s, h, ts[4] ?? pt(h.x - 140, h.y), 110, 70, 1800);
+    // bản thường: mỗi cấp +1 bùa (demo thể hiện cấp 5 = 5 bùa), mỗi bùa vào 1 mục tiêu khác nhau
+    const ts = s.targets();
+    for (let i = 0; i < 5; i++) throwTalisman(s, h, ts[i] ?? polar(h, (i / 5) * Math.PI * 2, 140), i * 90, 66, 1800);
   }
 };
 

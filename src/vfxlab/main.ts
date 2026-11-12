@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { SKILLS, skillIcon, type SkillDef } from '../config/skills';
 import { makeVfxTextures, VT } from '../vfx/textures';
 import { VfxKit, type Pt } from '../vfx/VfxKit';
-import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
+import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
 
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
@@ -40,6 +40,10 @@ class LabScene extends Phaser.Scene {
     this.load.image(ORB_BOLT, '/vfx/orb_bolt.png?v=1');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
     for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
+    for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key + '_blue', `/vfx/burn_${n}_blue.png?v=1`, { frameWidth: 256, frameHeight: 201 });
+    this.load.spritesheet(FIRE_TEX.blast + '_blue', '/vfx/fire_blast_blue.png?v=1', { frameWidth: 192, frameHeight: 192 });
+    this.load.image(FIRE_TEX.ring + '_blue', '/vfx/fire_ring_blue.png?v=1');
+    this.load.spritesheet(FIRE_SWIRL, '/vfx/fire_swirl_blue.png?v=1', { frameWidth: 256, frameHeight: 200 });
     this.load.image(FIRE_TEX.talisman, '/vfx/fire_talisman.png?v=1');
     this.load.image(FIRE_TEX.ring, '/vfx/fire_ring.png?v=1');
     this.load.spritesheet(FIRE_TEX.blast, '/vfx/fire_blast.png?v=1', { frameWidth: 192, frameHeight: 192 });
