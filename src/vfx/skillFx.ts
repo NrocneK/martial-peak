@@ -658,6 +658,7 @@ const hoKhieu: Fx = (s, aw) => {
 /** Linh Khí Đạn (lột xác) — LINH CHÂU HỘ THỂ: các quả cầu linh khí xoáy (tools/art/spirit_orb.py) lơ lửng xoay quanh
  *  người; lần lượt phóng vào quái gần nhất, nổ xoáy khi trúng rồi bay về chỗ. Thức tỉnh: vòng cầu lớn liên tục bắn tia. */
 export const SPIRIT_ORB = 'vx_spirit_orb';
+export const ORB_BOLT = 'vx_orb_bolt';
 const ORB_COL = 0x6cc8ff;
 function orbBurst(s: Stage, p: Pt, R: number): void {
   const k = s.kit, sc = k.scene;
@@ -744,12 +745,26 @@ const linhDan: Fx = (s, aw) => {
       const o = orbs[shotIdx++ % n];
       const t = s.targets()[shotIdx % 5];
       if (t) {
-        const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(15);
-        g.lineStyle(7, ORB_COL, 0.3).lineBetween(o.sp.x, o.sp.y, t.x, t.y - 6);
-        g.lineStyle(2.5, 0xe8faff, 0.95).lineBetween(o.sp.x, o.sp.y, t.x, t.y - 6);
-        sc.tweens.add({ targets: g, alpha: 0, duration: 140, onComplete: () => g.destroy() });
-        k.glow(t.x, t.y - 6, ORB_COL, 30, 140);
-        s.hit(t, ORB_COL);
+        // tia linh khí (tools/art/orb_bolt.py): vòng hào quang mỏng bung ở linh châu → vệt sáng thon vụt tới mục tiêu
+        const from = { x: o.sp.x, y: o.sp.y }, to = { x: t.x, y: t.y - 6 };
+        const a = ang(from, to), D = dist(from, to);
+        const halo = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(15);
+        const hs = { r: 4 };
+        sc.tweens.add({
+          targets: hs, r: 22, duration: 220, ease: 'Quad.easeOut',
+          onUpdate: () => { halo.clear(); halo.lineStyle(2, 0x9fe0ff, 1 - hs.r / 22).strokeEllipse(from.x, from.y, hs.r * 2, hs.r * 0.7); },
+          onComplete: () => halo.destroy(),
+        });
+        const b = sc.add.image(from.x, from.y, ORB_BOLT).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setRotation(a).setOrigin(1, 0.5);
+        const L = Math.min(150, D * 0.75) / b.width;
+        b.setScale(L * 0.4, 0.55);
+        sc.tweens.add({ targets: b, x: to.x, y: to.y, scaleX: L, duration: 120, ease: 'Quad.easeIn' });
+        sc.tweens.add({ targets: b, alpha: 0, scaleY: 0.2, delay: 120, duration: 110, onComplete: () => b.destroy() });
+        k.later(120, () => {
+          k.glow(to.x, to.y, ORB_COL, 34, 160);
+          k.burst(to.x, to.y, [0x9fe0ff, 0xffffff], 5, { tex: VT.SPARK, speed: [60, 160], scale: [0.3, 0], life: 220 });
+        });
+        k.later(120, () => s.hit(t, ORB_COL));
       }
     }
     if (el >= life) {
