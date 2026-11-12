@@ -178,6 +178,14 @@ new Phaser.Game({
  *  kim_dan — muốn đột phá Nguyên Anh phải phá đan, nên từ Nguyên Anh trở đi không còn Kim Đan để dùng;
  *  nguyen_anh — Nguyên Anh là sinh mạng thứ hai, không ai đem ra tấn công thay bản thân. */
 const REMOVED = new Set(['kim_dan', 'nguyen_anh']);
+/** kỹ năng mới đang thiết kế, CHƯA có trong dữ liệu game (thêm khi tích hợp) — chèn vào chỗ kỹ năng bị bỏ */
+const EXTRA: Record<string, SkillDef> = {
+  nguyen_anh: {
+    ...(SKILLS.find((x) => x.id === 'nguyen_anh') as SkillDef),
+    id: 'khi_long', name: 'Khí Long (thay Nguyên Anh)', type: 'Rồng khí lượn quanh thân',
+    awaken: { name: 'Huyết Long Trấn Địa', damage: '', effect: '' },
+  },
+};
 const list = document.getElementById('list')!;
 const cap = document.getElementById('cap')!;
 const rows = new Map<string, HTMLElement>();
@@ -191,10 +199,10 @@ for (const [label, src] of [['Kỹ năng vũ khí', 'weapon'], ['Kỹ năng cả
   grp.className = 'grp';
   grp.textContent = label;
   list.append(grp);
-  for (const s of SKILLS.filter((x) => x.source === src && !REMOVED.has(x.id))) {
+  for (const s of SKILLS.filter((x) => x.source === src).flatMap((x) => (REMOVED.has(x.id) ? (EXTRA[x.id] ? [EXTRA[x.id]] : []) : [x]))) {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<img src="${skillIcon(s.id)}" alt="" /><div><div class="nm">${s.name}</div><div class="ty">${s.type}</div></div>`;
+    row.innerHTML = `<img src="${skillIcon(s.id === "khi_long" ? "nguyen_anh" : s.id)}" alt="" /><div><div class="nm">${s.name}</div><div class="ty">${s.type}</div></div>`;
     const bt = document.createElement('div');
     bt.className = 'bt';
     const b1 = document.createElement('button');
@@ -229,7 +237,7 @@ for (const [label, a] of [['Tự động', null], ['↓', Math.PI / 2], ['↙', 
 (document.getElementById('walk') as HTMLInputElement).onchange = (e) => (scene.walk = (e.target as HTMLInputElement).checked);
 document.getElementById('all')!.onclick = () => {
   let i = 0;
-  const seq = SKILLS.filter((x) => !REMOVED.has(x.id)).flatMap((s) => [[s, false], [s, true]] as [SkillDef, boolean][]);
+  const seq = SKILLS.flatMap((x) => (REMOVED.has(x.id) ? (EXTRA[x.id] ? [EXTRA[x.id]] : []) : [x])).flatMap((s) => [[s, false], [s, true]] as [SkillDef, boolean][]);
   const next = () => {
     if (i >= seq.length) return;
     select(seq[i][0], seq[i][1]);

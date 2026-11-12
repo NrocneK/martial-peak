@@ -1296,9 +1296,186 @@ const daiDao: Fx = (s, aw) => {
   });
 };
 
+/** Kỹ năng thay Nguyên Anh — KHÍ LONG (rồng khí): rồng bay từ nhân vật ra, lượn ngẫu nhiên quanh nhân vật trong một
+ *  phạm vi, chạm quái trên đường bay thì gây sát thương. Thức tỉnh: huyết long; gần hết kỹ năng lượn tại chỗ 1 vòng
+ *  rồi đâm thẳng xuống đất nổ. Rồng dựng dạng CHUỖI ĐỐT: đầu bay trước, các đốt thân bám đúng đường đầu đã đi.
+ *  Bay ở độ cao z (vẽ lệch lên trên), có bóng mờ dưới đất. Đầu rồng cách điệu bằng ánh sáng (sẽ thay ảnh nếu có). */
+const DRAGON_PAL = {
+  normal: { edge: 0xe8b84a, core: 0x8ff0ff, hot: 0xffffff, glow: 0x5ac8ff, eye: 0xffffff, dark: 0x3a2a10 },
+  awaken: { edge: 0xb8101e, core: 0xffc240, hot: 0xffe0a0, glow: 0xff2a3a, eye: 0xfff6c0, dark: 0x1a0306 },
+};
+function dragonFx(s: Stage, aw: boolean): void {
+  const k = s.kit, sc = k.scene;
+  const P = aw ? DRAGON_PAL.awaken : DRAGON_PAL.normal;
+  const life = aw ? 5200 : 4200;
+  const RANGE = aw ? 190 : 170;
+  const SEG = 34, SP = 6;                                               // số đốt, khoảng cách đốt (px quãng đường)
+  const g = sc.add.graphics().setDepth(16);
+  const ga = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(17);
+  const shadow = sc.add.graphics().setDepth(2);
+  const h0 = H(s);
+  const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
+  const trail: { x: number; y: number; z: number }[] = [{ x: h0.x, y: h0.y, z: 6 }];
+  /** vị trí các đốt: đi ngược đường đầu rồng đã bay, mỗi đốt cách nhau SP px quãng đường (thân liền mạch) */
+  const segs = (): { x: number; y: number; z: number }[] => {
+    const out = [trail[0]];
+    let need = SP, j = 0, cur = trail[0];
+    while (out.length < SEG && j < trail.length - 1) {
+      const nx = trail[j + 1], d = Math.hypot(nx.x - cur.x, nx.y - cur.y - (nx.z - cur.z));
+      if (d >= need) {
+        const f = need / d;
+        cur = { x: cur.x + (nx.x - cur.x) * f, y: cur.y + (nx.y - cur.y) * f, z: cur.z + (nx.z - cur.z) * f };
+        out.push(cur);
+        need = SP;
+      } else { need -= d; cur = nx; j++; }
+    }
+    while (out.length < SEG) out.push(out[out.length - 1]);
+    return out;
+  };
+  let goal = { x: h0.x + (Math.random() - 0.5) * RANGE, y: h0.y - RANGE * 0.5 };
+  const hitCd = new Map<Pt, number>();
+  let el = 0, phase: 'roam' | 'circle' | 'dive' | 'done' = 'roam';
+  let circleC: Pt = { x: 0, y: 0 }, circleT = 0, diveFrom = { x: 0, y: 0, z: 0 }, diveT = 0;
+  const step = (_t: number, dms: number) => {
+    const dt = (dms * sc.time.timeScale) / 1000;
+    el += dt * 1000;
+    const hero = H(s);
+    if (phase === 'roam') {
+      // bay về điểm đích; tới gần thì chọn điểm mới ngẫu nhiên trong phạm vi quanh nhân vật (elip mặt đất)
+      if (Math.hypot(goal.x - head.x, goal.y - head.y) < 30) {
+        const a = Math.random() * Math.PI * 2, r = RANGE * (0.45 + 0.55 * Math.random());
+        goal = { x: hero.x + Math.cos(a) * r, y: hero.y + Math.sin(a) * r * 0.62 };
+      }
+      const want = Math.atan2(goal.y - head.y, goal.x - head.x);
+      const turn = Phaser.Math.Angle.Wrap(want - head.a);
+      head.a += Phaser.Math.Clamp(turn, -4.2 * dt, 4.2 * dt);             // giới hạn tốc độ xoay → lượn mềm
+      const sp = el < 350 ? 160 + el : 330;
+      head.x += Math.cos(head.a) * sp * dt;
+      head.y += Math.sin(head.a) * sp * dt;
+      head.z += (30 + 8 * Math.sin(el / 300) - head.z) * Math.min(1, dt * 4);
+      if (aw && el > life - 1500) { phase = 'circle'; circleC = { x: head.x + Math.cos(head.a + Math.PI / 2) * 46, y: head.y + Math.sin(head.a + Math.PI / 2) * 46 * 0.62 }; circleT = 0; }
+      if (!aw && el > life) phase = 'done';
+    } else if (phase === 'circle') {
+      // thức tỉnh: lượn tại chỗ đúng 1 vòng, vừa lượn vừa bốc cao
+      circleT += dt / 0.9;
+      const a0 = Math.atan2((head.y - circleC.y) / 0.62, head.x - circleC.x);
+      const a1 = a0 + dt / 0.9 * Math.PI * 2;
+      const nx = circleC.x + Math.cos(a1) * 46, ny = circleC.y + Math.sin(a1) * 46 * 0.62;
+      head.a = Math.atan2(ny - head.y, nx - head.x);
+      head.x = nx; head.y = ny;
+      head.z += (95 - head.z) * Math.min(1, dt * 3);
+      if (circleT >= 1) { phase = 'dive'; diveFrom = { x: head.x, y: head.y, z: head.z }; diveT = 0; }
+    } else if (phase === 'dive') {
+      // đâm thẳng xuống đất ở giữa vòng lượn
+      diveT += dt / 0.22;
+      const u = Math.min(1, diveT), e = u * u;
+      head.x = diveFrom.x + (circleC.x - diveFrom.x) * e;
+      head.y = diveFrom.y + (circleC.y - diveFrom.y) * e;
+      head.z = diveFrom.z * (1 - e);
+      head.a = Math.atan2(circleC.y - diveFrom.y - diveFrom.z, circleC.x - diveFrom.x);
+      if (u >= 1) { phase = 'done'; dragonBlast(s, circleC); }
+    }
+    trail.unshift({ x: head.x, y: head.y, z: head.z });
+    if (trail.length > 400) trail.length = 400;
+    const body = segs();
+    // chạm quái trên đường bay (đầu + nửa thân trước), mỗi quái chờ 0,45s mới bị trúng lại
+    for (const o of s.targets()) {
+      const cd = hitCd.get(o) ?? 0;
+      if (el < cd) continue;
+      for (let i = 0; i < SEG * 0.5; i++) {
+        const p = body[i];
+        if (Math.hypot(p.x - o.x, (p.y - (o.y - 6)) / 0.8) < 22) { s.hit(o, P.edge); hitCd.set(o, el + 450); break; }
+      }
+    }
+    // vẽ: bóng mờ dưới đất → thân (đuôi trước, đầu sau) → đầu
+    const fade = phase === 'done' ? 0 : Math.min(1, el / 200) * (aw ? 1 : Math.min(1, (life - el) / 400 + 0.0001));
+    g.clear(); ga.clear(); shadow.clear();
+    if (fade > 0) {
+      for (let i = SEG - 1; i >= 0; i--) {
+        const p = body[i];
+        const f = 1 - i / SEG;                                             // 1 ở đầu → 0 ở đuôi
+        const r = 2 + 9 * Math.sin(Math.min(1, f * 1.25) * Math.PI * 0.62) * (0.4 + 0.6 * f);
+        const sy = p.y - p.z;
+        shadow.fillStyle(0x000000, 0.12 * fade * f).fillEllipse(p.x, p.y + 8, r * 2.2, r * 0.8);
+        g.fillStyle(P.dark, 0.9 * fade).fillCircle(p.x, sy, r + 1.4);          // viền tối tách thân khỏi nền
+        g.fillStyle(P.edge, 0.95 * fade).fillCircle(p.x, sy, r);               // vảy vàng
+        g.fillStyle(P.core, 0.95 * fade).fillCircle(p.x, sy - r * 0.15, r * 0.5);   // dải khí giữa thân
+        ga.fillStyle(P.glow, 0.05 * fade).fillCircle(p.x, sy, r * 2.2);
+        if (i % 2 === 0 && i > 1 && i < SEG - 4) {                         // vây lưng răng cưa (hướng lên trên)
+          const q = body[Math.min(SEG - 1, i + 1)];
+          const tx = p.x - q.x, ty = sy - (q.y - q.z), tl = Math.hypot(tx, ty) || 1;
+          let ox = -ty / tl, oy = tx / tl;
+          if (oy > 0) { ox = -ox; oy = -oy; }
+          const fin = r * (1.1 + 0.5 * f);
+          g.fillStyle(P.edge, 0.95 * fade).fillTriangle(p.x - tx / tl * r * 0.6, sy - ty / tl * r * 0.6, p.x + tx / tl * r * 0.6, sy + ty / tl * r * 0.6, p.x + ox * fin - tx / tl * fin * 0.6, sy + oy * fin - ty / tl * fin * 0.6);
+        }
+      }
+      // đầu rồng cách điệu: hàm nhọn, 2 sừng cong, bờm khí, mắt rực
+      const hx = head.x, hy = head.y - head.z, a = Math.atan2(body[0].y - body[2].y - (body[0].z - body[2].z), body[0].x - body[2].x) || head.a;
+      const fx = Math.cos(a), fy = Math.sin(a), nx = -fy, ny = fx;
+      const pt2 = (f0: number, n0: number) => { const f = f0 * 1.5, n = n0 * 1.5; return { x: hx + fx * f + nx * n, y: hy + fy * f + ny * n }; };
+      const snout = [pt2(20, 0), pt2(8, 7), pt2(-6, 8), pt2(-10, 0), pt2(-6, -8), pt2(8, -7)];
+      g.fillStyle(P.dark, fade).fillCircle(hx, hy, 14);
+      g.fillStyle(P.edge, fade).fillPoints(snout.map((q) => new Phaser.Math.Vector2(q.x, q.y)), true);
+      g.fillStyle(P.core, fade).fillPoints([pt2(16, 0), pt2(6, 4.5), pt2(-5, 5), pt2(-7, 0), pt2(-5, -5), pt2(6, -4.5)].map((q) => new Phaser.Math.Vector2(q.x, q.y)), true);
+      for (const side of [-1, 1]) {
+        const h1 = pt2(-4, side * 6), h2 = pt2(-16, side * 13), h3 = pt2(-24, side * 10);
+        ga.lineStyle(2.4, P.edge, fade).beginPath().moveTo(h1.x, h1.y).lineTo(h2.x, h2.y).lineTo(h3.x, h3.y).strokePath();
+        for (let m = 0; m < 3; m++) {                                     // bờm khí
+          const b0 = pt2(-6 - m * 3, side * 4), b1 = pt2(-22 - m * 5 + Math.sin(el / 90 + m) * 3, side * (12 + m * 3));
+          ga.lineStyle(1.2, P.glow, 0.8 * fade).lineBetween(b0.x, b0.y, b1.x, b1.y);
+        }
+        const eye = pt2(4, side * 3.5);
+        ga.fillStyle(P.eye, fade).fillCircle(eye.x, eye.y, 1.8);
+        const wh = pt2(14, side * 3), wh2 = pt2(2 + Math.sin(el / 70) * 3, side * (16 + Math.cos(el / 110) * 3));
+        ga.lineStyle(1, P.hot, 0.8 * fade).lineBetween(wh.x, wh.y, wh2.x, wh2.y);   // râu rồng
+      }
+      ga.fillStyle(P.glow, 0.18 * fade).fillCircle(hx, hy, 22);
+    }
+    if (phase === 'done' && (aw || el > life + 400)) {
+      sc.events.off('update', step);
+      g.destroy(); ga.destroy(); shadow.destroy();
+    }
+  };
+  // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
+  k.glow(h0.x, h0.y - 10, P.glow, 70, 300);
+  sc.events.on('update', step);
+}
+
+/** thức tỉnh: rồng đâm xuống đất — cột sáng, sóng xung kích đỏ, đá vụn, nổ trúng quái quanh điểm đâm */
+function dragonBlast(s: Stage, c: Pt): void {
+  const k = s.kit, sc = k.scene;
+  const R = 150;
+  k.glow(c.x, c.y, 0xff3040, R * 1.6, 420);
+  if (sc.textures.exists(SHOCK_T6)) {
+    const key = SHOCK_T6 + '_play';
+    if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(SHOCK_T6, {}), frameRate: 30 });
+    const sp = sc.add.sprite(c.x, c.y + 6, SHOCK_T6, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(4).setTint(0xff5050).setScale(R / (SHOCK_RING * 256));
+    sp.play(key);
+    sp.once('animationcomplete', () => sp.destroy());
+  }
+  if (sc.textures.exists(FIRE_TEX.blast)) {
+    const key = FIRE_TEX.blast + '_play';
+    if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(FIRE_TEX.blast, {}), frameRate: 28 });
+    const bl = sc.add.sprite(c.x, c.y - 40, FIRE_TEX.blast, 0).setDepth(18).setScale(1.3).setTint(0xff6060);
+    bl.play(key);
+    bl.once('animationcomplete', () => bl.destroy());
+  }
+  k.burst(c.x, c.y - 6, [0xffe0a0, 0xff4040, 0xffffff], 36, { tex: VT.SPARK, speed: [160, 460], angle: [190, 350], gravity: 520, scale: [0.5, 0], life: 800 });
+  k.debris(c.x, c.y, 14, 0x4a2a24);
+  k.shake(320, 0.014);
+  for (const o of near(s, c, R)) {
+    s.hit(o, 0xffd0a0);
+    const aa = ang(c, o);
+    s.drag?.(o, o.x + Math.cos(aa) * 30, o.y + Math.sin(aa) * 30);
+  }
+}
+
+const khiLong: Fx = (s, aw) => dragonFx(s, aw);
+
 export const SKILL_FX: Record<string, Fx> = {
   ngu_kiem: nguKiem, ba_dao: baDao, pha_thuong: phaThuong, bang_quyen: bangQuyen, truy_tien: truyTien, thanh_phien: thanhPhien,
-  ho_khieu: hoKhieu, linh_dan: linhDan, hoa_phu: hoaPhu, kim_dan: kimDan, nguyen_anh: nguyenAnh, than_thuc: thanThuc,
+  ho_khieu: hoKhieu, linh_dan: linhDan, hoa_phu: hoaPhu, kim_dan: kimDan, nguyen_anh: nguyenAnh, khi_long: khiLong, than_thuc: thanThuc,
   hu_khong: huKhong, phap_tuong: phapTuong, van_kiem: vanKiem, than_loi: thanLoi, lien_hoa: lienHoa, ngan_ha: nganHa,
   hoang_chung: hoangChung, kim_than: kimThan, linh_vuc: linhVuc, de_an: deAn, dai_dao: daiDao,
 };
