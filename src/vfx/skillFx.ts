@@ -1301,10 +1301,10 @@ const daiDao: Fx = (s, aw) => {
  *  rồi đâm thẳng xuống đất nổ. Rồng dựng dạng CHUỖI ĐỐT: đầu bay trước, các đốt thân bám đúng đường đầu đã đi.
  *  Bay ở độ cao z (vẽ lệch lên trên), có bóng mờ dưới đất. Đầu rồng cách điệu bằng ánh sáng (sẽ thay ảnh nếu có). */
 const DRAGON_PAL = {
-  normal: { edge: 0xffd060, hot: 0xfff4c0, glow: 0xffb030 },
-  awaken: { edge: 0xff5038, hot: 0xffc080, glow: 0xff2030 },
+  normal: { edge: 0x8ac8ff, hot: 0xe0f2ff, glow: 0x4a8cff },
+  awaken: { edge: 0xc890ff, hot: 0xf0e0ff, glow: 0x9a40ff },
 };
-export const DRAGON_TEX = { head: 'vx_dragon_head', body: 'vx_dragon_body', mane: 'vx_dragon_mane' } as const;
+export const DRAGON_TEX = { head: 'vx_dragon_ink_head', body0: 'vx_dragon_ink_body0', body1: 'vx_dragon_ink_body1', body2: 'vx_dragon_ink_body2' } as const;
 function dragonFx(s: Stage, aw: boolean): void {
   const k = s.kit, sc = k.scene;
   const P = aw ? DRAGON_PAL.awaken : DRAGON_PAL.normal;
@@ -1313,9 +1313,11 @@ function dragonFx(s: Stage, aw: boolean): void {
   const SEG = 34, SP = 6;                                               // số đốt, khoảng cách đốt (px quãng đường)
   const sfx = aw ? '_aw' : '';
   const shadow = sc.add.graphics().setDepth(2);
-  const glowLine = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(15.7);
-  const strands = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(16);
-  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setBlendMode(Phaser.BlendModes.ADD).setDepth(17).setScale(0.5).setAlpha(0);
+  // nét cọ thân: 3 mẫu khác nhau xếp theo thứ tự cố định (không lặp đều) → thân như nét mực tự nhiên
+  const BODY_KEYS = [DRAGON_TEX.body0, DRAGON_TEX.body1, DRAGON_TEX.body2];
+  const ORDER = [1, 0, 2, 1, 2, 0, 0, 2, 1, 2, 1, 0, 2, 0, 1, 1, 0, 2];
+  const inkImgs = Array.from({ length: SEG }, (_, i) => sc.add.image(0, 0, BODY_KEYS[ORDER[i % ORDER.length]] + sfx).setDepth(16 + (SEG - i) * 0.001).setAlpha(0));
+  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setDepth(16.2).setScale(0.55).setAlpha(0);
   const glow = sc.add.image(0, 0, VT.SOFT).setTint(P.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(15.8).setScale(1.1).setAlpha(0);
   const h0 = H(s);
   const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
@@ -1391,68 +1393,34 @@ function dragonFx(s: Stage, aw: boolean): void {
         if (Math.hypot(p.x - o.x, (p.y - (o.y - 6)) / 0.8) < 22) { s.hit(o, P.edge); hitCd.set(o, el + 450); break; }
       }
     }
-    // vẽ rồng SỢI SÁNG (theo ảnh mẫu 2): thân = nhiều sợi sáng chấm li ti chạy song song dọc thân (lệch ngang khác
-    // nhau, gợn sóng nhẹ), to ở cổ thon về đuôi; vài sợi bờm dài tách khỏi lưng bay phất phơ; đầu = tách từ ảnh mẫu.
+    // vẽ rồng THUỶ MẶC (tools/art/dragon_ink.py, theo ảnh mẫu GIF): thân = các nét cọ mực lấy từ chính thân rồng mẫu,
+    // đóng dấu chồng lên nhau dọc theo các đốt (xoay theo chiều thân, to ở cổ thon về đuôi, rung nhẹ);
+    // đầu tách từ khung mẫu, phần cổ của đầu MỜ DẦN và nằm đè lên 3 dấu cọ đầu tiên → không có vết nối.
     const fade = phase === 'done' ? 0 : Math.min(1, el / 200) * (aw ? 1 : Math.min(1, (life - el) / 400 + 0.0001));
     shadow.clear();
-    strands.clear();
-    if (fade > 0) {
-      const pts = body.map((p, i) => {
-        const q = body[Math.min(SEG - 1, i + 1)], pp = body[Math.max(0, i - 1)];
-        const tx = pp.x - q.x, ty = (pp.y - pp.z) - (q.y - q.z), tl = Math.hypot(tx, ty) || 1;
-        const f = 1 - i / SEG;
-        return { x: p.x, y: p.y - p.z, nx: -ty / tl, ny: tx / tl, w: 3 + 13 * Math.sin(Math.min(1, f * 1.1) * Math.PI * 0.55), f };
-      });
-      for (const p of pts) shadow.fillStyle(0x000000, 0.08 * fade * p.f).fillEllipse(p.x, p.y + 30, p.w * 1.6, p.w * 0.6);
-      const NS = 9;
-      for (let k2 = 0; k2 < NS; k2++) {
-        const off = (k2 / (NS - 1)) * 2 - 1;                               // -1 .. 1 ngang thân
-        const bright = 1 - Math.abs(off) * 0.55;
-        for (let i = 1; i < SEG; i++) {
-          const p = pts[i], wv = Math.sin(el / 260 + i * 0.5 + k2 * 1.7) * 0.18;
-          const o = (off + wv) * p.w;
-          const x = p.x + p.nx * o, y = p.y + p.ny * o;
-          strands.fillStyle(k2 === (NS >> 1) ? P.hot : P.edge, (0.35 + 0.55 * bright) * fade * (0.4 + 0.6 * p.f));
-          strands.fillCircle(x, y, 0.8 + 0.9 * bright * p.f);
-          if (i % 2 === 0) {                                               // chấm phụ cho dày sợi
-            const p2 = pts[i - 1];
-            strands.fillCircle((x + p2.x + p2.nx * o) / 2, (y + p2.y + p2.ny * o) / 2, 0.7);
-          }
-        }
-      }
-      // sợi bờm dài tách khỏi lưng, bay ngược về sau + gợn sóng
-      for (let m = 0; m < 6; m++) {
-        const i0 = 2 + m * 4;
-        if (i0 >= SEG - 6) break;
-        const side = m % 2 ? 1 : -1;
-        let x = pts[i0].x + pts[i0].nx * pts[i0].w * side, y = pts[i0].y + pts[i0].ny * pts[i0].w * side;
-        for (let j = 1; j < 16; j++) {
-          const pj = pts[Math.min(SEG - 1, i0 + j)];
-          const sw = Math.sin(el / 200 + j * 0.6 + m) * 6 * (j / 16);
-          const tx = pj.x + pj.nx * (pj.w * side * (1 + j * 0.12) + sw), ty = pj.y + pj.ny * (pj.w * side * (1 + j * 0.12) + sw);
-          x += (tx - x) * 0.6; y += (ty - y) * 0.6;
-          strands.fillStyle(P.edge, 0.75 * fade * (1 - j / 16)).fillCircle(x, y, 0.9);
-        }
-      }
-      glowLine.clear();
-      for (let i = 1; i < SEG; i++) {
-        const p = pts[i], q = pts[i - 1];
-        glowLine.lineStyle(p.w * 1.6, P.glow, 0.07 * fade * p.f).lineBetween(q.x, q.y, p.x, p.y);
-      }
+    for (let i = SEG - 1; i >= 0; i--) {
+      const p = body[i], q = body[Math.min(SEG - 1, i + 1)], pp = body[Math.max(0, i - 1)];
+      const f = 1 - i / SEG;
+      const thick = 0.18 + 0.82 * Math.pow(f, 0.75);
+      const rot = Math.atan2((pp.y - pp.z) - (q.y - q.z), pp.x - q.x);
+      shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 10, 30 * thick, 10 * thick);
+      inkImgs[i].setPosition(p.x, p.y - p.z).setRotation(rot + Math.sin(el / 180 + i) * 0.08)
+        .setScale(0.62, 0.66 * thick * (0.92 + 0.08 * Math.sin(el / 150 + i * 1.3))).setFlipY(ORDER[(i + 5) % ORDER.length] === 2).setAlpha(fade * (0.6 + 0.3 * f) * (i % 2 ? 0.75 : 1));
     }
-    const hp = body[0], hq = body[2];
+    const hp = body[0], hq = body[3];
     const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
     const flip = Math.cos(hrot) < 0;
-    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(flip).setOrigin(0.199, flip ? 1 - 0.385 : 0.385).setAlpha(fade);
-    glow.setPosition(hp.x, hp.y - hp.z).setAlpha(0.35 * fade);
-    if (fade > 0 && Math.random() < 0.8) {                                   // hạt sáng li ti bay quanh
+    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(flip).setOrigin(0.006, flip ? 1 - 0.727 : 0.727).setAlpha(fade);
+    glow.setPosition(hp.x + Math.cos(hrot) * 30, hp.y - hp.z + Math.sin(hrot) * 30).setAlpha(0.3 * fade);
+    if (fade > 0 && Math.random() < 0.5) {                                   // mực văng / tia sét nhỏ tách khỏi thân
       const d = body[2 + Math.floor(Math.random() * (SEG - 4))];
-      const sp = sc.add.image(d.x + (Math.random() - 0.5) * 30, d.y - d.z + (Math.random() - 0.5) * 24, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.12 + Math.random() * 0.12).setAlpha(0.95);
-      sc.tweens.add({ targets: sp, y: sp.y - 8 - Math.random() * 12, alpha: 0, duration: 500 + Math.random() * 400, onComplete: () => sp.destroy() });
+      const sp = sc.add.image(d.x + (Math.random() - 0.5) * 26, d.y - d.z + (Math.random() - 0.5) * 20, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.1 + Math.random() * 0.12).setAlpha(0.9);
+      sc.tweens.add({ targets: sp, x: sp.x + (Math.random() - 0.5) * 20, y: sp.y - 6 - Math.random() * 10, alpha: 0, duration: 400 + Math.random() * 300, onComplete: () => sp.destroy() });
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      shadow.destroy(); headImg.destroy(); glow.destroy(); strands.destroy(); glowLine.destroy();
+      shadow.destroy(); headImg.destroy(); glow.destroy();
+      for (const o of inkImgs) o.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
@@ -1464,23 +1432,24 @@ function dragonFx(s: Stage, aw: boolean): void {
 function dragonBlast(s: Stage, c: Pt): void {
   const k = s.kit, sc = k.scene;
   const R = 150;
-  k.glow(c.x, c.y, 0xff3040, R * 1.6, 420);
+  k.glow(c.x, c.y, 0x9a40ff, R * 1.6, 420);
   if (sc.textures.exists(SHOCK_T6)) {
     const key = SHOCK_T6 + '_play';
     if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(SHOCK_T6, {}), frameRate: 30 });
-    const sp = sc.add.sprite(c.x, c.y + 6, SHOCK_T6, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(4).setTint(0xff5050).setScale(R / (SHOCK_RING * 256));
+    const sp = sc.add.sprite(c.x, c.y + 6, SHOCK_T6, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(4).setTint(0xc890ff).setScale(R / (SHOCK_RING * 256));
     sp.play(key);
     sp.once('animationcomplete', () => sp.destroy());
   }
-  if (sc.textures.exists(FIRE_TEX.blast)) {
-    const key = FIRE_TEX.blast + '_play';
-    if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(FIRE_TEX.blast, {}), frameRate: 28 });
-    const bl = sc.add.sprite(c.x, c.y - 40, FIRE_TEX.blast, 0).setDepth(18).setScale(1.3).setTint(0xff6060);
+  const BL = FIRE_TEX.blast + '_blue';                                    // cầu nổ bản xanh, nhuộm tím
+  if (sc.textures.exists(BL)) {
+    const key = BL + '_play';
+    if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(BL, {}), frameRate: 28 });
+    const bl = sc.add.sprite(c.x, c.y - 40, BL, 0).setDepth(18).setScale(1.3).setTint(0xd0a0ff);
     bl.play(key);
     bl.once('animationcomplete', () => bl.destroy());
   }
-  k.burst(c.x, c.y - 6, [0xffe0a0, 0xff4040, 0xffffff], 36, { tex: VT.SPARK, speed: [160, 460], angle: [190, 350], gravity: 520, scale: [0.5, 0], life: 800 });
-  k.debris(c.x, c.y, 14, 0x4a2a24);
+  k.burst(c.x, c.y - 6, [0xe0c8ff, 0x9a40ff, 0xffffff], 36, { tex: VT.SPARK, speed: [160, 460], angle: [190, 350], gravity: 520, scale: [0.5, 0], life: 800 });
+  k.debris(c.x, c.y, 14, 0x2a2440);
   k.shake(320, 0.014);
   for (const o of near(s, c, R)) {
     s.hit(o, 0xffd0a0);
