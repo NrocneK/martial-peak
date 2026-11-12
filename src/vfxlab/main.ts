@@ -36,7 +36,7 @@ class LabScene extends Phaser.Scene {
   preload(): void {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
     this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
-    this.load.image(TIGER_HEAD, '/vfx/tiger_head.png?v=3');
+    this.load.image(TIGER_HEAD, '/vfx/tiger_head.png?v=4');
     this.load.image(ARROW_HEAD, '/vfx/arrow_head.png?v=1');
     for (const [n, key] of Object.entries(FIST_TEX)) this.load.image(key, `/vfx/fist_${n}.png?v=3`);
     for (const [n, key] of Object.entries(SPEAR_TEX)) this.load.image(key, `/vfx/spear_${n}.png?v=1`);

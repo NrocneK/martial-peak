@@ -15,7 +15,11 @@ from PIL import Image, ImageDraw, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(HERE, 'out')
-CROP = (215, 395, 915, 1275)          # chỉ phần đầu hổ (bỏ dải mực xoáy quanh)
+CROP = (130, 400, 940, 1250)
+# đường bao ĐẦU hổ trong ảnh mẫu (đủ 2 tai + 2 bên má/bờm, cắt ngang trán để bỏ phần lưng phía trên)
+HEAD = [(240, 440), (268, 452), (318, 500), (400, 515), (540, 505), (680, 510), (742, 488), (800, 455), (830, 448),
+        (860, 500), (888, 580), (900, 680), (890, 790), (862, 895), (820, 995), (760, 1085), (680, 1165), (595, 1212),
+        (500, 1218), (405, 1175), (310, 1075), (235, 970), (185, 860), (172, 760), (182, 650), (205, 548), (225, 470)]
 SIZE = 320
 
 
@@ -35,14 +39,12 @@ def main():
     bgm = (a[..., 0] == 255) & (a[..., 1] == 0) & (a[..., 2] == 255)
     alpha = (~bgm).astype(np.uint8) * 255
     rgba = np.dstack([np.array(src), alpha])
+    # chỉ giữ trong đường bao đầu hổ (mép mềm), bỏ lưng + dải mực xoáy
+    hm = Image.new('L', src.size, 0)
+    ImageDraw.Draw(hm).polygon(HEAD, fill=255)
+    hm = hm.filter(ImageFilter.GaussianBlur(6))
+    rgba[..., 3] = (rgba[..., 3].astype(float) * np.array(hm) / 255).astype(np.uint8)
     img = Image.fromarray(rgba, 'RGBA').crop(CROP)
-    # mép mềm 1px để khỏi răng cưa + mờ dần ra rìa theo hình elip (khung cắt không để lại cạnh thẳng)
-    al = np.array(img.getchannel('A').filter(ImageFilter.GaussianBlur(1.2))).astype(float)
-    hh, ww = al.shape
-    yy, xx = np.mgrid[0:hh, 0:ww].astype(float)
-    rr = np.hypot((xx - ww / 2) / (ww / 2), (yy - hh * 0.47) / (hh * 0.53))
-    al *= np.clip((1.0 - rr) / 0.3, 0, 1) ** 1.2           # mờ dần rất rộng → không thấy rìa
-    img.putalpha(Image.fromarray(al.astype(np.uint8)))
     k = SIZE / max(img.size)
     img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
     # quầng sáng trắng sau lưng
