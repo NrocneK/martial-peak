@@ -78,8 +78,26 @@ def main():
     hp[..., :3] = (255, 248, 230)
     # (bỏ quầng sáng viền ngoài — tạo thành rìa giới hạn lộ rõ)
     canvas.alpha_composite(img, (pad, pad))
+    # ĐỔI STYLE giống sóng xung kích (mẫu video): ánh sáng năng lượng xanh lam trên nền đen, hoà trộn cộng sáng.
+    #   lông trắng → sáng xanh lam/trắng, mảng xám → xanh đậm mờ, nét mực đen → trong suốt (khe tối giữa các vệt sáng)
+    a = np.array(canvas).astype(float)
+    lum = a[..., :3].mean(2) / 255 * (a[..., 3] / 255)
+    t = np.clip((lum - 0.18) / 0.82, 0, 1) ** 1.25
+    stops = [(0.0, (8, 40, 60)), (0.35, (30, 120, 160)), (0.65, (90, 200, 220)), (0.85, (170, 240, 245)), (1.0, (245, 255, 255))]
+    col = np.zeros(t.shape + (3,))
+    for (x0, c0), (x1, c1) in zip(stops, stops[1:]):
+        m = (t >= x0) & (t <= x1)
+        k = ((t - x0) / (x1 - x0))[m][:, None]
+        col[m] = np.array(c0) * (1 - k) + np.array(c1) * k
+    alpha = np.clip(t * 1.15, 0, 1)
+    sharp = Image.fromarray(np.dstack([col, alpha * 255]).astype(np.uint8), 'RGBA')
+    glow = np.array(sharp.filter(ImageFilter.GaussianBlur(4))).astype(float)
+    glow[..., :3] = (60, 190, 230)
+    glow[..., 3] *= 0.9
+    canvas = Image.fromarray(glow.astype(np.uint8), 'RGBA')
+    canvas.alpha_composite(sharp)
     canvas.save(os.path.join(ROOT, 'public', 'vfx', 'tiger_head.png'))
-    pv = Image.new('RGBA', (canvas.width + 20, canvas.height + 20), (28, 26, 40, 255))
+    pv = Image.new('RGBA', (canvas.width + 20, canvas.height + 20), (16, 14, 26, 255))
     pv.alpha_composite(canvas, (10, 10))
     pv.save(os.path.join(OUT, 'tiger_fx_preview.png'))
     print('ok', canvas.size)
