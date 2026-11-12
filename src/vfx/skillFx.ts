@@ -1301,18 +1301,22 @@ const daiDao: Fx = (s, aw) => {
  *  rồi đâm thẳng xuống đất nổ. Rồng dựng dạng CHUỖI ĐỐT: đầu bay trước, các đốt thân bám đúng đường đầu đã đi.
  *  Bay ở độ cao z (vẽ lệch lên trên), có bóng mờ dưới đất. Đầu rồng cách điệu bằng ánh sáng (sẽ thay ảnh nếu có). */
 const DRAGON_PAL = {
-  normal: { edge: 0xe8b84a, core: 0x8ff0ff, hot: 0xffffff, glow: 0x5ac8ff, eye: 0xffffff, dark: 0x3a2a10 },
-  awaken: { edge: 0xb8101e, core: 0xffc240, hot: 0xffe0a0, glow: 0xff2a3a, eye: 0xfff6c0, dark: 0x1a0306 },
+  normal: { edge: 0xf0d090, glow: 0xffc860 },
+  awaken: { edge: 0xff7050, glow: 0xff2a3a },
 };
+export const DRAGON_TEX = { head: 'vx_dragon_head', body: 'vx_dragon_body', mane: 'vx_dragon_mane' } as const;
 function dragonFx(s: Stage, aw: boolean): void {
   const k = s.kit, sc = k.scene;
   const P = aw ? DRAGON_PAL.awaken : DRAGON_PAL.normal;
   const life = aw ? 5200 : 4200;
   const RANGE = aw ? 190 : 170;
   const SEG = 34, SP = 6;                                               // số đốt, khoảng cách đốt (px quãng đường)
-  const g = sc.add.graphics().setDepth(16);
-  const ga = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(17);
+  const sfx = aw ? '_aw' : '';
   const shadow = sc.add.graphics().setDepth(2);
+  const bodyImgs = Array.from({ length: SEG }, (_, i) => sc.add.image(0, 0, DRAGON_TEX.body + sfx).setDepth(16 + (SEG - i) * 0.001).setAlpha(0));
+  const maneImgs = Array.from({ length: Math.ceil(SEG / 3) }, () => sc.add.image(0, 0, DRAGON_TEX.mane + sfx).setOrigin(0, 0.5).setDepth(15.9).setAlpha(0));
+  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setDepth(17).setScale(0.62).setAlpha(0);
+  const glow = sc.add.image(0, 0, VT.SOFT).setTint(P.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(15.8).setScale(1.1).setAlpha(0);
   const h0 = H(s);
   const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
   const trail: { x: number; y: number; z: number }[] = [{ x: h0.x, y: h0.y, z: 6 }];
@@ -1387,54 +1391,39 @@ function dragonFx(s: Stage, aw: boolean): void {
         if (Math.hypot(p.x - o.x, (p.y - (o.y - 6)) / 0.8) < 22) { s.hit(o, P.edge); hitCd.set(o, el + 450); break; }
       }
     }
-    // vẽ: bóng mờ dưới đất → thân (đuôi trước, đầu sau) → đầu
+    // vẽ rồng BỤI VÀNG (tools/art/dragon_gold.py, theo ảnh mẫu): thân = nét cọ bụi đặt dọc theo các đốt, xoay theo
+    // chiều thân, to ở giữa thon về đuôi; bờm/vây = chùm lông dài bay ngược về sau; đầu = tách từ ảnh mẫu.
     const fade = phase === 'done' ? 0 : Math.min(1, el / 200) * (aw ? 1 : Math.min(1, (life - el) / 400 + 0.0001));
-    g.clear(); ga.clear(); shadow.clear();
-    if (fade > 0) {
-      for (let i = SEG - 1; i >= 0; i--) {
-        const p = body[i];
-        const f = 1 - i / SEG;                                             // 1 ở đầu → 0 ở đuôi
-        const r = 2 + 9 * Math.sin(Math.min(1, f * 1.25) * Math.PI * 0.62) * (0.4 + 0.6 * f);
-        const sy = p.y - p.z;
-        shadow.fillStyle(0x000000, 0.12 * fade * f).fillEllipse(p.x, p.y + 8, r * 2.2, r * 0.8);
-        g.fillStyle(P.dark, 0.9 * fade).fillCircle(p.x, sy, r + 1.4);          // viền tối tách thân khỏi nền
-        g.fillStyle(P.edge, 0.95 * fade).fillCircle(p.x, sy, r);               // vảy vàng
-        g.fillStyle(P.core, 0.95 * fade).fillCircle(p.x, sy - r * 0.15, r * 0.5);   // dải khí giữa thân
-        ga.fillStyle(P.glow, 0.05 * fade).fillCircle(p.x, sy, r * 2.2);
-        if (i % 2 === 0 && i > 1 && i < SEG - 4) {                         // vây lưng răng cưa (hướng lên trên)
-          const q = body[Math.min(SEG - 1, i + 1)];
-          const tx = p.x - q.x, ty = sy - (q.y - q.z), tl = Math.hypot(tx, ty) || 1;
-          let ox = -ty / tl, oy = tx / tl;
-          if (oy > 0) { ox = -ox; oy = -oy; }
-          const fin = r * (1.1 + 0.5 * f);
-          g.fillStyle(P.edge, 0.95 * fade).fillTriangle(p.x - tx / tl * r * 0.6, sy - ty / tl * r * 0.6, p.x + tx / tl * r * 0.6, sy + ty / tl * r * 0.6, p.x + ox * fin - tx / tl * fin * 0.6, sy + oy * fin - ty / tl * fin * 0.6);
-        }
+    shadow.clear();
+    for (let i = SEG - 1; i >= 0; i--) {
+      const p = body[i], q = body[Math.min(SEG - 1, i + 1)];
+      const f = 1 - i / SEG;                                               // 1 ở đầu → 0 ở đuôi
+      const thick = 0.25 + 0.75 * Math.sin(Math.min(1, f * 1.15) * Math.PI * 0.55);
+      const sy = p.y - p.z, qy = q.y - q.z;
+      const rot = Math.atan2(sy - qy, p.x - q.x);
+      shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 8, 16 * thick, 6 * thick);
+      bodyImgs[i].setPosition(p.x, sy).setRotation(rot).setScale(0.42, 1.0 * thick * (0.9 + 0.1 * Math.sin(el / 120 + i))).setAlpha(0.95 * fade);
+      if (i % 3 === 1 && i < SEG - 3) {
+        const m = maneImgs[(i - 1) / 3];
+        const sway = Math.sin(el / 160 + i * 0.7) * 0.25;
+        const up = Math.cos(rot) >= 0 ? -1 : 1;                           // vây luôn mọc về phía trên lưng
+        m.setPosition(p.x, sy).setRotation(rot + Math.PI + up * (0.45 + sway)).setScale(0.6 * thick + 0.2, (0.8 + 0.6 * thick) * -up).setAlpha(0.85 * fade);
       }
-      // đầu rồng cách điệu: hàm nhọn, 2 sừng cong, bờm khí, mắt rực
-      const hx = head.x, hy = head.y - head.z, a = Math.atan2(body[0].y - body[2].y - (body[0].z - body[2].z), body[0].x - body[2].x) || head.a;
-      const fx = Math.cos(a), fy = Math.sin(a), nx = -fy, ny = fx;
-      const pt2 = (f0: number, n0: number) => { const f = f0 * 1.5, n = n0 * 1.5; return { x: hx + fx * f + nx * n, y: hy + fy * f + ny * n }; };
-      const snout = [pt2(20, 0), pt2(8, 7), pt2(-6, 8), pt2(-10, 0), pt2(-6, -8), pt2(8, -7)];
-      g.fillStyle(P.dark, fade).fillCircle(hx, hy, 14);
-      g.fillStyle(P.edge, fade).fillPoints(snout.map((q) => new Phaser.Math.Vector2(q.x, q.y)), true);
-      g.fillStyle(P.core, fade).fillPoints([pt2(16, 0), pt2(6, 4.5), pt2(-5, 5), pt2(-7, 0), pt2(-5, -5), pt2(6, -4.5)].map((q) => new Phaser.Math.Vector2(q.x, q.y)), true);
-      for (const side of [-1, 1]) {
-        const h1 = pt2(-4, side * 6), h2 = pt2(-16, side * 13), h3 = pt2(-24, side * 10);
-        ga.lineStyle(2.4, P.edge, fade).beginPath().moveTo(h1.x, h1.y).lineTo(h2.x, h2.y).lineTo(h3.x, h3.y).strokePath();
-        for (let m = 0; m < 3; m++) {                                     // bờm khí
-          const b0 = pt2(-6 - m * 3, side * 4), b1 = pt2(-22 - m * 5 + Math.sin(el / 90 + m) * 3, side * (12 + m * 3));
-          ga.lineStyle(1.2, P.glow, 0.8 * fade).lineBetween(b0.x, b0.y, b1.x, b1.y);
-        }
-        const eye = pt2(4, side * 3.5);
-        ga.fillStyle(P.eye, fade).fillCircle(eye.x, eye.y, 1.8);
-        const wh = pt2(14, side * 3), wh2 = pt2(2 + Math.sin(el / 70) * 3, side * (16 + Math.cos(el / 110) * 3));
-        ga.lineStyle(1, P.hot, 0.8 * fade).lineBetween(wh.x, wh.y, wh2.x, wh2.y);   // râu rồng
-      }
-      ga.fillStyle(P.glow, 0.18 * fade).fillCircle(hx, hy, 22);
+    }
+    const hp = body[0], hq = body[2];
+    const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
+    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(Math.cos(hrot) < 0).setAlpha(fade);
+    headImg.setOrigin(0.2, Math.cos(hrot) < 0 ? 1 - 0.263 : 0.263);
+    glow.setPosition(hp.x, hp.y - hp.z).setAlpha(0.35 * fade);
+    if (fade > 0 && Math.random() < 0.6) {                                   // bụi vàng rắc dọc đường bay
+      const d = body[3 + Math.floor(Math.random() * (SEG - 6))];
+      const sp = sc.add.image(d.x + (Math.random() - 0.5) * 10, d.y - d.z + (Math.random() - 0.5) * 8, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.18 + Math.random() * 0.15).setAlpha(0.9);
+      sc.tweens.add({ targets: sp, y: sp.y + 14 + Math.random() * 10, alpha: 0, duration: 500 + Math.random() * 300, onComplete: () => sp.destroy() });
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      g.destroy(); ga.destroy(); shadow.destroy();
+      shadow.destroy(); headImg.destroy(); glow.destroy();
+      for (const o of [...bodyImgs, ...maneImgs]) o.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
