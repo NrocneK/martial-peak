@@ -778,6 +778,8 @@ const linhDan: Fx = (s, aw) => {
 /** Liệt Hỏa Phù — lá bùa nhỏ vẽ mới + vụ nổ cầu lửa cuộn khói + vòng sóng lửa sát đất + biển lửa (tools/art/fire_fx.py) */
 export const FIRE_TEX = { talisman: 'vx_fire_talisman', blast: 'vx_fire_blast', ring: 'vx_fire_ring' } as const;
 export const BURN_TEX = { in: 'vx_burn_in', loop: 'vx_burn_loop', out: 'vx_burn_out' } as const;
+/** số khung có hình của từng đoạn (theo tools/art/burn_ground.py) */
+const BURN_FRAMES = { in: 27, loop: 30, out: 23 };
 function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
   const k = s.kit, sc = k.scene;
   // lóe sáng + vòng sóng lửa loang sát đất
@@ -795,12 +797,13 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
   for (const o of near(s, p, R)) s.hit(o, 0xff7a30);
   // biển lửa — mặt đất cháy lấy từ video mẫu (tools/art/burn_ground.py): bùng cháy → vòng lửa cuộn LẶP tới hết
   // thời gian cháy → tàn dần. Vòng lửa trong khung rộng ≈ 78% bề ngang khung.
-  const mk = (key: string, rep: number) => {
+  // CHỈ lấy đúng số khung có hình — lưới 8 cột còn ô trống ở cuối, đọc cả ô trống làm vùng cháy tắt một nhịp
+  const mk = (key: string, count: number, rep: number) => {
     const ak = key + '_play';
-    if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(key, {}), frameRate: 15, repeat: rep });
+    if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(key, { start: 0, end: count - 1 }), frameRate: 15, repeat: rep });
     return ak;
   };
-  const aIn = mk(BURN_TEX.in, 0), aLoop = mk(BURN_TEX.loop, -1), aOut = mk(BURN_TEX.out, 0);
+  const aIn = mk(BURN_TEX.in, BURN_FRAMES.in, 0), aLoop = mk(BURN_TEX.loop, BURN_FRAMES.loop, -1), aOut = mk(BURN_TEX.out, BURN_FRAMES.out, 0);
   const bg = sc.add.sprite(p.x, p.y - R * 0.22, BURN_TEX.in, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale((R * 2.3) / (256 * 0.78));
   bg.play(aIn);
   bg.once('animationcomplete', () => bg.play(aLoop));
