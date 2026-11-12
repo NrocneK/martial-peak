@@ -1301,8 +1301,8 @@ const daiDao: Fx = (s, aw) => {
  *  rồi đâm thẳng xuống đất nổ. Rồng dựng dạng CHUỖI ĐỐT: đầu bay trước, các đốt thân bám đúng đường đầu đã đi.
  *  Bay ở độ cao z (vẽ lệch lên trên), có bóng mờ dưới đất. Đầu rồng cách điệu bằng ánh sáng (sẽ thay ảnh nếu có). */
 const DRAGON_PAL = {
-  normal: { edge: 0xf0d090, glow: 0xffc860 },
-  awaken: { edge: 0xff7050, glow: 0xff2a3a },
+  normal: { edge: 0xffd060, hot: 0xfff4c0, glow: 0xffb030 },
+  awaken: { edge: 0xff5038, hot: 0xffc080, glow: 0xff2030 },
 };
 export const DRAGON_TEX = { head: 'vx_dragon_head', body: 'vx_dragon_body', mane: 'vx_dragon_mane' } as const;
 function dragonFx(s: Stage, aw: boolean): void {
@@ -1313,9 +1313,9 @@ function dragonFx(s: Stage, aw: boolean): void {
   const SEG = 34, SP = 6;                                               // số đốt, khoảng cách đốt (px quãng đường)
   const sfx = aw ? '_aw' : '';
   const shadow = sc.add.graphics().setDepth(2);
-  const bodyImgs = Array.from({ length: SEG }, (_, i) => sc.add.image(0, 0, DRAGON_TEX.body + sfx).setDepth(16 + (SEG - i) * 0.001).setAlpha(0));
-  const maneImgs = Array.from({ length: Math.ceil(SEG / 3) }, () => sc.add.image(0, 0, DRAGON_TEX.mane + sfx).setOrigin(0, 0.5).setDepth(15.9).setAlpha(0));
-  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setDepth(17).setScale(0.62).setAlpha(0);
+  const glowLine = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(15.7);
+  const strands = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(16);
+  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setBlendMode(Phaser.BlendModes.ADD).setDepth(17).setScale(0.5).setAlpha(0);
   const glow = sc.add.image(0, 0, VT.SOFT).setTint(P.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(15.8).setScale(1.1).setAlpha(0);
   const h0 = H(s);
   const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
@@ -1391,39 +1391,68 @@ function dragonFx(s: Stage, aw: boolean): void {
         if (Math.hypot(p.x - o.x, (p.y - (o.y - 6)) / 0.8) < 22) { s.hit(o, P.edge); hitCd.set(o, el + 450); break; }
       }
     }
-    // vẽ rồng BỤI VÀNG (tools/art/dragon_gold.py, theo ảnh mẫu): thân = nét cọ bụi đặt dọc theo các đốt, xoay theo
-    // chiều thân, to ở giữa thon về đuôi; bờm/vây = chùm lông dài bay ngược về sau; đầu = tách từ ảnh mẫu.
+    // vẽ rồng SỢI SÁNG (theo ảnh mẫu 2): thân = nhiều sợi sáng chấm li ti chạy song song dọc thân (lệch ngang khác
+    // nhau, gợn sóng nhẹ), to ở cổ thon về đuôi; vài sợi bờm dài tách khỏi lưng bay phất phơ; đầu = tách từ ảnh mẫu.
     const fade = phase === 'done' ? 0 : Math.min(1, el / 200) * (aw ? 1 : Math.min(1, (life - el) / 400 + 0.0001));
     shadow.clear();
-    for (let i = SEG - 1; i >= 0; i--) {
-      const p = body[i], q = body[Math.min(SEG - 1, i + 1)];
-      const f = 1 - i / SEG;                                               // 1 ở đầu → 0 ở đuôi
-      const thick = 0.25 + 0.75 * Math.sin(Math.min(1, f * 1.15) * Math.PI * 0.55);
-      const sy = p.y - p.z, qy = q.y - q.z;
-      const rot = Math.atan2(sy - qy, p.x - q.x);
-      shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 8, 16 * thick, 6 * thick);
-      bodyImgs[i].setPosition(p.x, sy).setRotation(rot).setScale(0.42, 1.0 * thick * (0.9 + 0.1 * Math.sin(el / 120 + i))).setAlpha(0.95 * fade);
-      if (i % 3 === 1 && i < SEG - 3) {
-        const m = maneImgs[(i - 1) / 3];
-        const sway = Math.sin(el / 160 + i * 0.7) * 0.25;
-        const up = Math.cos(rot) >= 0 ? -1 : 1;                           // vây luôn mọc về phía trên lưng
-        m.setPosition(p.x, sy).setRotation(rot + Math.PI + up * (0.45 + sway)).setScale(0.6 * thick + 0.2, (0.8 + 0.6 * thick) * -up).setAlpha(0.85 * fade);
+    strands.clear();
+    if (fade > 0) {
+      const pts = body.map((p, i) => {
+        const q = body[Math.min(SEG - 1, i + 1)], pp = body[Math.max(0, i - 1)];
+        const tx = pp.x - q.x, ty = (pp.y - pp.z) - (q.y - q.z), tl = Math.hypot(tx, ty) || 1;
+        const f = 1 - i / SEG;
+        return { x: p.x, y: p.y - p.z, nx: -ty / tl, ny: tx / tl, w: 3 + 13 * Math.sin(Math.min(1, f * 1.1) * Math.PI * 0.55), f };
+      });
+      for (const p of pts) shadow.fillStyle(0x000000, 0.08 * fade * p.f).fillEllipse(p.x, p.y + 30, p.w * 1.6, p.w * 0.6);
+      const NS = 9;
+      for (let k2 = 0; k2 < NS; k2++) {
+        const off = (k2 / (NS - 1)) * 2 - 1;                               // -1 .. 1 ngang thân
+        const bright = 1 - Math.abs(off) * 0.55;
+        for (let i = 1; i < SEG; i++) {
+          const p = pts[i], wv = Math.sin(el / 260 + i * 0.5 + k2 * 1.7) * 0.18;
+          const o = (off + wv) * p.w;
+          const x = p.x + p.nx * o, y = p.y + p.ny * o;
+          strands.fillStyle(k2 === (NS >> 1) ? P.hot : P.edge, (0.35 + 0.55 * bright) * fade * (0.4 + 0.6 * p.f));
+          strands.fillCircle(x, y, 0.8 + 0.9 * bright * p.f);
+          if (i % 2 === 0) {                                               // chấm phụ cho dày sợi
+            const p2 = pts[i - 1];
+            strands.fillCircle((x + p2.x + p2.nx * o) / 2, (y + p2.y + p2.ny * o) / 2, 0.7);
+          }
+        }
+      }
+      // sợi bờm dài tách khỏi lưng, bay ngược về sau + gợn sóng
+      for (let m = 0; m < 6; m++) {
+        const i0 = 2 + m * 4;
+        if (i0 >= SEG - 6) break;
+        const side = m % 2 ? 1 : -1;
+        let x = pts[i0].x + pts[i0].nx * pts[i0].w * side, y = pts[i0].y + pts[i0].ny * pts[i0].w * side;
+        for (let j = 1; j < 16; j++) {
+          const pj = pts[Math.min(SEG - 1, i0 + j)];
+          const sw = Math.sin(el / 200 + j * 0.6 + m) * 6 * (j / 16);
+          const tx = pj.x + pj.nx * (pj.w * side * (1 + j * 0.12) + sw), ty = pj.y + pj.ny * (pj.w * side * (1 + j * 0.12) + sw);
+          x += (tx - x) * 0.6; y += (ty - y) * 0.6;
+          strands.fillStyle(P.edge, 0.75 * fade * (1 - j / 16)).fillCircle(x, y, 0.9);
+        }
+      }
+      glowLine.clear();
+      for (let i = 1; i < SEG; i++) {
+        const p = pts[i], q = pts[i - 1];
+        glowLine.lineStyle(p.w * 1.6, P.glow, 0.07 * fade * p.f).lineBetween(q.x, q.y, p.x, p.y);
       }
     }
     const hp = body[0], hq = body[2];
     const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
-    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(Math.cos(hrot) < 0).setAlpha(fade);
-    headImg.setOrigin(0.2, Math.cos(hrot) < 0 ? 1 - 0.263 : 0.263);
+    const flip = Math.cos(hrot) < 0;
+    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(flip).setOrigin(0.199, flip ? 1 - 0.385 : 0.385).setAlpha(fade);
     glow.setPosition(hp.x, hp.y - hp.z).setAlpha(0.35 * fade);
-    if (fade > 0 && Math.random() < 0.6) {                                   // bụi vàng rắc dọc đường bay
-      const d = body[3 + Math.floor(Math.random() * (SEG - 6))];
-      const sp = sc.add.image(d.x + (Math.random() - 0.5) * 10, d.y - d.z + (Math.random() - 0.5) * 8, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.18 + Math.random() * 0.15).setAlpha(0.9);
-      sc.tweens.add({ targets: sp, y: sp.y + 14 + Math.random() * 10, alpha: 0, duration: 500 + Math.random() * 300, onComplete: () => sp.destroy() });
+    if (fade > 0 && Math.random() < 0.8) {                                   // hạt sáng li ti bay quanh
+      const d = body[2 + Math.floor(Math.random() * (SEG - 4))];
+      const sp = sc.add.image(d.x + (Math.random() - 0.5) * 30, d.y - d.z + (Math.random() - 0.5) * 24, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.12 + Math.random() * 0.12).setAlpha(0.95);
+      sc.tweens.add({ targets: sp, y: sp.y - 8 - Math.random() * 12, alpha: 0, duration: 500 + Math.random() * 400, onComplete: () => sp.destroy() });
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      shadow.destroy(); headImg.destroy(); glow.destroy();
-      for (const o of [...bodyImgs, ...maneImgs]) o.destroy();
+      shadow.destroy(); headImg.destroy(); glow.destroy(); strands.destroy(); glowLine.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra

@@ -100,9 +100,42 @@ def mane(w=80, h=36):
     save_pair(np.clip(a * (0.6 + 0.5 * grain), 0, 1), np.clip(a * 1.3 * (0.6 + 0.5 * grain), 0, 1), 'dragon_mane')
 
 
+HEAD2_POLY = [(95, 415), (200, 405), (300, 470), (420, 560), (475, 690), (420, 800), (320, 830), (230, 770), (150, 690),
+              (85, 600), (65, 520)]
+NECK2, SNOUT2 = (300, 770), (162, 452)
+
+
+def head2():
+    """đầu rồng theo ảnh mẫu 2 (dragon_ref2.webp — rồng bằng sợi sáng chấm li ti): đầu + bờm sợi chảy ra sau"""
+    src = np.array(Image.open(os.path.join(HERE, 'ref', 'dragon_ref2.webp')).convert('RGB')).astype(float)
+    lum = src.max(2)
+    alpha = np.clip((lum - 18) / 120, 0, 1)
+    m = Image.new('L', (src.shape[1], src.shape[0]), 0)
+    ImageDraw.Draw(m).polygon(HEAD2_POLY, fill=255)
+    alpha *= np.array(m.filter(ImageFilter.GaussianBlur(14))) / 255
+    t = np.clip(src.mean(2) / 230, 0, 1)
+    ang = math.degrees(math.atan2(SNOUT2[1] - NECK2[1], SNOUT2[0] - NECK2[0]))
+    for stops, suf in ((None, ''), (BLOOD, '_aw')):
+        col = src if stops is None else ramp(t, stops)
+        im = Image.fromarray(np.dstack([col, alpha * 255]).astype(np.uint8), 'RGBA')
+        W, H = im.size
+        big = Image.new('RGBA', (W * 2, H * 2), (0, 0, 0, 0))
+        big.paste(im, (W - NECK2[0], H - NECK2[1]))
+        rot = big.rotate(ang, resample=Image.BICUBIC, center=(W, H))
+        bb = rot.getchannel('A').point(lambda v: 255 if v > 10 else 0).getbbox()
+        crop = rot.crop(bb)
+        k = 200 / crop.width
+        crop = crop.resize((200, round(crop.height * k)), Image.LANCZOS)
+        crop.save(os.path.join(VFX, f'dragon_head{suf}.png'))
+        if not suf:
+            print('head2', crop.size, 'neck origin', round((W - bb[0]) / (bb[2] - bb[0]), 3), round((H - bb[1]) / (bb[3] - bb[1]), 3))
+    return Image.open(os.path.join(VFX, 'dragon_head.png'))
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    hd = head()
+    head()
+    hd = head2()
     body()
     mane()
     pv = Image.new('RGBA', (hd.width + 280, max(hd.height, 120) + 20), (10, 10, 12, 255))
