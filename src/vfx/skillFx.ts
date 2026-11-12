@@ -777,6 +777,7 @@ const linhDan: Fx = (s, aw) => {
 
 /** Liệt Hỏa Phù — lá bùa nhỏ vẽ mới + vụ nổ cầu lửa cuộn khói + vòng sóng lửa sát đất + biển lửa (tools/art/fire_fx.py) */
 export const FIRE_TEX = { talisman: 'vx_fire_talisman', blast: 'vx_fire_blast', ring: 'vx_fire_ring' } as const;
+export const BURN_TEX = { in: 'vx_burn_in', loop: 'vx_burn_loop', out: 'vx_burn_out' } as const;
 function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
   const k = s.kit, sc = k.scene;
   // lóe sáng + vòng sóng lửa loang sát đất
@@ -792,16 +793,21 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
   k.burst(p.x, p.y - 10, [0xffe080, 0xff8a20, 0xff4a10], 22, { tex: VT.SPARK, speed: [120, 340], angle: [200, 340], gravity: 420, scale: [0.4, 0], life: 700 });
   k.shake(140, 0.005);
   for (const o of near(s, p, R)) s.hit(o, 0xff7a30);
-  // biển lửa: lửa nhỏ liếm lên khắp vùng (đốm lửa thưa, cao thấp khác nhau), tắt dần
-  const fl = sc.add.particles(p.x, p.y, VT.FLAME, {
-    lifespan: { min: 380, max: 700 }, speedY: { min: -90, max: -40 }, speedX: { min: -10, max: 10 }, scale: { start: 0.55, end: 0.05 }, alpha: { start: 0.9, end: 0 },
-    tint: [0xffe070, 0xff8a20, 0xff4a10], blendMode: Phaser.BlendModes.ADD, frequency: 30,
-    emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 1.7, R * 0.95) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
-  }).setDepth(17);
-  const scorch = sc.add.image(p.x, p.y, VT.SOFT).setTint(0x2a0e04).setDepth(2).setScale(R / 40, R / 70).setAlpha(0.55);
-  k.later(burn, () => fl.stop());
-  sc.tweens.add({ targets: scorch, alpha: 0, delay: burn, duration: 600, onComplete: () => scorch.destroy() });
-  k.later(burn + 800, () => fl.destroy());
+  // biển lửa — mặt đất cháy lấy từ video mẫu (tools/art/burn_ground.py): bùng cháy → vòng lửa cuộn LẶP tới hết
+  // thời gian cháy → tàn dần. Vòng lửa trong khung rộng ≈ 78% bề ngang khung.
+  const mk = (key: string, rep: number) => {
+    const ak = key + '_play';
+    if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(key, {}), frameRate: 15, repeat: rep });
+    return ak;
+  };
+  const aIn = mk(BURN_TEX.in, 0), aLoop = mk(BURN_TEX.loop, -1), aOut = mk(BURN_TEX.out, 0);
+  const bg = sc.add.sprite(p.x, p.y - R * 0.22, BURN_TEX.in, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale((R * 2.3) / (256 * 0.78));
+  bg.play(aIn);
+  bg.once('animationcomplete', () => bg.play(aLoop));
+  k.later(burn, () => {
+    bg.play(aOut);
+    bg.once('animationcomplete', () => bg.destroy());
+  });
 }
 
 /** ném 1 lá bùa nhỏ: bay vòng cung, xoay lật, có vệt tàn lửa; tới nơi bùa bùng cháy rồi nổ */
