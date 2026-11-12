@@ -655,20 +655,109 @@ const hoKhieu: Fx = (s, aw) => {
   });
 };
 
+/** Linh Khí Đạn (lột xác) — LINH CHÂU HỘ THỂ: các quả cầu linh khí xoáy (tools/art/spirit_orb.py) lơ lửng xoay quanh
+ *  người; lần lượt phóng vào quái gần nhất, nổ xoáy khi trúng rồi bay về chỗ. Thức tỉnh: vòng cầu lớn liên tục bắn tia. */
+export const SPIRIT_ORB = 'vx_spirit_orb';
+const ORB_COL = 0x6cc8ff;
+function orbBurst(s: Stage, p: Pt, R: number): void {
+  const k = s.kit, sc = k.scene;
+  k.glow(p.x, p.y, ORB_COL, R * 1.4, 240);
+  const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(16);
+  let el = 0;
+  const step = (_t: number, dms: number) => {
+    el += dms * sc.time.timeScale;
+    const u = Math.min(1, el / 300);
+    g.clear();
+    for (let i = 0; i < 4; i++) {                                    // xoáy xé tan: 4 nhánh cong bung ra
+      const a0 = (i * Math.PI) / 2 + u * 3;
+      g.lineStyle(3, 0xd8f6ff, 0.9 * (1 - u)).beginPath();
+      for (let j = 0; j <= 12; j++) {
+        const f = j / 12, r = R * (0.2 + 0.8 * u) * f;
+        const a = a0 + f * 2.2;
+        const x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r * 0.75;
+        if (j) g.lineTo(x, y);
+        else g.moveTo(x, y);
+      }
+      g.strokePath();
+    }
+    g.lineStyle(2, ORB_COL, 0.8 * (1 - u)).strokeEllipse(p.x, p.y, R * 2 * u, R * 1.5 * u);
+    if (u >= 1) { sc.events.off('update', step); g.destroy(); }
+  };
+  sc.events.on('update', step);
+  for (const o of near(s, p, R)) s.hit(o, ORB_COL);
+}
+
+type Orb = { sp: Phaser.GameObjects.Sprite; slot: number; state: 'orbit' | 'fly' | 'back'; t: number; tgt?: Pt; from?: Pt };
+
 const linhDan: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
-  const ts = s.targets();
-  const n = aw ? 9 : 4;
+  const k = s.kit, sc = k.scene;
+  const n = aw ? 8 : 4;
+  const orbitR = aw ? 62 : 44;
+  const life = aw ? 3600 : 2600;
+  if (!sc.anims.exists('vx_spirit_orb_spin')) sc.anims.create({ key: 'vx_spirit_orb_spin', frames: sc.anims.generateFrameNumbers(SPIRIT_ORB, {}), frameRate: 24, repeat: -1 });
+  const orbs: Orb[] = [];
   for (let i = 0; i < n; i++) {
-    const t = ts[i % Math.max(1, ts.length)] ?? pt(h.x + 100, h.y);
-    k.later(i * 40, () =>
-      k.fly(VT.ORB, h, t, {
-        dur: 420, tint: 0x70c8ff, scale: 0.8, trail: 0x9fd8ff, trailScale: 0.6, arc: (i % 2 ? 1 : -1) * 0.35, ease: 'Sine.easeIn',
-        onArrive: () => { s.hit(t, 0x70c8ff); k.glow(t.x, t.y, 0x9fe0ff, 60, 240); k.ring(t.x, t.y, 0x70c8ff, 6, 40, 240); },
-      }),
-    );
+    const sp = sc.add.sprite(0, 0, SPIRIT_ORB, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(14).setScale(0).setAlpha(0.95);
+    sp.play({ key: 'vx_spirit_orb_spin', startFrame: (i * 3) % 12 });
+    sc.tweens.add({ targets: sp, scale: aw ? 0.36 : 0.32, duration: 260, delay: i * 50, ease: 'Back.easeOut' });
+    orbs.push({ sp, slot: i, state: 'orbit', t: 0 });
   }
-  if (aw) k.burst(h.x, h.y, 0xc8ecff, 20, { tex: VT.ORB, speed: [40, 120], life: 500, scale: [0.4, 0] });
+  let el = 0, nextShot = 450, shotIdx = 0, beamT = 0;
+  const slotPos = (i: number): Pt => {
+    const h = H(s);
+    const a = (el / 1000) * 1.6 + (i / n) * Math.PI * 2;
+    return { x: h.x + Math.cos(a) * orbitR, y: h.y - 4 + Math.sin(a) * orbitR * 0.55 };
+  };
+  const step = (_t: number, dms: number) => {
+    const dt = dms * sc.time.timeScale;
+    el += dt;
+    for (const o of orbs) {
+      const home = slotPos(o.slot);
+      if (o.state === 'orbit') {
+        o.sp.setPosition(home.x, home.y).setDepth(home.y > H(s).y - 4 ? 14 : 9);       // nửa sau vòng nằm sau nhân vật
+      } else if (o.state === 'fly' && o.tgt && o.from) {
+        o.t += dt / 260;
+        const u = Math.min(1, o.t), e = u * u;
+        o.sp.setPosition(o.from.x + (o.tgt.x - o.from.x) * e, o.from.y + (o.tgt.y - o.from.y) * e - Math.sin(u * Math.PI) * 18).setDepth(15);
+        if (u >= 1) { orbBurst(s, o.tgt, aw ? 60 : 46); o.state = 'back'; o.t = 0; o.from = { x: o.tgt.x, y: o.tgt.y }; }
+      } else if (o.state === 'back' && o.from) {
+        o.t += dt / 360;
+        const u = Math.min(1, o.t), e = 1 - (1 - u) ** 2;
+        o.sp.setPosition(o.from.x + (home.x - o.from.x) * e, o.from.y + (home.y - o.from.y) * e);
+        if (u >= 1) o.state = 'orbit';
+      }
+    }
+    if (!aw && el >= nextShot && el < life - 700) {
+      // bản thường: lần lượt phóng từng linh châu đang chờ vào quái gần nhất
+      const o = orbs[shotIdx % n];
+      const ts = s.targets();
+      if (o.state === 'orbit' && ts.length) {
+        const t = ts[shotIdx % Math.min(4, ts.length)];
+        o.state = 'fly'; o.t = 0; o.from = { x: o.sp.x, y: o.sp.y }; o.tgt = { x: t.x, y: t.y - 6 };
+      }
+      shotIdx++;
+      nextShot += 240;
+    }
+    if (aw && el > 500 && el < life - 600 && (beamT -= dt) <= 0) {
+      // thức tỉnh: vòng linh châu liên tục bắn tia linh khí vào quái gần
+      beamT = 110;
+      const o = orbs[shotIdx++ % n];
+      const t = s.targets()[shotIdx % 5];
+      if (t) {
+        const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(15);
+        g.lineStyle(7, ORB_COL, 0.3).lineBetween(o.sp.x, o.sp.y, t.x, t.y - 6);
+        g.lineStyle(2.5, 0xe8faff, 0.95).lineBetween(o.sp.x, o.sp.y, t.x, t.y - 6);
+        sc.tweens.add({ targets: g, alpha: 0, duration: 140, onComplete: () => g.destroy() });
+        k.glow(t.x, t.y - 6, ORB_COL, 30, 140);
+        s.hit(t, ORB_COL);
+      }
+    }
+    if (el >= life) {
+      sc.events.off('update', step);
+      for (const o of orbs) sc.tweens.add({ targets: o.sp, scale: 0, alpha: 0, duration: 220, onComplete: () => o.sp.destroy() });
+    }
+  };
+  sc.events.on('update', step);
 };
 
 /** Liệt Hỏa Phù — lá bùa nhỏ vẽ mới + vụ nổ cầu lửa cuộn khói + vòng sóng lửa sát đất + biển lửa (tools/art/fire_fx.py) */
