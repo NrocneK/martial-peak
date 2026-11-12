@@ -2,7 +2,7 @@
 LIỆT HỎA PHÙ — mặt đất cháy, lấy từ video mẫu burning-ground.mp4 (một chu kỳ ở giây 16,7 → 23,8).
 Video đã nhìn chéo từ trên xuống (đúng góc game) nên không cần ép dẹt.
 
-  bùng cháy  16,70 → 18,10   (lửa đỏ lóe, tàn lửa bắn lên)       → public/vfx/burn_in.png
+  bùng cháy  17,20 → 19,00   (bắt đầu ngay khung lửa bùng sáng — bỏ ~0,5s nét lửa mờ trước đó để không bị "tắt rồi hiện lại")       → public/vfx/burn_in.png
   duy trì    19,00 → 21,00   (vòng lửa cuộn — LẶP theo thời gian biển lửa) → public/vfx/burn_loop.png
   tàn dần    22,30 → 23,80                                          → public/vfx/burn_out.png
 Mỗi đoạn 15 khung/giây, khung 256×201, xếp lưới 8 cột.
@@ -23,7 +23,7 @@ OUT = os.path.join(HERE, 'out')
 CUT = os.path.join(HERE, 'ref', 'burn_cut')
 CROP = (168, 40, 568, 354)          # vùng vòng lửa trong khung 736×414 (đủ vòng + tàn lửa bay lên)
 FW, FH, FPS, COLS = 256, 201, 15, 8
-PARTS = {'in': (16.70, 18.10), 'loop': (19.00, 21.00), 'out': (22.30, 23.80)}
+PARTS = {'in': (17.20, 19.00), 'loop': (19.00, 21.00), 'out': (22.30, 23.80)}
 
 
 def grab(video, t0, t1, tag):

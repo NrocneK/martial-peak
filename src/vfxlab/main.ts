@@ -39,7 +39,7 @@ class LabScene extends Phaser.Scene {
     for (const [key, f] of [[SHOCK_T3, 'shock_t3'], [SHOCK_T6, 'shock_t6']]) this.load.spritesheet(key, `/vfx/${f}.png?v=1`, { frameWidth: 256, frameHeight: 159 });
     this.load.image(ORB_BOLT, '/vfx/orb_bolt.png?v=1');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
-    for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=1`, { frameWidth: 256, frameHeight: 201 });
+    for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
     this.load.image(FIRE_TEX.talisman, '/vfx/fire_talisman.png?v=1');
     this.load.image(FIRE_TEX.ring, '/vfx/fire_ring.png?v=1');
     this.load.spritesheet(FIRE_TEX.blast, '/vfx/fire_blast.png?v=1', { frameWidth: 192, frameHeight: 192 });
