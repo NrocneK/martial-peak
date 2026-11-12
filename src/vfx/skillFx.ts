@@ -791,9 +791,12 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number, blue = false): void
   // cầu lửa cuộn bốc khói
   const blk = B(FIRE_TEX.blast);
   if (!sc.anims.exists(blk + '_play')) sc.anims.create({ key: blk + '_play', frames: sc.anims.generateFrameNumbers(blk, {}), frameRate: 28 });
-  const bl = sc.add.sprite(p.x, p.y - R * 0.35, blk, 0).setDepth(18).setScale((R * 2.2) / 192);
-  bl.play(blk + '_play');
-  bl.once('animationcomplete', () => bl.destroy());
+  const sphere = () => {
+    const bl = sc.add.sprite(p.x, p.y - R * 0.35, blk, 0).setDepth(18).setScale((R * 2.2) / 192);
+    bl.play(blk + '_play');
+    bl.once('animationcomplete', () => bl.destroy());
+  };
+  if (!blue) sphere();                                                    // thức tỉnh: cầu lửa dời xuống cuối kỹ năng
   // tàn lửa văng lên + rơi
   k.burst(p.x, p.y - 10, blue ? [0xc8f0ff, 0x60b0ff, 0x2060ff] : [0xffe080, 0xff8a20, 0xff4a10], 22, { tex: VT.SPARK, speed: [120, 340], angle: [200, 340], gravity: 420, scale: [0.4, 0], life: 700 });
   k.shake(140, 0.005);
@@ -813,6 +816,7 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number, blue = false): void
   k.later(burn, () => {
     if (blue) {
       // thức tỉnh: NỔ XOÁY ở cuối kỹ năng, lửa tắt ngay theo vụ nổ (nổ xong là hết kỹ năng, không còn lửa tàn)
+      sphere();
       fireSwirl(s, p, R * 1.25);
       sc.tweens.add({ targets: bg, alpha: 0, duration: 160, onComplete: () => bg.destroy() });
       return;
@@ -873,22 +877,13 @@ const hoaPhu: Fx = (s, aw) => {
       throwTalisman(s, h, { x: h.x + Math.cos(a) * 140, y: h.y + 8 + Math.sin(a) * 140 * 0.58 }, i * 70, 72, 3000, true);
     }
   } else {
-    // bản thường: mỗi cấp +1 bùa (demo thể hiện cấp 5 = 5 bùa). Chọn mục tiêu CÁCH XA NHAU (vùng cháy không chồng
-    // nhau, phân bố đều quanh người): lần lượt lấy mục tiêu gần nhất mà cách mọi điểm đã chọn ≥ 2,1 bán kính cháy;
-    // thiếu thì rơi vào chỗ trống chia đều quanh người.
-    const R = 66, n = 5;
-    const spots: Pt[] = [];
-    const farEnough = (q: Pt) => spots.every((o) => Math.hypot((o.x - q.x), (o.y - q.y) / 0.58) >= R * 2.1);
-    for (const t of s.targets()) {
-      if (spots.length >= n) break;
-      if (dist(h, t) <= 260 && farEnough(t)) spots.push({ x: t.x, y: t.y });
+    // bản thường: mỗi cấp +1 bùa (demo thể hiện cấp 5 = 5 bùa), rải ĐỀU trên vòng elip quanh nhân vật
+    // (đúng phối cảnh mặt đất); vòng xoay ngẫu nhiên mỗi lần ném cho đỡ lặp
+    const n = 5, rot = Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const a = rot + (i / n) * Math.PI * 2;
+      throwTalisman(s, h, { x: h.x + Math.cos(a) * 140, y: h.y + 8 + Math.sin(a) * 140 * 0.58 }, i * 90, 66, 1800);
     }
-    for (let i = 0; spots.length < n && i < 24; i++) {
-      const a = (i / 24) * Math.PI * 2 * 5;
-      const q = { x: h.x + Math.cos(a) * 150, y: h.y + 8 + Math.sin(a) * 150 * 0.58 };
-      if (farEnough(q)) spots.push(q);
-    }
-    spots.forEach((q, i) => throwTalisman(s, h, q, i * 90, R, 1800));
   }
 };
 
