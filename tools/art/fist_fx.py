@@ -76,8 +76,11 @@ def disc(w=512):
     rings = np.zeros_like(r)                                 # bỏ các vòng tròn đồng tâm
     cracks = cracks * edge
     hot = np.exp(-(r / 0.16) ** 2)
-    inten = np.clip(0.35 + 0.65 * np.maximum.reduce([rim, cracks * 0.95, rings, hot]), 0, 1)
-    alpha = np.clip(fill + cracks * 0.85 + hot, 0, 1) * (r < 1.0)
+    # bỏ các vết nứt thẳng (theo góp ý): lòng đĩa chỉ còn quầng sáng cam loang mềm + vân khói nhẹ cho khỏi phẳng
+    swirl = 0.5 + 0.5 * np.sin(th * 7 + r * 9) * np.sin(th * 3 - r * 5)
+    fill = fill * (0.75 + 0.5 * swirl)
+    inten = np.clip(0.35 + 0.65 * np.maximum(hot, 0.35 * swirl * edge), 0, 1)
+    alpha = np.clip(fill + hot, 0, 1) * (r < 1.0)
     return to_img(inten, alpha, w, h, glow=4)
 
 
