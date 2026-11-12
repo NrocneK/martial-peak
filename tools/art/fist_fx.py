@@ -8,7 +8,7 @@ Mẫu 2 (thức tỉnh — thêm một đợt địa chấn nứt vỡ): MẠNG 
   sáng ở giữa, mờ dần ra ngoài; một cột sáng lửa vàng bốc lên; đá vỡ bay.
 Màu giữ như mẫu: trắng vàng → vàng → cam → nâu cam. Mọi hình đối xứng quanh tâm nên dùng chung mọi hướng.
 
-  python3 -I tools/art/fist_fx.py → public/vfx/fist_{disc,dust,crack,pillar}.png + tools/art/out/fist_fx_preview.png
+  python3 -I tools/art/fist_fx.py → public/vfx/fist_{disc,dust,crack,pillar,mask}.png + tools/art/out/fist_fx_preview.png
 """
 import math
 import os
@@ -63,8 +63,9 @@ def disc(w=512):
     h = int(w * K)
     r, th = ground(w, h)
     rng = np.random.default_rng(7)
-    rim = np.exp(-((r - 0.97) / 0.035) ** 2) + 0.5 * np.exp(-((r - 0.95) / 0.09) ** 2)
-    fill = np.clip(1 - r, 0, 1) * 0 + (r < 1) * (0.32 + 0.18 * r)
+    rim = np.zeros_like(r)                                   # bỏ viền tròn ngoài (theo góp ý)
+    edge = np.clip((1 - r) / 0.35, 0, 1) ** 1.2              # mép ngoài mờ dần, không thành đường tròn
+    fill = edge * (0.30 + 0.1 * (1 - r))
     # vết nứt thẳng tỏa từ tâm: nhiều tia góc ngẫu nhiên, mảnh dần ra ngoài, hơi gãy khúc
     cracks = np.zeros_like(r)
     for ang in rng.uniform(0, 2 * math.pi, 46):
@@ -72,11 +73,12 @@ def disc(w=512):
         d = np.abs(np.sin(th - ang - jag)) * np.maximum(r, 0.05)
         width = 0.004 + 0.010 * (1 - r)
         cracks = np.maximum(cracks, np.exp(-(d / width) ** 2) * (np.cos(th - ang) > 0) * (r < 0.96) * rng.uniform(0.5, 1))
-    rings = sum(0.5 * np.exp(-((r - rr) / 0.008) ** 2) for rr in (0.38, 0.62, 0.8)) * (r < 1)
+    rings = np.zeros_like(r)                                 # bỏ các vòng tròn đồng tâm
+    cracks = cracks * edge
     hot = np.exp(-(r / 0.16) ** 2)
     inten = np.clip(0.35 + 0.65 * np.maximum.reduce([rim, cracks * 0.95, rings, hot]), 0, 1)
-    alpha = np.clip(fill * (r < 1) + rim + cracks * 0.8 + rings * 0.6 + hot, 0, 1) * (r < 1.06)
-    return to_img(inten, alpha, w, h, glow=6)
+    alpha = np.clip(fill + cracks * 0.85 + hot, 0, 1) * (r < 1.0)
+    return to_img(inten, alpha, w, h, glow=4)
 
 
 def dust(w=360, h=220):
@@ -139,14 +141,22 @@ def pillar(w=140, h=300):
     return to_img(inten, alpha, w, h, glow=8)
 
 
+def mask(w=256):
+    """mặt nạ lan ra: đĩa (nhìn chéo) đặc ở giữa, MÉP MỀM ~30% → phóng to dần để lộ hiệu ứng từ tâm ra ngoài"""
+    h = int(w * K)
+    r, _ = ground(w, h)
+    a = np.clip((1.0 - r) / 0.3, 0, 1) ** 1.5
+    return to_img(np.ones_like(r), a, w, h)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    imgs = {'disc': disc(), 'dust': dust(), 'crack': crack(), 'pillar': pillar()}
+    imgs = {'disc': disc(), 'dust': dust(), 'crack': crack(), 'pillar': pillar(), 'mask': mask()}
     for k, im in imgs.items():
         im.save(os.path.join(ROOT, 'public', 'vfx', f'fist_{k}.png'))
     pv = Image.new('RGBA', (1600, 380), (20, 18, 24, 255))
     x = 10
-    for k in ('disc', 'dust', 'crack', 'pillar'):
+    for k in ('disc', 'dust', 'crack', 'pillar'):  # (mask không cần xem)
         pv.alpha_composite(imgs[k], (x, 10))
         x += imgs[k].width + 10
     pv.save(os.path.join(OUT, 'fist_fx_preview.png'))

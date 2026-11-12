@@ -342,18 +342,30 @@ const phaThuong: Fx = (s, aw) => {
 };
 
 /** Băng Sơn Quyền — ảnh hiệu ứng (tools/art/fist_fx.py, dựng theo 2 ảnh mẫu); đối xứng quanh tâm nên dùng mọi hướng */
-export const FIST_TEX = { disc: 'vx_fist_disc', dust: 'vx_fist_dust', crack: 'vx_fist_crack', pillar: 'vx_fist_pillar' } as const;
+export const FIST_TEX = { disc: 'vx_fist_disc', dust: 'vx_fist_dust', crack: 'vx_fist_crack', pillar: 'vx_fist_pillar', mask: 'vx_fist_mask' } as const;
 const FIST_COL = 0xffb040;
 const DISC_R = 512 / 2 / 1.08;     // bán kính đĩa trong ảnh (px)
 const CRACK_R = 560 / 2 / 1.08;
+
+/** cho hiệu ứng mặt đất LAN TỪ NHÂN VẬT RA: phủ mặt nạ mép mềm, phóng to dần từ tâm (không có đường tròn cứng) */
+function spreadOut(k: Stage['kit'], im: Phaser.GameObjects.Image, grow: number): void {
+  const sc = k.scene;
+  if (!sc.textures.exists(FIST_TEX.mask) || sc.game.renderer.type !== Phaser.WEBGL) return;
+  const m = sc.make.image({ x: im.x, y: im.y, key: FIST_TEX.mask, add: false });
+  const full = (im.displayWidth / m.width) * 1.3;
+  m.setScale(full * 0.04);
+  im.setMask(m.createBitmapMask());
+  sc.tweens.add({ targets: m, scale: full, duration: grow, ease: 'Sine.easeOut' });
+  im.once('destroy', () => m.destroy());
+}
 
 /** chấn động ra xung quanh (mẫu 1): đĩa sáng có vân nứt bung ra trên mặt đất + bụi xòe + tia sáng dựng ở tâm */
 function fistShock(s: Stage, c: Pt, R: number): void {
   const k = s.kit, sc = k.scene;
   const add = (key: string, x: number, y: number) => sc.add.image(x, y, key).setBlendMode(Phaser.BlendModes.ADD);
-  const d = add(FIST_TEX.disc, c.x, c.y).setDepth(3).setScale((R / DISC_R) * 0.25);
-  sc.tweens.add({ targets: d, scale: R / DISC_R, duration: 150, ease: 'Cubic.easeOut' });
-  sc.tweens.add({ targets: d, alpha: 0, scale: (R / DISC_R) * 1.08, delay: 200, duration: 240, onComplete: () => d.destroy() });
+  const d = add(FIST_TEX.disc, c.x, c.y).setDepth(3).setScale(R / DISC_R);
+  spreadOut(k, d, 260);                                                   // sóng chấn động lan từ chân nhân vật ra
+  sc.tweens.add({ targets: d, alpha: 0, delay: 300, duration: 260, onComplete: () => d.destroy() });
   const du = add(FIST_TEX.dust, c.x, c.y).setOrigin(0.5, 1).setDepth(11).setScale(0.35 * (R / 110), 0.15 * (R / 110)).setAlpha(0.9);
   sc.tweens.add({ targets: du, scaleX: 0.7 * (R / 110), scaleY: 0.62 * (R / 110), alpha: 0, duration: 520, ease: 'Quad.easeOut', onComplete: () => du.destroy() });
   const pl = add(FIST_TEX.pillar, c.x, c.y + 4).setOrigin(0.5, 1).setDepth(12).setScale(0.35, 0.05);
@@ -369,8 +381,8 @@ function fistShock(s: Stage, c: Pt, R: number): void {
 /** đợt địa chấn nứt vỡ (mẫu 2, thức tỉnh): mạng vết nứt phát sáng loang rộng + cột sáng lửa bốc lên + đá vỡ bay */
 function fistQuake(s: Stage, c: Pt, R: number): void {
   const k = s.kit, sc = k.scene;
-  const cr = sc.add.image(c.x, c.y, FIST_TEX.crack).setBlendMode(Phaser.BlendModes.ADD).setDepth(2).setScale((R / CRACK_R) * 0.2);
-  sc.tweens.add({ targets: cr, scale: R / CRACK_R, duration: 280, ease: 'Cubic.easeOut' });
+  const cr = sc.add.image(c.x, c.y, FIST_TEX.crack).setBlendMode(Phaser.BlendModes.ADD).setDepth(2).setScale(R / CRACK_R);
+  spreadOut(k, cr, 420);                                                  // vết nứt lan dần từ chân nhân vật ra
   sc.tweens.add({ targets: cr, alpha: { from: 1, to: 0.55 }, duration: 160, delay: 280, yoyo: true, repeat: 1 });
   sc.tweens.add({ targets: cr, alpha: 0, delay: 900, duration: 500, onComplete: () => cr.destroy() });
   const pl = sc.add.image(c.x, c.y + 6, FIST_TEX.pillar).setBlendMode(Phaser.BlendModes.ADD).setOrigin(0.5, 1).setDepth(12).setScale(0.9, 0.1);
