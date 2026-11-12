@@ -40,11 +40,29 @@ def main():
     bgm = (a[..., 0] == 255) & (a[..., 1] == 0) & (a[..., 2] == 255)
     alpha = (~bgm).astype(np.uint8) * 255
     rgba = np.dstack([np.array(src), alpha])
-    # chỉ giữ trong đường bao đầu hổ (mép mềm), bỏ lưng + dải mực xoáy
+    # CẮT BÁM THEO TỪNG SỢI LÔNG:
+    #  - lõi = đường bao đầu thu vào 60px → giữ nguyên
+    #  - dải mép (đường bao nới ra 38px, trừ lõi): chỉ giữ điểm SÁNG (lông trắng/xám) nối liền với lõi
+    #    → các sợi lông ló ra ngoài được giữ, mảng mực đen bên ngoài bị bỏ
+    #  - lấp các lỗ kín (sọc đen nằm giữa các sợi lông) để không thủng
+    from scipy import ndimage as nd
     hm = Image.new('L', src.size, 0)
     ImageDraw.Draw(hm).polygon(HEAD, fill=255)
-    hm = hm.filter(ImageFilter.GaussianBlur(6))
-    rgba[..., 3] = (rgba[..., 3].astype(float) * np.array(hm) / 255).astype(np.uint8)
+    P = np.array(hm) > 0
+    core = nd.binary_erosion(P, iterations=60)
+    yy, xx = np.mgrid[0:h, 0:w]
+    # trán giữa 2 tai: sọc đen chạm sát mép trên là của đầu hổ → giữ đến sát đường bao
+    core |= nd.binary_erosion(P, iterations=6) & (yy < 600) & (xx > 300) & (xx < 770)
+    outer = nd.binary_dilation(P, iterations=38)
+    lum = np.array(src).astype(float).mean(2)
+    bright = (lum > 105) & outer & ~bgm & ~((xx > 850) & (yy < 640))   # bỏ dải mực xoáy cạnh tai phải
+    lab, _ = nd.label(bright | core)
+    ids = np.unique(lab[core])
+    keep = np.isin(lab, ids[ids > 0]) | core
+    keep = nd.binary_fill_holes(keep)
+    keep = nd.binary_opening(keep, iterations=1)                       # bỏ hạt lẻ
+    soft = nd.gaussian_filter(keep.astype(float), 0.8)
+    rgba[..., 3] = (rgba[..., 3].astype(float) * np.clip(soft * 1.3, 0, 1)).astype(np.uint8)
     img = Image.fromarray(rgba, 'RGBA').crop(CROP)
     k = SIZE / max(img.size)
     img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
