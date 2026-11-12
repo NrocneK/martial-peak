@@ -610,6 +610,10 @@ const thanhPhien: Fx = (s, aw) => {
 /** Hổ Khiếu Chấn — hư ảnh đầu hổ (tools/art/tiger_fx.py, tách từ ảnh mẫu) hiện trên đầu nhân vật gầm lên,
  *  rồi sóng âm xung kích lan quanh thân: sát thương + đẩy lùi. Thức tỉnh: phạm vi lớn hơn + choáng. */
 export const TIGER_HEAD = 'vx_tiger_head';
+/** dải khung sóng xung kích (256×159 mỗi khung, 17 khung, 30 khung/giây) */
+export const SHOCK_T3 = 'vx_shock_t3';
+export const SHOCK_T6 = 'vx_shock_t6';
+const SHOCK_RING = 0.44;      // bán kính vòng sóng to nhất / bề ngang khung
 const TIGER_COL = 0xf4ecdc;
 const hoKhieu: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene, h = H(s);
@@ -624,45 +628,31 @@ const hoKhieu: Fx = (s, aw) => {
     sc.tweens.add({ targets: tg, angle: { from: -3, to: 3 }, duration: 45, yoyo: true, repeat: 4 });
   });
   sc.tweens.add({ targets: tg, alpha: 0, scale: S0 * 1.25, delay: 760, duration: 260, onComplete: () => tg.destroy() });
-  // 2) sóng âm xung kích: nhiều vòng sóng mỏng nối nhau lan ra từ thân (nhìn chéo nên dẹt), + vệt gió hướng tâm
-  const wave = (delay: number, scale: number, stun: boolean) =>
-    k.later(delay, () => {
-      for (let i = 0; i < 3; i++)
-        k.later(i * 70, () => {
-          const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(4);
-          let el = 0;
-          const dur = 420;
-          const step = (_t: number, dms: number) => {
-            el += dms * sc.time.timeScale;
-            const u = Math.min(1, el / dur);
-            const r = 18 + (R * scale - 18) * (1 - (1 - u) ** 2);
-            g.clear();
-            g.lineStyle(10 - i * 2, TIGER_COL, 0.18 * (1 - u)).strokeEllipse(h.x, h.y + 10, r * 2, r * 1.2);
-            g.lineStyle(3 - i * 0.6, 0xffffff, 0.85 * (1 - u)).strokeEllipse(h.x, h.y + 10, r * 2, r * 1.2);
-            if (u >= 1) { sc.events.off('update', step); g.destroy(); }
-          };
-          sc.events.on('update', step);
-        });
-      for (let i = 0; i < 16; i++) {
-        const a = (i / 16) * Math.PI * 2 + Math.random() * 0.2;
-        const p1 = { x: h.x + Math.cos(a) * 30, y: h.y + 10 + Math.sin(a) * 18 };
-        const p2 = { x: h.x + Math.cos(a) * R * scale * 0.95, y: h.y + 10 + Math.sin(a) * R * scale * 0.57 };
-        k.streak(p1.x, p1.y, p2.x, p2.y, TIGER_COL, 4, 260);
-      }
-      k.glow(h.x, h.y, TIGER_COL, 70 * scale, 260);
-      k.shake(180, aw ? 0.01 : 0.006);
-      for (const o of near(s, h, R * scale)) {
+  // 2) sóng âm xung kích — hoạt ảnh lấy từ video mẫu (tools/art/shock_fx.py; đã ép dẹt về góc nhìn chéo):
+  //    mẫu số 3 cho đòn thường, mẫu số 6 cho thức tỉnh. Lan từ chân nhân vật, trúng đòn khi vòng sóng bung ra.
+  k.later(300, () => {
+    const key = aw ? SHOCK_T6 : SHOCK_T3;
+    const animKey = key + '_play';
+    if (!sc.anims.exists(animKey) && sc.textures.exists(key)) sc.anims.create({ key: animKey, frames: sc.anims.generateFrameNumbers(key, {}), frameRate: 30 });
+    if (sc.textures.exists(key)) {
+      const sp = sc.add.sprite(h.x, h.y + 10, key, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(4);
+      sp.setScale(R / (SHOCK_RING * 256));                               // bán kính vòng sóng to nhất ≈ R
+      sp.play(animKey);
+      sp.once('animationcomplete', () => sp.destroy());
+    }
+    k.shake(180, aw ? 0.01 : 0.006);
+    k.later(120, () => {
+      for (const o of near(s, h, R)) {
         s.hit(o, TIGER_COL);
-        // đẩy lùi: hình nhân bị đẩy ra ngoài rồi tự trôi về chỗ cũ
         const aa = ang(h, o);
-        s.drag?.(o, o.x + Math.cos(aa) * 34, o.y + Math.sin(aa) * 34);
-        if (stun) {
+        s.drag?.(o, o.x + Math.cos(aa) * 34, o.y + Math.sin(aa) * 34);  // đẩy lùi
+        if (aw) {
           const st = sc.add.image(o.x, o.y - 30, VT.SPARK).setTint(0xfff0a0).setBlendMode(Phaser.BlendModes.ADD).setDepth(16).setScale(0.4);
           sc.tweens.add({ targets: st, angle: 360, duration: 600, repeat: 1, onComplete: () => st.destroy() });
         }
       }
     });
-  wave(300, 1, aw);
+  });
 };
 
 const linhDan: Fx = (s, aw) => {
