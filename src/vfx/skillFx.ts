@@ -671,32 +671,73 @@ const linhDan: Fx = (s, aw) => {
   if (aw) k.burst(h.x, h.y, 0xc8ecff, 20, { tex: VT.ORB, speed: [40, 120], life: 500, scale: [0.4, 0] });
 };
 
+/** Liệt Hỏa Phù — lá bùa nhỏ vẽ mới + vụ nổ cầu lửa cuộn khói + vòng sóng lửa sát đất + biển lửa (tools/art/fire_fx.py) */
+export const FIRE_TEX = { talisman: 'vx_fire_talisman', blast: 'vx_fire_blast', ring: 'vx_fire_ring' } as const;
+function fireBlast(s: Stage, p: Pt, R: number, burn: number): void {
+  const k = s.kit, sc = k.scene;
+  // lóe sáng + vòng sóng lửa loang sát đất
+  k.glow(p.x, p.y, 0xffb040, R * 1.6, 260);
+  const rg = sc.add.image(p.x, p.y + 4, FIRE_TEX.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale(0.15);
+  sc.tweens.add({ targets: rg, scale: (R * 2.3) / 256, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => rg.destroy() });
+  // cầu lửa cuộn bốc khói
+  if (!sc.anims.exists('vx_fire_blast_play')) sc.anims.create({ key: 'vx_fire_blast_play', frames: sc.anims.generateFrameNumbers(FIRE_TEX.blast, {}), frameRate: 28 });
+  const bl = sc.add.sprite(p.x, p.y - R * 0.35, FIRE_TEX.blast, 0).setDepth(18).setScale((R * 2.2) / 192);
+  bl.play('vx_fire_blast_play');
+  bl.once('animationcomplete', () => bl.destroy());
+  // tàn lửa văng lên + rơi
+  k.burst(p.x, p.y - 10, [0xffe080, 0xff8a20, 0xff4a10], 22, { tex: VT.SPARK, speed: [120, 340], angle: [200, 340], gravity: 420, scale: [0.4, 0], life: 700 });
+  k.shake(140, 0.005);
+  for (const o of near(s, p, R)) s.hit(o, 0xff7a30);
+  // biển lửa: lửa nhỏ liếm lên khắp vùng (đốm lửa thưa, cao thấp khác nhau), tắt dần
+  const fl = sc.add.particles(p.x, p.y, VT.FLAME, {
+    lifespan: { min: 380, max: 700 }, speedY: { min: -90, max: -40 }, speedX: { min: -10, max: 10 }, scale: { start: 0.55, end: 0.05 }, alpha: { start: 0.9, end: 0 },
+    tint: [0xffe070, 0xff8a20, 0xff4a10], blendMode: Phaser.BlendModes.ADD, frequency: 30,
+    emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 1.7, R * 0.95) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
+  }).setDepth(17);
+  const scorch = sc.add.image(p.x, p.y, VT.SOFT).setTint(0x2a0e04).setDepth(2).setScale(R / 40, R / 70).setAlpha(0.55);
+  k.later(burn, () => fl.stop());
+  sc.tweens.add({ targets: scorch, alpha: 0, delay: burn, duration: 600, onComplete: () => scorch.destroy() });
+  k.later(burn + 800, () => fl.destroy());
+}
+
+/** ném 1 lá bùa nhỏ: bay vòng cung, xoay lật, có vệt tàn lửa; tới nơi bùa bùng cháy rồi nổ */
+function throwTalisman(s: Stage, from: Pt, to: Pt, delay: number, R: number, burn: number): void {
+  const k = s.kit, sc = k.scene;
+  k.later(delay, () => {
+    const tl = sc.add.image(from.x, from.y - 10, FIRE_TEX.talisman).setDepth(19).setScale(0.45);
+    const trail = sc.add.particles(0, 0, VT.SPARK, { follow: tl, lifespan: 260, speed: 10, scale: { start: 0.22, end: 0 }, alpha: { start: 0.9, end: 0 }, tint: [0xffc060, 0xff6a20], blendMode: Phaser.BlendModes.ADD, frequency: 18 }).setDepth(18);
+    const D = dist(from, to);
+    const dur = 300 + D * 0.9;
+    const st = { u: 0 };
+    sc.tweens.add({
+      targets: st, u: 1, duration: dur, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        const x = from.x + (to.x - from.x) * st.u, y = from.y + (to.y - from.y) * st.u - Math.sin(st.u * Math.PI) * (40 + D * 0.15) - 10 * (1 - st.u);
+        tl.setPosition(x, y).setRotation(st.u * Math.PI * 3).setScale(0.45, 0.45 * Math.cos(st.u * Math.PI * 5));
+      },
+      onComplete: () => {
+        trail.stop();
+        k.later(300, () => trail.destroy());
+        // bùa bùng cháy chớp sáng rồi nổ
+        tl.setRotation(0).setScale(0.5).setTint(0xffd080);
+        sc.tweens.add({ targets: tl, scale: 0.7, alpha: 0, duration: 120, onComplete: () => tl.destroy() });
+        k.glow(to.x, to.y - 6, 0xffd060, 40, 120);
+        k.later(90, () => fireBlast(s, to, R, burn));
+      },
+    });
+  });
+}
+
 const hoaPhu: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
+  const h = H(s);
   const ts = s.targets();
-  const spots: Pt[] = aw ? [0, 1, 2, 3, 4].map((i) => polar(h, (i / 5) * Math.PI * 2, 110)) : [ts[1] ?? pt(h.x + 140, h.y), ts[4] ?? pt(h.x - 140, h.y)];
-  spots.forEach((p, i) =>
-    k.later(i * 80, () =>
-      k.fly(VT.TALISMAN, h, p, {
-        dur: 420, add: false, scale: 1, arc: 0.4, spin: 0.25, faceDir: false, trail: 0xff7a30, trailScale: 0.5,
-        onArrive: () => {
-          k.glow(p.x, p.y, 0xff7a30, 150, 380);
-          k.ring(p.x, p.y, 0xffc060, 20, 80, 360, true);
-          k.burst(p.x, p.y, [0xffd060, 0xff6a20, 0xff3a10], 18, { tex: VT.FLAME, speed: [40, 140], scale: [1.1, 0.2], life: 620, gravity: -340 });
-          k.shake(120, 0.004);
-          for (const o of near(s, p, 80)) s.hit(o, 0xff7a30);
-          // biển lửa
-          const fl = k.scene.add.particles(p.x, p.y, VT.FLAME, {
-            lifespan: 700, speedY: { min: -110, max: -50 }, speedX: { min: -12, max: 12 }, scale: { start: 0.9, end: 0.1 }, alpha: { start: 0.85, end: 0 },
-            tint: [0xffd060, 0xff7a20, 0xff3a10], blendMode: Phaser.BlendModes.ADD, frequency: 24,
-            emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, aw ? 60 : 55) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
-          }).setDepth(19);
-          k.later(aw ? 2200 : 1600, () => fl.stop());
-          k.later(aw ? 2900 : 2300, () => fl.destroy());
-        },
-      }),
-    ),
-  );
+  if (aw) {
+    // Phần Thiên: 5 bùa rơi thành vòng quanh thân, biển lửa nối thành tường lửa
+    for (let i = 0; i < 5; i++) throwTalisman(s, h, polar(h, (i / 5) * Math.PI * 2 - Math.PI / 2, 120), i * 70, 80, 3000);
+  } else {
+    throwTalisman(s, h, ts[1] ?? pt(h.x + 140, h.y), 0, 70, 1800);
+    throwTalisman(s, h, ts[4] ?? pt(h.x - 140, h.y), 110, 70, 1800);
+  }
 };
 
 const kimDan: Fx = (s, aw) => {
