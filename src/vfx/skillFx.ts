@@ -615,10 +615,10 @@ const hoKhieu: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene, h = H(s);
   const R = aw ? 190 : 125;
   // 1) hư ảnh đầu hổ hiện trên đầu nhân vật: bung lên, rung khi gầm, rồi tan
-  const top = pt(h.x, h.y - 62);
+  const top = pt(h.x, h.y - 105);                                  // cao hẳn trên đầu, không che nhân vật
   const tg = sc.add.image(top.x, top.y + 12, TIGER_HEAD).setDepth(15).setAlpha(0).setScale(0.12);
   const S0 = aw ? 0.36 : 0.3;
-  sc.tweens.add({ targets: tg, alpha: 0.95, scale: S0, y: top.y, duration: 220, ease: 'Back.easeOut' });
+  sc.tweens.add({ targets: tg, alpha: 0.6, scale: S0, y: top.y, duration: 220, ease: 'Back.easeOut' });
   k.later(240, () => {
     sc.tweens.add({ targets: tg, scale: S0 * 1.12, duration: 70, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });   // gầm
     sc.tweens.add({ targets: tg, angle: { from: -3, to: 3 }, duration: 45, yoyo: true, repeat: 4 });

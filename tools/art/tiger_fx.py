@@ -41,7 +41,7 @@ def main():
     hh, ww = al.shape
     yy, xx = np.mgrid[0:hh, 0:ww].astype(float)
     rr = np.hypot((xx - ww / 2) / (ww / 2), (yy - hh * 0.47) / (hh * 0.53))
-    al *= np.clip((1.0 - rr) / 0.22, 0, 1)
+    al *= np.clip((1.0 - rr) / 0.45, 0, 1) ** 1.5           # mờ dần rất rộng → không thấy rìa
     img.putalpha(Image.fromarray(al.astype(np.uint8)))
     k = SIZE / max(img.size)
     img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
@@ -55,7 +55,7 @@ def main():
     halo.putalpha(sil.point(lambda v: int(v * 0.75)))
     hp = np.array(halo)
     hp[..., :3] = (255, 248, 230)
-    canvas.alpha_composite(Image.fromarray(hp, 'RGBA'))
+    # (bỏ quầng sáng viền ngoài — tạo thành rìa giới hạn lộ rõ)
     canvas.alpha_composite(img, (pad, pad))
     canvas.save(os.path.join(ROOT, 'public', 'vfx', 'tiger_head.png'))
     pv = Image.new('RGBA', (canvas.width + 20, canvas.height + 20), (28, 26, 40, 255))
