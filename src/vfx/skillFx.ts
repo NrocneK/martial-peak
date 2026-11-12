@@ -811,9 +811,14 @@ function fireBlast(s: Stage, p: Pt, R: number, burn: number, blue = false): void
   bg.play(aIn);
   bg.once('animationcomplete', () => bg.play(aLoop));
   k.later(burn, () => {
+    if (blue) {
+      // thức tỉnh: NỔ XOÁY ở cuối kỹ năng, lửa tắt ngay theo vụ nổ (nổ xong là hết kỹ năng, không còn lửa tàn)
+      fireSwirl(s, p, R * 1.25);
+      sc.tweens.add({ targets: bg, alpha: 0, duration: 160, onComplete: () => bg.destroy() });
+      return;
+    }
     bg.play(aOut);
     bg.once('animationcomplete', () => bg.destroy());
-    if (blue) fireSwirl(s, p, R * 1.25);                                   // thức tỉnh: nổ xoáy trước khi tắt lửa
   });
 }
 
@@ -868,9 +873,22 @@ const hoaPhu: Fx = (s, aw) => {
       throwTalisman(s, h, { x: h.x + Math.cos(a) * 140, y: h.y + 8 + Math.sin(a) * 140 * 0.58 }, i * 70, 72, 3000, true);
     }
   } else {
-    // bản thường: mỗi cấp +1 bùa (demo thể hiện cấp 5 = 5 bùa), mỗi bùa vào 1 mục tiêu khác nhau
-    const ts = s.targets();
-    for (let i = 0; i < 5; i++) throwTalisman(s, h, ts[i] ?? polar(h, (i / 5) * Math.PI * 2, 140), i * 90, 66, 1800);
+    // bản thường: mỗi cấp +1 bùa (demo thể hiện cấp 5 = 5 bùa). Chọn mục tiêu CÁCH XA NHAU (vùng cháy không chồng
+    // nhau, phân bố đều quanh người): lần lượt lấy mục tiêu gần nhất mà cách mọi điểm đã chọn ≥ 2,1 bán kính cháy;
+    // thiếu thì rơi vào chỗ trống chia đều quanh người.
+    const R = 66, n = 5;
+    const spots: Pt[] = [];
+    const farEnough = (q: Pt) => spots.every((o) => Math.hypot((o.x - q.x), (o.y - q.y) / 0.58) >= R * 2.1);
+    for (const t of s.targets()) {
+      if (spots.length >= n) break;
+      if (dist(h, t) <= 260 && farEnough(t)) spots.push({ x: t.x, y: t.y });
+    }
+    for (let i = 0; spots.length < n && i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2 * 5;
+      const q = { x: h.x + Math.cos(a) * 150, y: h.y + 8 + Math.sin(a) * 150 * 0.58 };
+      if (farEnough(q)) spots.push(q);
+    }
+    spots.forEach((q, i) => throwTalisman(s, h, q, i * 90, R, 1800));
   }
 };
 
