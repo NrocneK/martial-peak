@@ -14,6 +14,8 @@ export interface Stage {
   targets(): Pt[];
   /** Báo trúng đòn (trang demo cho hình nhân chớp + rung) */
   hit(t: Pt, color?: number): void;
+  /** Kéo mục tiêu tới vị trí (x, y) — dùng cho lốc xoáy kéo quái (trang demo: hình nhân bị kéo rồi tự trôi về chỗ cũ) */
+  drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
   pose?(skill: string, n: 0 | 1 | 2, a: number): void;
 }
@@ -516,31 +518,92 @@ const truyTien: Fx = (s, aw) => {
   }
 };
 
+/** Thanh Phong Phiến — LỐC XOÁY (theo ảnh mẫu): nhiều vòng xoắn sáng trắng xanh chồng lên nhau, dưới hẹp trên loe,
+ *  xoay liên tục; vòng phía trước sáng, phía sau mờ; bụi đá cuốn quanh chân. Lốc tự đi tìm quái, HÚT quái nhỏ trong
+ *  vòng hút vào rồi KÉO đi theo, gây sát thương mỗi nhịp. */
+const WIND_COL = 0x9fdcff;
+function tornado(s: Stage, start: Pt, size: number, life: number): void {
+  const k = s.kit, sc = k.scene;
+  const pos = { x: start.x, y: start.y };
+  const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(14);
+  const base = sc.add.image(start.x, start.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(WIND_COL).setDepth(2).setScale(0.9 * size, 0.35 * size).setAlpha(0.5);
+  const dust = sc.add.particles(0, 0, VT.ROCK, {
+    lifespan: 650, speed: 0, scale: { start: 0.45 * size, end: 0.2 * size }, alpha: { start: 0.8, end: 0 }, tint: [0xc8d4e0, 0x8a96a6], frequency: 45, rotate: { min: 0, max: 360 },
+    emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const th = Math.random() * 6.28, r = (14 + Math.random() * 26) * size; p.x = pos.x + Math.cos(th) * r; p.y = pos.y + Math.sin(th) * r * 0.4 - Math.random() * 30 * size; p.velocityX = -Math.sin(th) * 120 * size; p.velocityY = -30 - Math.random() * 40; },
+  }).setDepth(13);
+  const caught = new Set<Pt>();
+  let el = 0, tick = 0, wander = Math.random() * 6.28;
+  const H0 = 96 * size, RB = 6 * size, RT = 36 * size, RINGS = 12;
+  const step = (_t: number, dms: number) => {
+    const dt = (dms * sc.time.timeScale) / 1000;
+    el += dt * 1000;
+    const appear = Math.min(1, el / 220), vanish = Math.min(1, Math.max(0, (life - el) / 300));
+    const vis = appear * vanish;
+    // di chuyển: hướng về quái gần nhất chưa bị cuốn (hoặc lang thang), tốc độ chậm
+    const tgt = s.targets().filter((o) => !caught.has(o)).sort((p1, p2) => dist(p1, pos) - dist(p2, pos))[0];
+    wander += dt * 1.3;
+    const aim = tgt && dist(tgt, pos) < 260 ? ang(pos, tgt) + Math.sin(wander) * 0.4 : wander;
+    pos.x += Math.cos(aim) * 70 * dt;
+    pos.y += Math.sin(aim) * 70 * dt;
+    base.setPosition(pos.x, pos.y + 2).setAlpha(0.45 * vis);
+    // hút + kéo quái nhỏ: trong 60px bị hút dần vào sát chân lốc rồi đi theo
+    for (const o of s.targets()) {
+      const d = dist(o, pos);
+      if (d < 60 * size || caught.has(o)) {
+        caught.add(o);
+        const a0 = ang(pos, o) + dt * 3;                                   // xoay quanh chân lốc
+        const r0 = Math.max(10 * size, d - 90 * dt);
+        s.drag?.(o, pos.x + Math.cos(a0) * r0, pos.y + Math.sin(a0) * r0 * 0.5);
+      }
+    }
+    if ((tick -= dt) <= 0) {
+      tick = 0.35;
+      for (const o of caught) s.hit(o, WIND_COL);
+    }
+    // vẽ phễu: các vòng xoắn (cung elip) từ chân lên đỉnh, mỗi vòng xoay lệch pha, độ dài cung + độ nghiêng + bán kính
+    // khác nhau một chút (như mẫu, không đều tăm tắp như lò xo); quầng sáng rộng + lõi trắng
+    g.clear();
+    const spin = el / 1000 * 9;
+    for (let i = 0; i < RINGS; i++) {
+      const f = (i + 0.35 * Math.sin(i * 2.3)) / (RINGS - 1);
+      const rr = (RB + (RT - RB) * Math.max(0, f) ** 1.35) * (0.9 + 0.2 * Math.sin(i * 1.7 + el / 400));
+      const cy = pos.y - H0 * Math.max(0, f) * appear;
+      const cx = pos.x + Math.sin(el / 260 + f * 3) * 6 * size * f;     // thân lốc uốn lượn nhẹ
+      const tilt = 0.18 * Math.sin(i * 1.3 + el / 500);                  // vòng hơi nghiêng
+      const ph = spin * (1.2 - f * 0.5) + i * 0.9;
+      const span = Math.PI * (1.25 + 0.55 * (0.5 + 0.5 * Math.sin(i * 2.9)));
+      const segs = 22;
+      for (let j = 0; j < segs; j++) {
+        const t0 = ph + (j / segs) * span, t1 = ph + ((j + 1) / segs) * span;
+        const front = Math.sin((t0 + t1) / 2);                              // > 0: nửa phía trước
+        const head = j / segs;                                              // đầu vệt sáng hơn đuôi
+        const al = (0.2 + 0.8 * head) * (front > 0 ? 1 : 0.35) * vis;
+        const x0 = cx + Math.cos(t0) * rr, y0 = cy + Math.sin(t0) * rr * 0.32 + Math.cos(t0) * rr * tilt;
+        const x1 = cx + Math.cos(t1) * rr, y1 = cy + Math.sin(t1) * rr * 0.32 + Math.cos(t1) * rr * tilt;
+        g.lineStyle((front > 0 ? 10 : 6) * size, WIND_COL, 0.12 * al).lineBetween(x0, y0, x1, y1);
+        g.lineStyle((front > 0 ? 5 : 3) * size, WIND_COL, 0.3 * al).lineBetween(x0, y0, x1, y1);
+        g.lineStyle((front > 0 ? 2 : 1.1) * size, front > 0 ? 0xffffff : 0xcfeaff, 0.95 * al).lineBetween(x0, y0, x1, y1);
+      }
+    }
+    if (el >= life) {
+      sc.events.off('update', step);
+      g.destroy();
+      base.destroy();
+      dust.stop();
+      k.later(700, () => dust.destroy());
+    }
+  };
+  sc.events.on('update', step);
+}
+
 const thanhPhien: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 100, h.y);
   const a = ang(h, t);
-  const n = aw ? 12 : 5;
-  for (let i = 0; i < n; i++) {
-    const b = aw ? a + (i / n) * Math.PI * 2 : a + (i / (n - 1) - 0.5) * (Math.PI / 2);
-    const end = polar(h, b, 230);
-    k.fly(VT.FAN_BLADE, h, end, {
-      dur: 380, tint: 0x80f0d0, scale: 0.8, trail: 0x80f0d0, trailScale: 0.4, ease: 'Quad.easeOut', faceDir: true,
-      onArrive: () => k.fly(VT.FAN_BLADE, end, H(s), { dur: 380, tint: 0x80f0d0, scale: 0.7, trail: 0x80f0d0, trailScale: 0.4, ease: 'Quad.easeIn', arc: 0.2 }),
-    });
-  }
-  k.burst(h.x, h.y, 0x9fe8b0, 8, { tex: VT.LEAF, speed: [80, 200], life: 700, add: false, rotate: true, scale: [0.9, 0.5] });
-  for (const o of near(s, h, 230)) if (aw || Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.8) k.later((dist(h, o) / 230) * 380, () => s.hit(o, 0x80f0d0));
-  if (aw) {
-    // lốc xoáy
-    const c = polar(h, a, 90);
-    const tor = k.scene.add.particles(c.x, c.y, VT.SOFT, {
-      lifespan: 700, speed: 0, scale: { start: 0.25, end: 0.05 }, alpha: { start: 0.7, end: 0 }, tint: [0x80f0d0, 0xc8fff0], blendMode: Phaser.BlendModes.ADD, frequency: 14,
-      emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const y = -Math.random() * 80; const r = 6 + (-y / 80) * 30; const th = Math.random() * 6.28; p.x = Math.cos(th) * r; p.y = y; p.velocityY = -30; p.velocityX = -Math.sin(th) * 90; },
-    }).setDepth(21);
-    k.scene.tweens.add({ targets: tor, x: c.x + Math.cos(a) * 120, y: c.y + Math.sin(a) * 120, duration: 2000 });
-    k.later(2000, () => { tor.stop(); k.later(700, () => tor.destroy()); });
-  }
+  // phất quạt gọi gió: vài lá + luồng gió nhỏ trước mặt, rồi lốc xoáy bốc lên
+  k.burst(h.x, h.y, 0xd8f0ff, 8, { tex: VT.LEAF, speed: [80, 200], life: 600, add: false, rotate: true, scale: [0.8, 0.4], angle: [(a * 180) / Math.PI - 50, (a * 180) / Math.PI + 50] });
+  if (aw) for (let i = 0; i < 3; i++) tornado(s, polar(h, a + (i - 1) * 0.9, 70), 1.25, 3200);
+  else tornado(s, polar(h, a, 50), 1, 2600);
 };
 
 // ---------------------------------------------------------------- CẢNH GIỚI

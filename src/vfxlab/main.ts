@@ -11,6 +11,9 @@ import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, baDao
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
   hitT: number;
+  hx: number;   // chỗ đứng gốc (bị lốc kéo đi thì tự trôi về)
+  hy: number;
+  dragT: number;
 }
 
 class LabScene extends Phaser.Scene {
@@ -61,7 +64,7 @@ class LabScene extends Phaser.Scene {
     for (const p of spots) {
       this.add.ellipse(p.x, p.y + 20, 26, 8, 0x000000, 0.35).setDepth(1);
       const img = this.add.image(p.x, p.y, VT.DUMMY).setDepth(5).setOrigin(0.5, 0.6);
-      this.dummies.push({ x: p.x, y: p.y, img, hitT: 0 });
+      this.dummies.push({ x: p.x, y: p.y, img, hitT: 0, hx: p.x, hy: p.y, dragT: 0 });
     }
     this.cameras.main.centerOn(0, 0);
     this.fitZoom();
@@ -82,6 +85,14 @@ class LabScene extends Phaser.Scene {
         d.img.setTintFill(color);
         d.hitT = 0.09;
         this.tweens.add({ targets: d.img, angle: { from: -10, to: 0 }, duration: 160, ease: 'Back.easeOut' });
+      },
+      drag: (t, x, y) => {
+        const d = t as Dummy;
+        if (!d.img) return;
+        d.x = x;
+        d.y = y;
+        d.img.setPosition(x, y);
+        d.dragT = 0.25;
       },
       pose: (skill, n, a0) => {
         const a = this.dir ?? a0;
@@ -123,7 +134,17 @@ class LabScene extends Phaser.Scene {
   update(_t: number, dms: number): void {
     const dt = dms / 1000;
     this.t += dt;
-    for (const d of this.dummies) if (d.hitT > 0 && (d.hitT -= dt) <= 0) d.img.clearTint();
+    for (const d of this.dummies) {
+      if (d.hitT > 0 && (d.hitT -= dt) <= 0) d.img.clearTint();
+      if (d.dragT > 0) d.dragT -= dt;
+      else if (d.x !== d.hx || d.y !== d.hy) {                             // hết bị kéo → trôi về chỗ cũ
+        const k = Math.min(1, dt * 3);
+        d.x += (d.hx - d.x) * k;
+        d.y += (d.hy - d.y) * k;
+        if (Math.hypot(d.hx - d.x, d.hy - d.y) < 0.5) { d.x = d.hx; d.y = d.hy; }
+        d.img.setPosition(d.x, d.y);
+      }
+    }
     if (this.walk) {
       this.hero.setPosition(Math.cos(this.t * 0.6) * 60, Math.sin(this.t * 0.6) * 40);
     } else this.hero.setPosition(0, 0);
