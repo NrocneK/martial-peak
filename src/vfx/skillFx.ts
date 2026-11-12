@@ -341,33 +341,64 @@ const phaThuong: Fx = (s, aw) => {
   }
 };
 
+/** Băng Sơn Quyền — ảnh hiệu ứng (tools/art/fist_fx.py, dựng theo 2 ảnh mẫu); đối xứng quanh tâm nên dùng mọi hướng */
+export const FIST_TEX = { disc: 'vx_fist_disc', dust: 'vx_fist_dust', crack: 'vx_fist_crack', pillar: 'vx_fist_pillar' } as const;
+const FIST_COL = 0xffb040;
+const DISC_R = 512 / 2 / 1.08;     // bán kính đĩa trong ảnh (px)
+const CRACK_R = 560 / 2 / 1.08;
+
+/** chấn động ra xung quanh (mẫu 1): đĩa sáng có vân nứt bung ra trên mặt đất + bụi xòe + tia sáng dựng ở tâm */
+function fistShock(s: Stage, c: Pt, R: number): void {
+  const k = s.kit, sc = k.scene;
+  const add = (key: string, x: number, y: number) => sc.add.image(x, y, key).setBlendMode(Phaser.BlendModes.ADD);
+  const d = add(FIST_TEX.disc, c.x, c.y).setDepth(3).setScale((R / DISC_R) * 0.25);
+  sc.tweens.add({ targets: d, scale: R / DISC_R, duration: 150, ease: 'Cubic.easeOut' });
+  sc.tweens.add({ targets: d, alpha: 0, scale: (R / DISC_R) * 1.08, delay: 200, duration: 240, onComplete: () => d.destroy() });
+  const du = add(FIST_TEX.dust, c.x, c.y).setOrigin(0.5, 1).setDepth(11).setScale(0.35 * (R / 110), 0.15 * (R / 110)).setAlpha(0.9);
+  sc.tweens.add({ targets: du, scaleX: 0.7 * (R / 110), scaleY: 0.62 * (R / 110), alpha: 0, duration: 520, ease: 'Quad.easeOut', onComplete: () => du.destroy() });
+  const pl = add(FIST_TEX.pillar, c.x, c.y + 4).setOrigin(0.5, 1).setDepth(12).setScale(0.35, 0.05);
+  sc.tweens.add({ targets: pl, scaleY: 0.55, duration: 80, ease: 'Quad.easeOut' });
+  sc.tweens.add({ targets: pl, alpha: 0, scaleX: 0.15, delay: 90, duration: 240, onComplete: () => pl.destroy() });
+  k.glow(c.x, c.y, FIST_COL, 70, 260);
+  k.burst(c.x, c.y - 6, [0xffd070, 0xff9a30], 14, { tex: VT.SPARK, speed: [60, 220], angle: [200, 340], scale: [0.4, 0], life: 420 });
+  k.debris(c.x, c.y, 8, 0x6a4a2a);
+  k.shake(140, 0.006);
+  for (const o of near(s, c, R)) s.hit(o, FIST_COL);
+}
+
+/** đợt địa chấn nứt vỡ (mẫu 2, thức tỉnh): mạng vết nứt phát sáng loang rộng + cột sáng lửa bốc lên + đá vỡ bay */
+function fistQuake(s: Stage, c: Pt, R: number): void {
+  const k = s.kit, sc = k.scene;
+  const cr = sc.add.image(c.x, c.y, FIST_TEX.crack).setBlendMode(Phaser.BlendModes.ADD).setDepth(2).setScale((R / CRACK_R) * 0.2);
+  sc.tweens.add({ targets: cr, scale: R / CRACK_R, duration: 280, ease: 'Cubic.easeOut' });
+  sc.tweens.add({ targets: cr, alpha: { from: 1, to: 0.55 }, duration: 160, delay: 280, yoyo: true, repeat: 1 });
+  sc.tweens.add({ targets: cr, alpha: 0, delay: 900, duration: 500, onComplete: () => cr.destroy() });
+  const pl = sc.add.image(c.x, c.y + 6, FIST_TEX.pillar).setBlendMode(Phaser.BlendModes.ADD).setOrigin(0.5, 1).setDepth(12).setScale(0.9, 0.1);
+  sc.tweens.add({ targets: pl, scaleY: 1.1, duration: 160, ease: 'Quad.easeOut' });
+  sc.tweens.add({ targets: pl, alpha: 0, scaleX: 0.5, delay: 300, duration: 500, onComplete: () => pl.destroy() });
+  k.glow(c.x, c.y, FIST_COL, 140, 500);
+  for (let i = 0; i < 3; i++) k.later(i * 90, () => k.debris(c.x + (Math.random() - 0.5) * R, c.y + (Math.random() - 0.5) * R * 0.5, 7, 0x4a3420));
+  k.burst(c.x, c.y - 10, [0xffe090, 0xffa040, 0xffffff], 30, { tex: VT.SPARK, speed: [80, 300], angle: [200, 340], scale: [0.5, 0], life: 700 });
+  k.shake(260, 0.01);
+  for (const o of near(s, c, R)) s.hit(o, 0xffe090);
+}
+
 const bangQuyen: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const t = s.targets()[0] ?? pt(h.x + 60, h.y);
   const a = ang(h, t);
+  // 3 cú đấm nhanh (đốm sáng + tia văng) rồi đòn thứ 3 chấn động
   for (let i = 0; i < 3; i++)
     k.later(i * 120, () => {
-      const p = polar(h, a + (i - 1) * 0.25, 46);
-      k.glow(p.x, p.y, 0xff7a6a, 80, 200);
-      k.ring(p.x, p.y, 0xffc0b0, 8, 48, 220, true);
-      k.slash(p.x, p.y, a, 30, 0xff8a6a, 160, { sweep: 0.1, width: 0.6 });
-      k.burst(p.x, p.y, 0xffd0c0, 10, { tex: VT.SPARK, scale: [0.4, 0], speed: [80, 220], life: 240, angle: [(a * 180) / Math.PI - 40, (a * 180) / Math.PI + 40] });
-      s.hit(t, 0xff7a6a);
+      const p = polar(h, a + (i - 1) * 0.25, 40);
+      k.glow(p.x, p.y, FIST_COL, 60, 180);
+      k.ring(p.x, p.y, 0xffe0a0, 6, 34, 200, true);
+      k.burst(p.x, p.y, [0xffe0a0, FIST_COL], 8, { tex: VT.SPARK, scale: [0.35, 0], speed: [80, 220], life: 220, angle: [(a * 180) / Math.PI - 40, (a * 180) / Math.PI + 40] });
+      s.hit(t, FIST_COL);
     });
-  k.later(360, () => {
-    // chấn động
-    k.ring(h.x, h.y + 10, 0xff7a6a, 20, 110, 420, true);
-    k.ring(h.x, h.y + 10, 0xffe0d0, 10, 80, 300);
-    k.debris(h.x, h.y + 10, 12);
-    k.shake(150, 0.006);
-    for (const o of near(s, h, 110)) s.hit(o, 0xff7a6a);
-    if (aw)
-      for (const da of [-0.5, 0, 0.5]) {
-        const c = k.img(VT.CRACK, h.x, h.y + 10, { tint: 0xff6a3a, origin: [0, 0.5], sx: 0.2, sy: 1.4, rot: a + da });
-        k.scene.tweens.add({ targets: c, scaleX: 1.6, duration: 220, ease: 'Quad.easeOut', onComplete: () => k.tw(c, { alpha: 0 }, 500) });
-        for (let j = 1; j <= 4; j++) k.later(j * 50, () => { const p = polar(h, a + da, j * 50); k.glow(p.x, p.y + 10, 0xff7a3a, 40, 260); k.debris(p.x, p.y + 10, 3); });
-      }
-  });
+  const foot = pt(h.x, h.y + 14);
+  k.later(360, () => fistShock(s, foot, 110));
+  if (aw) k.later(480, () => fistQuake(s, foot, 200));
 };
 
 const truyTien: Fx = (s, aw) => {
