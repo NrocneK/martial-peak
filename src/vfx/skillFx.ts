@@ -607,31 +607,62 @@ const thanhPhien: Fx = (s, aw) => {
 };
 
 // ---------------------------------------------------------------- CẢNH GIỚI
+/** Hổ Khiếu Chấn — hư ảnh đầu hổ (tools/art/tiger_fx.py, tách từ ảnh mẫu) hiện trên đầu nhân vật gầm lên,
+ *  rồi sóng âm xung kích lan quanh thân: sát thương + đẩy lùi. Thức tỉnh: phạm vi lớn hơn + choáng. */
+export const TIGER_HEAD = 'vx_tiger_head';
+const TIGER_COL = 0xf4ecdc;
 const hoKhieu: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
-  if (aw) {
-    const c = s.targets()[Math.min(3, s.targets().length - 1)] ?? pt(h.x + 120, h.y);
-    k.later(0, () => {
-      const cl = k.img(VT.CLAW, c.x, c.y, { tint: 0xfff0c0, scale: 0.2, rot: -0.4 });
-      k.scene.tweens.add({ targets: cl, scale: 0.9, duration: 160, ease: 'Back.easeOut', onComplete: () => k.tw(cl, { alpha: 0 }, 300) });
-      k.glow(c.x, c.y, 0xffe0a0, 120, 300);
-      for (const o of near(s, c, 80)) s.hit(o, 0xffe0a0);
-    });
-  }
-  const wave = (d: number, big: number) =>
-    k.later(d, () => {
-      k.ring(h.x, h.y, 0xffe0a0, 20, 130 * big, 460, true);
-      k.ring(h.x, h.y, 0xffffff, 10, 100 * big, 360);
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2;
-        const p1 = polar(h, a, 40), p2 = polar(h, a, 120 * big);
-        k.streak(p1.x, p1.y, p2.x, p2.y, 0xffe0a0, 6, 300);
+  const k = s.kit, sc = k.scene, h = H(s);
+  const R = aw ? 190 : 125;
+  // 1) hư ảnh đầu hổ hiện trên đầu nhân vật: bung lên, rung khi gầm, rồi tan
+  const top = pt(h.x, h.y - 62);
+  const tg = sc.add.image(top.x, top.y + 12, TIGER_HEAD).setDepth(15).setAlpha(0).setScale(0.12);
+  const S0 = aw ? 0.36 : 0.3;
+  sc.tweens.add({ targets: tg, alpha: 0.95, scale: S0, y: top.y, duration: 220, ease: 'Back.easeOut' });
+  k.later(240, () => {
+    sc.tweens.add({ targets: tg, scale: S0 * 1.12, duration: 70, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });   // gầm
+    sc.tweens.add({ targets: tg, angle: { from: -3, to: 3 }, duration: 45, yoyo: true, repeat: 4 });
+  });
+  sc.tweens.add({ targets: tg, alpha: 0, scale: S0 * 1.25, delay: 760, duration: 260, onComplete: () => tg.destroy() });
+  // 2) sóng âm xung kích: nhiều vòng sóng mỏng nối nhau lan ra từ thân (nhìn chéo nên dẹt), + vệt gió hướng tâm
+  const wave = (delay: number, scale: number, stun: boolean) =>
+    k.later(delay, () => {
+      for (let i = 0; i < 3; i++)
+        k.later(i * 70, () => {
+          const g = sc.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(4);
+          let el = 0;
+          const dur = 420;
+          const step = (_t: number, dms: number) => {
+            el += dms * sc.time.timeScale;
+            const u = Math.min(1, el / dur);
+            const r = 18 + (R * scale - 18) * (1 - (1 - u) ** 2);
+            g.clear();
+            g.lineStyle(10 - i * 2, TIGER_COL, 0.18 * (1 - u)).strokeEllipse(h.x, h.y + 10, r * 2, r * 1.2);
+            g.lineStyle(3 - i * 0.6, 0xffffff, 0.85 * (1 - u)).strokeEllipse(h.x, h.y + 10, r * 2, r * 1.2);
+            if (u >= 1) { sc.events.off('update', step); g.destroy(); }
+          };
+          sc.events.on('update', step);
+        });
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2 + Math.random() * 0.2;
+        const p1 = { x: h.x + Math.cos(a) * 30, y: h.y + 10 + Math.sin(a) * 18 };
+        const p2 = { x: h.x + Math.cos(a) * R * scale * 0.95, y: h.y + 10 + Math.sin(a) * R * scale * 0.57 };
+        k.streak(p1.x, p1.y, p2.x, p2.y, TIGER_COL, 4, 260);
       }
-      k.shake(160, 0.006);
-      for (const o of near(s, h, 130 * big)) s.hit(o, 0xffe0a0);
+      k.glow(h.x, h.y, TIGER_COL, 70 * scale, 260);
+      k.shake(180, aw ? 0.01 : 0.006);
+      for (const o of near(s, h, R * scale)) {
+        s.hit(o, TIGER_COL);
+        // đẩy lùi: hình nhân bị đẩy ra ngoài rồi tự trôi về chỗ cũ
+        const aa = ang(h, o);
+        s.drag?.(o, o.x + Math.cos(aa) * 34, o.y + Math.sin(aa) * 34);
+        if (stun) {
+          const st = sc.add.image(o.x, o.y - 30, VT.SPARK).setTint(0xfff0a0).setBlendMode(Phaser.BlendModes.ADD).setDepth(16).setScale(0.4);
+          sc.tweens.add({ targets: st, angle: 360, duration: 600, repeat: 1, onComplete: () => st.destroy() });
+        }
+      }
     });
-  wave(aw ? 200 : 0, 1);
-  wave(aw ? 550 : 350, 1.15);
+  wave(300, 1, aw);
 };
 
 const linhDan: Fx = (s, aw) => {
