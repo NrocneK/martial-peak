@@ -950,8 +950,9 @@ const nguyenAnh: Fx = (s, aw) => {
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
 export const QI_AURA = 'vx_qi_aura';
-const QI_ARM_PIVOT: [number, number] = [0.617, 0.954];                    // khuỷu tay (điểm xoay khi chém)
-const QI_ARM_REACH = 523;                                                  // khuỷu → mũi lưỡi kiếm khí (px ảnh)
+const QI_ARM_PIVOT: [number, number] = [0.626, 0.957];                    // khuỷu tay (điểm xoay khi chém)
+const QI_ARM_REACH = 539;                                                  // khuỷu → mũi kiếm laser (px ảnh)
+const QI_ARM_TIP_OFF = -0.0607;                                           // mũi kiếm lệch so với phương đứng qua khuỷu (rad)
 
 /**
  * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ, nắm tay bọc LUỒNG KIẾM KHÍ vuốt nhọn thành lưỡi: hiện ra trên đầu
@@ -976,10 +977,10 @@ const thanThuc: Fx = (s, aw) => {
     const cand = pool.filter((t) => Math.sign(t.x - hero.x || side) === side);
     const t = cand[Math.floor(i / 2)] ?? pool[i % Math.max(1, pool.length)];
     const h0 = home();
-    const arm = sc.add.image(h0.x, h0.y, QI_ARM).setOrigin(QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21)
+    const arm = sc.add.image(h0.x, h0.y, QI_ARM).setOrigin(side < 0 ? 1 - QI_ARM_PIVOT[0] : QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21)
       .setScale(SC * 0.5).setAlpha(0).setRotation(tilt).setFlipX(side < 0);
     // luồng kiếm khí: chồng khít lên tay (cộng sáng), chớp nháy + phập phồng như lửa
-    const aura = sc.add.image(h0.x, h0.y, QI_AURA).setOrigin(QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21.1)
+    const aura = sc.add.image(h0.x, h0.y, QI_AURA).setOrigin(side < 0 ? 1 - QI_ARM_PIVOT[0] : QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21.1)
       .setBlendMode(Phaser.BlendModes.ADD).setFlipX(side < 0).setAlpha(0);
     const ph = Math.random() * 10;
     const follow = (time: number) => {
@@ -1012,7 +1013,7 @@ const thanThuc: Fx = (s, aw) => {
         const draw = (fade: number) => {
           // vệt chém: MỘT dải trăng khuyết liền (không chia khúc) bám mũi kiếm — mép ngoài sắc, đuôi thon nhọn dần
           g.clear();
-          const a1 = st.r - Math.PI / 2, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
+          const a1 = st.r - Math.PI / 2 + QI_ARM_TIP_OFF * side, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
           if (span < 0.05) return;
           const R = SWORD * 1.02;
           const outer: Phaser.Types.Math.Vector2Like[] = [], inner: Phaser.Types.Math.Vector2Like[] = [];

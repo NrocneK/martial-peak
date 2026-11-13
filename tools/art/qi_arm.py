@@ -5,9 +5,8 @@ có vòng xuyến) + LƯỠI KIẾM NĂNG LƯỢNG bọc nắm tay, nối dài t
   1) cắt cánh tay trên-phải (nắm đấm + vòng xuyến + cẳng tay) bằng đường viền tay vẽ theo ảnh mẫu; phần dưới khuỷu
      (cánh tay trên) mờ dần → tay khí hiện ra từ hư không
   2) quầng sáng vàng mềm quanh tay (thay quầng đỏ của nền mẫu)
-  3) KIẾM KHÍ BAO BỌC BÀN TAY: lớp khí mỏng ôm sát đường viền nắm đấm (viền sáng, trong để thấy tay), từ mép trên
-     bàn tay mọc ra một lưỡi kiếm thẳng nằm đúng trên trục cẳng tay. Dựng bằng hàm khoảng cách → mép sắc, cân đối.
-     Lớp vẽ: quầng ngoài · thân vàng · viền sáng mảnh · sống kiếm trắng · vân khí chạy dọc
+  3) KIẾM LASER: luồng sáng thẳng đều, mũi tròn, phóng ra từ GIỮA nắm tay song song trục cẳng tay; đoạn trong nắm tay
+     bị tay che (như nắm chuôi). Lõi trắng · thân vàng nhạt · quầng vàng cam.
   4) xoay cả hình cho trục cẳng tay DỰNG ĐỨNG; điểm xoay khi chém = khuỷu tay
   → public/vfx/qi_arm.png, qi_aura.png  (cùng khung để game chồng khít; lớp khí chớp nháy riêng)
 
@@ -32,8 +31,8 @@ ARM = [(22, 21), (30, 17), (40, 17), (50, 23), (55, 32), (57, 37), (66, 38), (76
 ELBOW = (75, 102)                        # khuỷu tay
 FIST_C = (53.6, 41.4)                    # cổ tay (điểm bạn đánh dấu) — trục cẳng tay: khuỷu → điểm này
 FIST = [(22, 21), (30, 17), (40, 17), (50, 23), (55, 32), (57, 38), (52, 45), (40, 47), (30, 44), (23, 36), (21, 28)]  # bàn tay (nắm đấm)
-BLADE_U0 = 21                            # chân lưỡi: khoảng cách (dọc trục, từ FIST_C) tới mép trên nắm đấm
-BLADE_L = 110                            # FIST_C → mũi lưỡi
+FIST_CTR = (38.5, 31)                    # giữa nắm tay (chỗ chuôi kiếm laser)
+BLADE_L = 100                            # giữa nắm tay → mũi lưỡi
 TIP = (FIST_C[0] + (FIST_C[0] - ELBOW[0]) / 64.27 * BLADE_L, FIST_C[1] + (FIST_C[1] - ELBOW[1]) / 64.27 * BLADE_L)  # mũi (trên trục kéo dài)
 
 
@@ -76,52 +75,34 @@ def main():
     armF = Image.fromarray(g.astype(np.uint8), 'RGBA')
     armF.alpha_composite(canvas)
 
-    # --- LƯỠI KIẾM NĂNG LƯỢNG theo trục cẳng tay
+    # --- KIẾM LASER: luồng sáng thẳng, đều, mũi tròn, phóng ra từ GIỮA nắm tay song song trục cẳng tay.
+    #     Lõi trắng đặc · viền vàng · quầng vàng cam toả rộng. Đoạn nằm trong nắm tay bị tay che (ẩn) → như đang nắm chuôi.
     SS = 3                                                                   # siêu mẫu chống răng cưa
     Y, X = np.mgrid[0:CH * SS, 0:CW * SS].astype(float) / SS
-    fcx, fcy = C(*FIST_C)
-    u = (X - fcx) * ux + (Y - fcy) * uy                                      # dọc trục từ tâm nắm đấm, + lên mũi
+    fcx, fcy = C(*FIST_CTR)
+    u = (X - fcx) * ux + (Y - fcy) * uy                                      # dọc trục từ giữa nắm tay, + lên mũi
     v = (X - fcx) * nx + (Y - fcy) * ny                                      # ngang trục
-    L = BLADE_L * UP                                                         # tâm cổ tay → mũi
-    # (a) VỎ KIẾM KHÍ ôm sát bàn tay: khoảng cách tới mặt nạ nắm đấm (bo tròn góc), nở ra 3px
+    L = BLADE_L * UP                                                         # giữa nắm tay → mũi
+    R = 5 * UP                                                               # bán kính lưỡi (lõi + viền)
+    d = np.hypot(v, u - np.clip(u, 0, L)) - R                                # khoảng cách tới thân lưỡi (đầu tròn)
     fmask = Image.new('L', (CW * SS, CH * SS), 0)
     ImageDraw.Draw(fmask).polygon([(C(x, y)[0] * SS, C(x, y)[1] * SS) for x, y in FIST], fill=255)
-    fm = ndimage.gaussian_filter(np.array(fmask).astype(float), 2.5 * UP * SS) > 127
-    dE = (ndimage.distance_transform_edt(~fm) - ndimage.distance_transform_edt(fm)) / SS - 3 * UP
-    # (b) LƯỠI KIẾM thẳng trên trục cẳng tay, mọc ra từ mép trên bàn tay: hai mép song song, vát nhọn 22% cuối,
-    #     loe sáng ở chân; phần dưới chân chìm vào vỏ
-    u0 = BLADE_U0 * UP                                                       # chỗ trục ló ra khỏi mép trên nắm đấm
-    W = 6.5 * UP
-    taper = W * (1 - 0.2 * np.clip((u - u0) / (L * 0.78), 0, 1))
-    hw = np.where(u < L * 0.78, taper, W * 0.8 * np.clip((L - u) / (L * 0.22), 0, 1))
-    hw = hw + 2.5 * UP * np.exp(-np.maximum(u - u0, 0) / (6 * UP))                  # loe sáng ở chân lưỡi
-    dB = np.where(u < L, np.abs(v) - hw, np.hypot(v, u - L)) + np.maximum(u0 + 6 * UP - u, 0) ** 1.5 / (2 * UP) ** 0.5
-    k = 8 * UP                                                               # hợp mượt vỏ + lưỡi
-    hh = np.clip(0.5 + 0.5 * (dE - dB) / k, 0, 1)
-    d = dE * (1 - hh) + dB * hh - k * hh * (1 - hh)
-    aa = 0.9
-    fill = np.clip(0.5 - d / aa, 0, 1)                                       # bên trong (mép sắc)
-    rim = np.exp(-(d / (1.1 * UP)) ** 2)                                     # viền sáng mảnh
-    glowO = np.exp(-np.maximum(d, 0) / (6 * UP)) * (d > 0)                   # quầng ngoài
-    inner = np.clip(-d / W, 0, 1)                                            # 0 ở mép → 1 ở sống kiếm
-    # thân: lưỡi đặc; vỏ quanh bàn tay chỉ là lớp khí mỏng + viền sáng (thấy rõ tay bên trong)
-    solid = hh ** 1.5
-    bodyA = fill * (0.16 + 0.66 * solid) * (0.75 + 0.25 * inner)
-    core = np.exp(-(v / (1.4 * UP)) ** 2) * np.clip((u - u0 + 4 * UP) / (10 * UP), 0, 1) * np.clip((L * 0.97 - u) / (L * 0.12), 0, 1) * solid
-    vein = (0.5 + 0.5 * np.sin(v / (1.8 * UP) * np.pi + np.sin(u / (11 * UP)) * 1.5)) * 0.22 * solid
-    A = np.clip(np.maximum.reduce([bodyA, rim * (0.6 + 0.35 * solid), glowO * (0.3 + 0.15 * solid), core]), 0, 1)
-    c_out = np.array([255, 150, 40.]); c_body = np.array([255, 200, 85.]); c_hot = np.array([255, 242, 190.])
-    tt = np.clip(inner * 1.3 + vein, 0, 1)[..., None]
-    col = c_body * (1 - tt) + c_hot * tt
-    col = np.where((d > 0)[..., None], c_out, col)
-    col = col * (1 - rim[..., None] * 0.6) + c_hot * rim[..., None] * 0.6
-    col = col * (1 - core[..., None]) + np.array([255, 255, 250.]) * core[..., None]
+    hide = 1 - ndimage.gaussian_filter(np.array(fmask).astype(float) / 255, 1.5 * UP * SS)   # tay che chuôi
+    coreA = np.clip(0.5 - (d + R * 0.45) / 0.9, 0, 1)                        # lõi trắng (hẹp hơn thân)
+    bodyA = np.clip(0.5 - d / 0.9, 0, 1)                                     # thân (mép sắc)
+    glowA = np.exp(-np.maximum(d, 0) / (3.5 * UP)) * 0.85                    # quầng sát
+    hazeA = np.exp(-np.maximum(d, 0) / (8 * UP)) * 0.3                       # quầng toả rộng
+    A = np.clip(np.maximum.reduce([bodyA, glowA, hazeA]), 0, 1) * hide
+    c_core = np.array([255, 255, 248.]); c_body = np.array([255, 228, 140.]); c_glow = np.array([255, 170, 40.])
+    t = np.clip(d / (6 * UP), 0, 1)[..., None]
+    col = c_glow * t + c_body * (1 - t)
+    col = col * (1 - coreA[..., None]) + c_core * coreA[..., None]
     auraI = Image.fromarray(np.dstack([np.clip(col, 0, 255), A * 255]).astype(np.uint8), 'RGBA').resize((CW, CH), Image.LANCZOS)
 
     # đánh dấu khuỷu + mũi bằng 2 điểm phụ (để đo lại sau khi xoay), rồi xoay cho trục dựng đứng
     mk = Image.new('L', (CW, CH), 0)
     md = ImageDraw.Draw(mk)
-    for (px, py), val in ((C(*ELBOW), 255), (C(*TIP), 128)):
+    for (px, py), val in ((C(*ELBOW), 255), (C(FIST_CTR[0] + ux * BLADE_L, FIST_CTR[1] + uy * BLADE_L), 128)):
         md.ellipse([px - 3, py - 3, px + 3, py + 3], fill=val)
     ang = np.degrees(np.arctan2(ux, -uy))                                    # độ nghiêng trục so với phương đứng
     armF = armF.rotate(ang, resample=Image.BICUBIC, expand=True)
@@ -137,7 +118,7 @@ def main():
     armF.save(os.path.join(VFX, 'qi_arm.png'))
     auraI.save(os.path.join(VFX, 'qi_aura.png'))
     print('qi_arm', armF.size, 'tilt', round(ang, 1), 'pivot(khuỷu)', round(ex / armF.width, 3), round(ey / armF.height, 3),
-          'mũi', round(tx, 1), round(ty, 1), 'reach', round(ey - ty))
+          'mũi', round(tx, 1), round(ty, 1), 'reach', round(float(np.hypot(ex - tx, ey - ty))), 'lệch góc', round(float(np.degrees(np.arctan2(tx - ex, ey - ty))), 2))
 
     ca = np.array(armF).astype(float); cb = np.array(auraI).astype(float)
     bg = np.full(ca.shape[:2] + (3,), (26, 24, 40.))
