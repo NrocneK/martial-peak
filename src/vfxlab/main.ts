@@ -100,6 +100,7 @@ class LabScene extends Phaser.Scene {
         d.hitT = 0.09;
         this.tweens.add({ targets: d.img, angle: { from: -10, to: 0 }, duration: 160, ease: 'Back.easeOut' });
       },
+      sprite: (t) => (t as Dummy).img,
       drag: (t, x, y) => {
         const d = t as Dummy;
         if (!d.img) return;

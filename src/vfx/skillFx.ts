@@ -18,6 +18,8 @@ export interface Stage {
   drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
   pose?(skill: string, n: 0 | 1 | 2, a: number): void;
+  /** Hình của mục tiêu (để hiệu ứng tách/nứt hình) — trang demo: hình nhân */
+  sprite?(t: Pt): Phaser.GameObjects.Image | Phaser.GameObjects.Sprite | undefined;
 }
 
 type Fx = (s: Stage, aw: boolean) => void;
@@ -946,25 +948,127 @@ const nguyenAnh: Fx = (s, aw) => {
   k.later(dur + 50, () => { ev.remove(); sp.forEach((i) => i.destroy()); halo.forEach((i) => i.destroy()); });
 };
 
+/**
+ * THẦN THỨC TRẢM — "ý niệm trảm": không vũ khí. Không gian quanh mục tiêu KHỰNG lại một khắc (gợn sóng co vào, tối mờ),
+ * rồi một đường chỉ sáng mảnh như sợi tóc lóe lên cắt ngang; mục tiêu NỨT theo đúng đường đó (hai nửa trượt lệch nhau)
+ * rồi liền lại — trúng đòn trễ nửa nhịp như bị chém vào hồn.
+ * Thức tỉnh (Trảm Thần Diệt Hồn): tông vàng kim, đường chém dài hơn, hồn nổ thành đoá sóng lan 120px.
+ */
 const thanThuc: Fx = (s, aw) => {
-  const k = s.kit;
+  const k = s.kit, sc = k.scene;
+  const C = aw ? { core: 0xfffbe8, glow: 0xffc850, deep: 0xb07010 } : { core: 0xffffff, glow: 0xb890ff, deep: 0x5a3aa0 };
+  const KY = 0.6;                                                           // nén mặt đất (gợn sóng nằm trên nền)
   const ts = s.targets().slice(-3);
-  ts.forEach((t, i) =>
-    k.later(i * 150, () => {
-      const eye = k.img(VT.EYE, t.x, t.y - 46, { scale: 0.1, alpha: 0, add: false, depth: 22 });
-      k.scene.tweens.add({ targets: eye, scale: 0.5, alpha: 1, duration: 180, ease: 'Back.easeOut' });
-      k.later(260, () => {
-        k.tw(eye, { alpha: 0, scale: 0.7 }, 200);
-        k.slash(t.x, t.y, -0.8, 50, 0xc8a0ff, 220, { sweep: 0.15, width: 0.4 });
-        k.slash(t.x, t.y, 2.3, 50, 0xc8a0ff, 220, { sweep: 0.15, width: 0.4 });
-        k.streak(t.x - 46, t.y - 46, t.x + 46, t.y + 46, 0xd8b0ff, 10, 220);
-        k.streak(t.x + 46, t.y - 46, t.x - 46, t.y + 46, 0xd8b0ff, 10, 220);
-        k.glow(t.x, t.y, 0xa070ff, 90, 300);
-        s.hit(t, 0xc8a0ff);
-        if (aw) k.later(200, () => { k.ring(t.x, t.y, 0xc8a0ff, 10, 120, 420, true); k.burst(t.x, t.y, [0xc8a0ff, 0xffffff], 20, { tex: VT.SPARK, speed: [100, 300], scale: [0.4, 0] }); for (const o of near(s, t, 120)) s.hit(o, 0xc8a0ff); });
+  ts.forEach((t, idx) => k.later(idx * 260, () => {
+    const cx = t.x, cy = t.y - 10;
+    // 1) KHÔNG GIAN KHỰNG: màn tối mờ + 2 vòng gợn co dần vào tâm
+    const veil = k.img(VT.SOFT, cx, t.y, { tint: 0x000000, add: false, scale: 0.4, alpha: 0, depth: 4 });
+    veil.setScale(1.5, 1.5 * KY);
+    sc.tweens.add({ targets: veil, alpha: 0.45, duration: 160 });
+    const rip = sc.add.graphics().setDepth(4.5).setBlendMode(Phaser.BlendModes.ADD);
+    const r0 = { v: 0 };
+    sc.tweens.add({
+      targets: r0, v: 1, duration: 300, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        rip.clear();
+        for (let q = 0; q < 3; q++) {
+          const f = Phaser.Math.Clamp(r0.v * 1.3 - q * 0.15, 0, 1);
+          if (f <= 0 || f >= 1) continue;
+          const rr = 90 - 70 * f;
+          rip.lineStyle(1.4, C.glow, 0.5 * Math.sin(f * Math.PI));
+          rip.strokeEllipse(cx, t.y, rr * 2, rr * 2 * KY);
+        }
+      },
+      onComplete: () => rip.destroy(),
+    });
+    // 2) SỢI CHỈ SÁNG: chạy từ đầu này sang đầu kia trong 70ms
+    const ang = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.45) + (Math.random() < 0.5 ? 0 : Math.PI);
+    const L = aw ? 130 : 95, dx = Math.cos(ang), dy = Math.sin(ang);
+    const ax = cx - dx * L, ay = cy - dy * L, bx = cx + dx * L, by = cy + dy * L;
+    k.later(300, () => {
+      const g = sc.add.graphics().setDepth(23).setBlendMode(Phaser.BlendModes.ADD);
+      const st = { p: 0, a: 1, w: 1 };
+      const draw = () => {
+        g.clear();
+        const ex = ax + (bx - ax) * st.p, ey = ay + (by - ay) * st.p;
+        g.lineStyle(7 * st.w, C.glow, 0.22 * st.a).lineBetween(ax, ay, ex, ey);
+        g.lineStyle(3 * st.w, C.glow, 0.55 * st.a).lineBetween(ax, ay, ex, ey);
+        g.lineStyle(1.2, C.core, st.a).lineBetween(ax, ay, ex, ey);
+      };
+      sc.tweens.add({ targets: st, p: 1, duration: 70, onUpdate: draw });
+      sc.tweens.add({ targets: st, a: 0, w: 0.2, delay: 200, duration: 380, ease: 'Quad.easeIn', onUpdate: draw, onComplete: () => g.destroy() });
+      k.glow(cx, cy, C.glow, 60, 220);
+      for (const [x, y] of [[ax, ay], [bx, by]]) k.later(70, () => k.glow(x, y, C.core, 14, 200));
+      sc.tweens.add({ targets: veil, alpha: 0, delay: 120, duration: 320, onComplete: () => veil.destroy() });
+      // 3) MỤC TIÊU NỨT theo đường chém: 2 nửa (mặt nạ nửa mặt phẳng) trượt lệch rồi liền lại
+      const spr = s.sprite?.(t);
+      if (spr && spr.visible) {
+        const nx = -dy, ny = dx, BIG = 400;
+        const halves = [1, -1].map((sd) => {
+          const im = sc.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name)
+            .setOrigin(spr.originX, spr.originY).setScale(spr.scaleX, spr.scaleY).setFlip(spr.flipX, spr.flipY).setDepth(spr.depth + 0.01);
+          const mg = sc.make.graphics({}, false);
+          mg.fillStyle(0xffffff).fillPoints([
+            { x: cx - dx * BIG, y: cy - dy * BIG }, { x: cx + dx * BIG, y: cy + dy * BIG },
+            { x: cx + dx * BIG + nx * BIG * sd, y: cy + dy * BIG + ny * BIG * sd }, { x: cx - dx * BIG + nx * BIG * sd, y: cy - dy * BIG + ny * BIG * sd },
+          ], true);
+          im.setMask(mg.createGeometryMask());
+          return { im, mg, sd, x0: spr.x, y0: spr.y };
+        });
+        spr.setVisible(false);
+        const sp = { v: 0 };
+        sc.tweens.add({
+          targets: sp, v: 1, duration: 140, yoyo: true, hold: 160, ease: 'Quad.easeOut',
+          onUpdate: () => {
+            for (const h of halves) {
+              const o = h.sd * sp.v;                                          // tách theo pháp tuyến + trượt dọc đường chém
+              h.im.setPosition(h.x0 + nx * 2.5 * o + dx * 5 * o, h.y0 + ny * 2.5 * o + dy * 5 * o);
+            }
+          },
+          onComplete: () => {
+            for (const h of halves) { h.im.clearMask(); h.mg.destroy(); h.im.destroy(); }
+            spr.setVisible(true);
+            s.hit(t, C.glow);
+          },
+        });
+      } else k.later(300, () => s.hit(t, C.glow));
+      // mảnh sáng li ti bong ra dọc đường chém
+      for (let q = 0; q < 10; q++) {
+        const f = Math.random() * 2 - 1;
+        const d = sc.add.image(cx + dx * L * f, cy + dy * L * f, VT.DOT).setTint(q % 3 ? C.glow : C.core).setBlendMode(Phaser.BlendModes.ADD).setDepth(23).setScale(0.06 + Math.random() * 0.06);
+        const side = Math.random() < 0.5 ? -1 : 1;
+        sc.tweens.add({ targets: d, x: d.x - dy * side * (6 + Math.random() * 14), y: d.y + dx * side * (6 + Math.random() * 14), alpha: 0, delay: 60 + Math.random() * 120, duration: 420, onComplete: () => d.destroy() });
+      }
+      // THỨC TỈNH: hồn nổ thành đoá sóng (6 cánh) lan 120px
+      if (aw) k.later(460, () => {
+        const fl = sc.add.graphics().setDepth(4.6).setBlendMode(Phaser.BlendModes.ADD);
+        const e = { v: 0 };
+        sc.tweens.add({
+          targets: e, v: 1, duration: 520, ease: 'Cubic.easeOut',
+          onUpdate: () => {
+            fl.clear();
+            const R = 120 * e.v, al = 1 - e.v;
+            fl.lineStyle(2.5, C.glow, 0.8 * al).strokeEllipse(t.x, t.y, R * 2, R * 2 * KY);
+            fl.lineStyle(1.2, C.core, 0.7 * al);
+            for (let p = 0; p < 6; p++) {                                   // cánh hoa: cung nhọn từ tâm ra
+              const a0 = (p / 6) * Math.PI * 2 + e.v * 0.6;
+              fl.beginPath();
+              for (let u = 0; u <= 12; u++) {
+                const tt = u / 12, rr = R * 0.85 * Math.sin(tt * Math.PI) ** 0.6 * tt ** 0.3, aa = a0 + (tt - 0.5) * 0.9;
+                const X = t.x + Math.cos(aa) * rr * (0.2 + tt * 0.8), Y = t.y + Math.sin(aa) * rr * (0.2 + tt * 0.8) * KY;
+                if (u === 0) fl.moveTo(X, Y); else fl.lineTo(X, Y);
+              }
+              fl.strokePath();
+            }
+          },
+          onComplete: () => fl.destroy(),
+        });
+        k.glow(t.x, t.y - 10, C.glow, 110, 360);
+        k.burst(t.x, t.y - 10, [C.glow, C.core], 18, { tex: VT.SPARK, speed: [80, 240], scale: [0.35, 0] });
+        for (const o of near(s, t, 120)) if (o !== t) s.hit(o, C.glow);
       });
-    }),
-  );
+    });
+  }));
 };
 
 const huKhong: Fx = (s, aw) => {
