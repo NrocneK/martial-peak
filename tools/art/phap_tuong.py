@@ -113,11 +113,12 @@ def palm():
     a = np.array(src).astype(float)
     R, G, B = a[..., 0], a[..., 1], a[..., 2]
     skin = (R - B > 18) & (R > 140) & (G > 110)
+    pale = (R > 170) & (G > 130) & (np.abs(R - B) < 60) & (a.min(2) < 245)   # da nhạt / hồng (ngón cái, mép phải)
+    skin = skin | (pale & ndimage.binary_dilation(skin, iterations=4))
     m = ndimage.binary_fill_holes(ndimage.binary_closing(skin, iterations=2))
-    m = ndimage.binary_opening(m, iterations=1)
     lab, n = ndimage.label(m)
     m = lab == (np.argmax(ndimage.sum(m, lab, range(1, n + 1))) + 1)
-    m = ndimage.binary_dilation(m, iterations=1)                              # gồm cả viền tay của mẫu
+    m = ndimage.binary_dilation(m, iterations=2)                              # gồm cả viền tay của mẫu
     PAD = 14
     m = np.pad(m, PAD); a = np.pad(a, ((PAD, PAD), (PAD, PAD), (0, 0)), mode='edge')
     h0, w0 = m.shape
@@ -141,7 +142,7 @@ def palm():
     xs = np.nonzero(f.any(0))[0]
     x1 = xs.max()
     wn = xx + ndimage.gaussian_filter(np.random.default_rng(4).standard_normal((H, W)), 8 * UPS / 3) * 220
-    cut = np.clip((x1 - 4 * UPS - wn) / (12 * UPS), 0, 1) ** 1.3
+    cut = np.ones((H, W))                                                     # mẫu không có cổ tay → giữ trọn bàn tay
     col = col * cut[..., None] + np.array([255, 135, 25.]) * (1 - cut[..., None])
     bodyA = np.maximum(fm * (0.85 + 0.15 * ln), rim * 0.95) * cut
     # quầng + lửa bốc lên
