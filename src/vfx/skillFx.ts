@@ -1123,7 +1123,7 @@ const huKhong: Fx = (s, aw) => {
 
 /** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
  *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng = mu bàn tay úp xuống (điểm chạm đất `cx, cy` = trọng tâm bàn tay, rộng palmW) */
-export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.473, cy: 0.46, palmW: 754 } as const;
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.531, cy: 0.533, palmW: 710 } as const;
 
 /**
  * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
@@ -1173,7 +1173,7 @@ const phapTuong: Fx = (s, aw) => {
   const RP = aw ? 120 : 95;                                                // bán kính chưởng (px game)
   const PS = (RP * 2.6) / PHAP_TUONG.palmW;
   const palm = (p: Pt, delay: number) => k.later(delay, () => {
-    const fl = p.x < hero.x;                                               // mẫu: ngón tay chỉ xuống phải → lật khi đánh bên trái
+    const fl = false;                                                      // dùng 1 góc (SW) cho mọi hướng
     const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0, scale: 0.3, depth: 4 });
     sh.setScale(0.6, 0.6 * KY);
     sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: (RP * 2.4) / 128, scaleY: ((RP * 2.4) / 128) * KY, duration: 600, ease: 'Quad.easeIn' });

@@ -104,7 +104,7 @@ def bez(p0, p1, p2, n=24):
 
 K_GROUND = 0.6                           # nén mặt đất của góc nhìn game
 # mẫu = hướng SW (ngón tay chỉ xuống trái); xoay trên mặt đất ngược chiều kim đồng hồ 45° mỗi hướng
-PALM_DIRS = [('sw', 0), ('s', 45), ('se', 90), ('e', 135), ('ne', 180), ('n', 225), ('nw', 270), ('w', 315)]
+PALM_DIRS = [('sw', 0)]                  # dùng 1 góc (SW, đúng mẫu) cho mọi hướng
 
 
 def palm():
@@ -195,27 +195,9 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     avatar()
     res = palm()
-    tiles = []
-    for name, _ in PALM_DIRS:
-        img, (cx, cy) = res[name]
-        img.save(os.path.join(VFX, f'phap_tuong_palm_{name}.png'))
-        print('palm', name, img.size, 'center', round(cx, 3), round(cy, 3))
-        ia = np.array(img).astype(float)
-        bg = np.full(ia.shape[:2] + (3,), (26, 24, 40.))
-        tiles.append((name, Image.fromarray(np.clip(bg + ia[..., :3] * ia[..., 3:] / 255, 0, 255).astype(np.uint8))))
-    TW = max(t.width for _, t in tiles); TH = max(t.height for _, t in tiles)
-    pv = Image.new('RGB', (TW * 4, TH * 2), (26, 24, 40))
-    d = ImageDraw.Draw(pv)
-    order = ['nw', 'n', 'ne', 'e', 'w', 'sw', 's', 'se']
-    tm = dict(tiles)
-    for i, n_ in enumerate(order):
-        t = tm[n_]
-        x, y = (i % 4) * TW, (i // 4) * TH
-        pv.paste(t, (x + (TW - t.width) // 2, y + (TH - t.height) // 2))
-        d.text((x + 10, y + 10), n_.upper(), fill=(255, 255, 255))
-    pv.thumbnail((2000, 2000))
-    pv.save(os.path.join(OUT, 'palm_8dirs.png'))
-
+    img, (cx, cy) = res['sw']
+    img.save(os.path.join(VFX, 'phap_tuong_palm.png'))
+    print('palm', img.size, 'center', round(cx, 3), round(cy, 3))
 
 if __name__ == '__main__':
     main()
