@@ -1160,13 +1160,12 @@ const phapTuong: Fx = (s, aw) => {
   // đứng SAU LƯNG nhân vật: lệch về phía sau theo hướng nhìn, luôn vẽ DƯỚI nhân vật (nhân vật đứng trước pháp tướng
   // như ảnh mẫu); khi nhân vật nhìn lên, pháp tướng không lấn xuống trước mặt mà đứng sát sau lưng
   const FACE_A = [90, 135, 180, 225, 270, 315, 0, 45].map((d) => (d * Math.PI) / 180);
-  const BACK = 34;
   const spot = () => {
     const a = FACE_A[facing()];
-    // luôn ở PHÍA TRÊN nhân vật trên màn hình (sau lưng theo góc nhìn), lệch ngang: nhìn xuống → về phía sau lưng,
-    // quay lưng (nhìn lên) → về phía nhân vật đang hướng tới (NE → phải, NW → trái, N → chính giữa)
-    const up = Math.sin(a) < -0.1;
-    return { x: hero.x + (up ? 1 : -1) * Math.cos(a) * BACK, y: hero.y - Math.max(6, Math.abs(Math.sin(a)) * BACK) * KY };
+    // như ảnh mẫu: pháp tướng là phông nền khổng lồ đứng NGAY SAU nhân vật, thẳng trục với nhân vật, xa máy quay hơn
+    // một chút; nhân vật luôn đứng phía trước (vẽ đè lên). Hướng nào cũng vậy, chỉ đổi khung quay mặt cho cùng hướng.
+    void a;
+    return { x: hero.x, y: hero.y - 10 * KY };
   };
   const sp0 = spot();
   const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
