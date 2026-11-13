@@ -1157,13 +1157,23 @@ const phapTuong: Fx = (s, aw) => {
   const AS = ((aw ? 3.6 : 3.0) * 68) / PHAP_TUONG.bodyH;                   // cao gấp ~3 nhân vật
   // pháp tướng quay cùng hướng nhân vật: bảng 8 khung, khung i = hàng i của sprite nhân vật (S, SW, W, NW, N, NE, E, SE)
   const facing = () => (hero.texture.key === 'hero' ? Math.floor(Number(hero.frame.name) / 7) % 8 : 0);
-  const av = sc.add.image(hero.x, hero.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
+  // đứng SAU LƯNG nhân vật: lệch về phía sau theo hướng nhìn, luôn vẽ DƯỚI nhân vật (nhân vật đứng trước pháp tướng
+  // như ảnh mẫu); khi nhân vật nhìn lên, pháp tướng không lấn xuống trước mặt mà đứng sát sau lưng
+  const FACE_A = [90, 135, 180, 225, 270, 315, 0, 45].map((d) => (d * Math.PI) / 180);
+  const BACK = 34;
+  const spot = () => {
+    const a = FACE_A[facing()];
+    return { x: hero.x - Math.cos(a) * BACK, y: hero.y - Math.max(4, Math.sin(a) * BACK) * KY };
+  };
+  const sp0 = spot();
+  const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
     .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setScale(AS * 0.7);
   sc.tweens.add({ targets: av, alpha: 0.85, scale: AS, duration: 420, ease: 'Cubic.easeOut' });
-  k.glow(h.x, h.y - 40, 0xffc850, 120, 500, { alpha: 0.7 });
+  k.glow(sp0.x, sp0.y - 60, 0xffc850, 120, 500, { alpha: 0.7 });
   const flick = (time: number) => {
     if (!av.active) return;
-    av.setPosition(hero.x, hero.y + 8);
+    const spn = spot();
+    av.setPosition(spn.x, spn.y + 8);
     if (Number(av.frame.name) !== facing()) av.setFrame(facing());
     circ.setPosition(hero.x, hero.y + 4);
     const g = av.getData('fade') ?? 1;
