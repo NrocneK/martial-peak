@@ -18,8 +18,6 @@ export interface Stage {
   drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
   pose?(skill: string, n: 0 | 1 | 2, a: number): void;
-  /** Hình của mục tiêu (để hiệu ứng tách/nứt hình) — trang demo: hình nhân */
-  sprite?(t: Pt): Phaser.GameObjects.Image | Phaser.GameObjects.Sprite | undefined;
 }
 
 type Fx = (s: Stage, aw: boolean) => void;
@@ -948,127 +946,97 @@ const nguyenAnh: Fx = (s, aw) => {
   k.later(dur + 50, () => { ev.remove(); sp.forEach((i) => i.destroy()); halo.forEach((i) => i.destroy()); });
 };
 
+/** Tay khí vàng cầm kiếm (tools/art/qi_arm.py, từ ảnh mẫu pháp tướng nhiều tay) — dựng đứng, mũi kiếm lên trên */
+export const QI_ARM = 'vx_qi_arm';
+const QI_ARM_PIVOT: [number, number] = [0.406, 0.739];                     // cổ tay (điểm xoay khi chém)
+
 /**
- * THẦN THỨC TRẢM — "ý niệm trảm": không vũ khí. Không gian quanh mục tiêu KHỰNG lại một khắc (gợn sóng co vào, tối mờ),
- * rồi một đường chỉ sáng mảnh như sợi tóc lóe lên cắt ngang; mục tiêu NỨT theo đúng đường đó (hai nửa trượt lệch nhau)
- * rồi liền lại — trúng đòn trễ nửa nhịp như bị chém vào hồn.
- * Thức tỉnh (Trảm Thần Diệt Hồn): tông vàng kim, đường chém dài hơn, hồn nổ thành đoá sóng lan 120px.
+ * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ cầm kiếm: hiện ra trên đầu nhân vật, mỗi tay bay tới một kẻ địch gần đó,
+ * giơ kiếm rồi bổ xuống (vệt chém vàng theo mũi kiếm), xong bay về và tan.
+ *   thường: 2 tay (trái/phải) · thức tỉnh: 6 tay xếp như pháp tướng (3 tầng mỗi bên), chém 6 mục tiêu so le.
  */
 const thanThuc: Fx = (s, aw) => {
-  const k = s.kit, sc = k.scene;
-  const C = aw ? { core: 0xfffbe8, glow: 0xffc850, deep: 0xb07010 } : { core: 0xffffff, glow: 0xb890ff, deep: 0x5a3aa0 };
-  const KY = 0.6;                                                           // nén mặt đất (gợn sóng nằm trên nền)
-  const ts = s.targets().slice(-3);
-  ts.forEach((t, idx) => k.later(idx * 260, () => {
-    const cx = t.x, cy = t.y - 10;
-    // 1) KHÔNG GIAN KHỰNG: màn tối mờ + 2 vòng gợn co dần vào tâm
-    const veil = k.img(VT.SOFT, cx, t.y, { tint: 0x000000, add: false, scale: 0.4, alpha: 0, depth: 4 });
-    veil.setScale(1.5, 1.5 * KY);
-    sc.tweens.add({ targets: veil, alpha: 0.45, duration: 160 });
-    const rip = sc.add.graphics().setDepth(4.5).setBlendMode(Phaser.BlendModes.ADD);
-    const r0 = { v: 0 };
-    sc.tweens.add({
-      targets: r0, v: 1, duration: 300, ease: 'Sine.easeIn',
-      onUpdate: () => {
-        rip.clear();
-        for (let q = 0; q < 3; q++) {
-          const f = Phaser.Math.Clamp(r0.v * 1.3 - q * 0.15, 0, 1);
-          if (f <= 0 || f >= 1) continue;
-          const rr = 90 - 70 * f;
-          rip.lineStyle(1.4, C.glow, 0.5 * Math.sin(f * Math.PI));
-          rip.strokeEllipse(cx, t.y, rr * 2, rr * 2 * KY);
-        }
-      },
-      onComplete: () => rip.destroy(),
-    });
-    // 2) SỢI CHỈ SÁNG: chạy từ đầu này sang đầu kia trong 70ms
-    const ang = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.45) + (Math.random() < 0.5 ? 0 : Math.PI);
-    const L = aw ? 130 : 95, dx = Math.cos(ang), dy = Math.sin(ang);
-    const ax = cx - dx * L, ay = cy - dy * L, bx = cx + dx * L, by = cy + dy * L;
-    k.later(300, () => {
-      const g = sc.add.graphics().setDepth(23).setBlendMode(Phaser.BlendModes.ADD);
-      const st = { p: 0, a: 1, w: 1 };
-      const draw = () => {
-        g.clear();
-        const ex = ax + (bx - ax) * st.p, ey = ay + (by - ay) * st.p;
-        g.lineStyle(7 * st.w, C.glow, 0.22 * st.a).lineBetween(ax, ay, ex, ey);
-        g.lineStyle(3 * st.w, C.glow, 0.55 * st.a).lineBetween(ax, ay, ex, ey);
-        g.lineStyle(1.2, C.core, st.a).lineBetween(ax, ay, ex, ey);
-      };
-      sc.tweens.add({ targets: st, p: 1, duration: 70, onUpdate: draw });
-      sc.tweens.add({ targets: st, a: 0, w: 0.2, delay: 200, duration: 380, ease: 'Quad.easeIn', onUpdate: draw, onComplete: () => g.destroy() });
-      k.glow(cx, cy, C.glow, 60, 220);
-      for (const [x, y] of [[ax, ay], [bx, by]]) k.later(70, () => k.glow(x, y, C.core, 14, 200));
-      sc.tweens.add({ targets: veil, alpha: 0, delay: 120, duration: 320, onComplete: () => veil.destroy() });
-      // 3) MỤC TIÊU NỨT theo đường chém: 2 nửa (mặt nạ nửa mặt phẳng) trượt lệch rồi liền lại
-      const spr = s.sprite?.(t);
-      if (spr && spr.visible) {
-        const nx = -dy, ny = dx, BIG = 400;
-        const halves = [1, -1].map((sd) => {
-          const im = sc.add.image(spr.x, spr.y, spr.texture.key, spr.frame.name)
-            .setOrigin(spr.originX, spr.originY).setScale(spr.scaleX, spr.scaleY).setFlip(spr.flipX, spr.flipY).setDepth(spr.depth + 0.01);
-          const mg = sc.make.graphics({}, false);
-          mg.fillStyle(0xffffff).fillPoints([
-            { x: cx - dx * BIG, y: cy - dy * BIG }, { x: cx + dx * BIG, y: cy + dy * BIG },
-            { x: cx + dx * BIG + nx * BIG * sd, y: cy + dy * BIG + ny * BIG * sd }, { x: cx - dx * BIG + nx * BIG * sd, y: cy - dy * BIG + ny * BIG * sd },
-          ], true);
-          im.setMask(mg.createGeometryMask());
-          return { im, mg, sd, x0: spr.x, y0: spr.y };
-        });
-        spr.setVisible(false);
-        const sp = { v: 0 };
+  const k = s.kit, sc = k.scene, hero = s.hero;
+  const N = aw ? 6 : 2;
+  const SC = aw ? 0.17 : 0.16;                                             // tay+kiếm cao ≈ 110px
+  const SWORD = 679 * QI_ARM_PIVOT[1] * SC;                                 // cổ tay → mũi kiếm (px)
+  // chỗ tay hiện ra quanh đầu nhân vật: [dx, dy, nghiêng]
+  const SLOTS: [number, number, number][] = aw
+    ? [[-34, -78, -0.25], [34, -78, 0.25], [-62, -52, -0.6], [62, -52, 0.6], [-52, -18, -1.0], [52, -18, 1.0]]
+    : [[-30, -74, -0.3], [30, -74, 0.3]];
+  const pool = s.targets().filter((t) => Math.hypot(t.x - hero.x, t.y - hero.y) < 260);
+  for (let i = 0; i < N; i++) {
+    const [dx, dy, tilt] = SLOTS[i];
+    const side = dx < 0 ? -1 : 1;
+    const home = () => ({ x: hero.x + dx, y: hero.y + dy });
+    // mỗi tay một mục tiêu; tay bên trái ưu tiên mục tiêu bên trái
+    const cand = pool.filter((t) => Math.sign(t.x - hero.x || side) === side);
+    const t = cand[Math.floor(i / 2)] ?? pool[i % Math.max(1, pool.length)];
+    const h0 = home();
+    const arm = sc.add.image(h0.x, h0.y, QI_ARM).setOrigin(QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21)
+      .setScale(SC * 0.5).setAlpha(0).setRotation(tilt).setFlipX(side < 0);
+    const delay = aw ? i * 90 : i * 180;
+    // hiện ra
+    k.later(delay, () => k.glow(h0.x, h0.y - 20, 0xffc850, 50, 300, { alpha: 0.6 }));
+    sc.tweens.add({ targets: arm, alpha: 0.92, scale: SC, delay, duration: 220, ease: 'Back.easeOut' });
+    if (!t) {                                                               // không có địch gần: giơ kiếm rồi tan
+      sc.tweens.add({ targets: arm, alpha: 0, delay: delay + 700, duration: 300, onComplete: () => arm.destroy() });
+      continue;
+    }
+    const sd = t.x >= h0.x ? 1 : -1;                                        // chém từ trên bổ xuống về phía mục tiêu
+    // chỗ đứng chém: cổ tay lệch lên trên + ra sau mục tiêu để cung mũi kiếm đi qua mục tiêu
+    const px = t.x - sd * SWORD * 0.55, py = t.y - 10 - SWORD * 0.62;
+    const rRaise = -sd * 0.55, rEnd = sd * 2.25;                            // góc giơ kiếm → góc bổ xong
+    k.later(delay + 240, () => {
+      sc.tweens.add({ targets: arm, x: px, y: py, rotation: rRaise, duration: 200, ease: 'Cubic.easeOut' });
+      // bổ xuống
+      k.later(250, () => {
+        const g = sc.add.graphics().setDepth(20.5).setBlendMode(Phaser.BlendModes.ADD);
+        const st = { r: rRaise };
+        let hitDone = false;
+        const draw = (fade: number) => {
+          // vệt chém: MỘT dải trăng khuyết liền (không chia khúc) bám mũi kiếm — mép ngoài sắc, đuôi thon nhọn dần
+          g.clear();
+          const a1 = st.r - Math.PI / 2, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
+          if (span < 0.05) return;
+          const R = SWORD * 1.02;
+          const outer: Phaser.Types.Math.Vector2Like[] = [], inner: Phaser.Types.Math.Vector2Like[] = [];
+          for (let q = 0; q <= n; q++) {
+            const f = q / n, b = a1 - sd * span * f, wdt = SWORD * 0.3 * (1 - f) ** 1.3;
+            outer.push({ x: px + Math.cos(b) * R, y: py + Math.sin(b) * R });
+            inner.push({ x: px + Math.cos(b) * (R - wdt), y: py + Math.sin(b) * (R - wdt) });
+          }
+          g.fillStyle(0xffb030, 0.4 * fade).fillPoints([...outer, ...inner.reverse()], true);
+          inner.reverse();
+          const mid = outer.map((o, q) => ({ x: (o.x * 2 + inner[q].x) / 3, y: (o.y * 2 + inner[q].y) / 3 }));
+          g.fillStyle(0xffe08a, 0.7 * fade).fillPoints([...outer, ...mid.reverse()], true);
+          g.lineStyle(2, 0xfffbe8, fade).strokePoints(outer.slice(0, Math.ceil(n * 0.6)));
+        };
         sc.tweens.add({
-          targets: sp, v: 1, duration: 140, yoyo: true, hold: 160, ease: 'Quad.easeOut',
+          targets: [st], r: rEnd, duration: 150, ease: 'Quad.easeIn',
           onUpdate: () => {
-            for (const h of halves) {
-              const o = h.sd * sp.v;                                          // tách theo pháp tuyến + trượt dọc đường chém
-              h.im.setPosition(h.x0 + nx * 2.5 * o + dx * 5 * o, h.y0 + ny * 2.5 * o + dy * 5 * o);
+            arm.setRotation(st.r);
+            draw(1);
+            if (!hitDone && (st.r - rRaise) * sd > 1.25) {                    // mũi kiếm qua mục tiêu
+              hitDone = true;
+              s.hit(t, 0xffd070);
+              k.glow(t.x, t.y - 12, 0xffc850, 70, 260);
+              k.burst(t.x, t.y - 12, [0xffe090, 0xffffff], 10, { tex: VT.SPARK, speed: [80, 220], scale: [0.3, 0], life: 300 });
+              if (aw) k.shake(60, 0.002);
             }
           },
           onComplete: () => {
-            for (const h of halves) { h.im.clearMask(); h.mg.destroy(); h.im.destroy(); }
-            spr.setVisible(true);
-            s.hit(t, C.glow);
+            const ff = { v: 1 };
+            sc.tweens.add({ targets: ff, v: 0, duration: 220, onUpdate: () => draw(ff.v), onComplete: () => g.destroy() });
+            // bay về trên đầu rồi tan
+            const hb = home();
+            sc.tweens.add({ targets: arm, x: hb.x, y: hb.y, rotation: tilt, delay: 120, duration: 260, ease: 'Cubic.easeInOut' });
+            sc.tweens.add({ targets: arm, alpha: 0, scale: SC * 1.15, delay: 380, duration: 260, onComplete: () => arm.destroy() });
           },
         });
-      } else k.later(300, () => s.hit(t, C.glow));
-      // mảnh sáng li ti bong ra dọc đường chém
-      for (let q = 0; q < 10; q++) {
-        const f = Math.random() * 2 - 1;
-        const d = sc.add.image(cx + dx * L * f, cy + dy * L * f, VT.DOT).setTint(q % 3 ? C.glow : C.core).setBlendMode(Phaser.BlendModes.ADD).setDepth(23).setScale(0.06 + Math.random() * 0.06);
-        const side = Math.random() < 0.5 ? -1 : 1;
-        sc.tweens.add({ targets: d, x: d.x - dy * side * (6 + Math.random() * 14), y: d.y + dx * side * (6 + Math.random() * 14), alpha: 0, delay: 60 + Math.random() * 120, duration: 420, onComplete: () => d.destroy() });
-      }
-      // THỨC TỈNH: hồn nổ thành đoá sóng (6 cánh) lan 120px
-      if (aw) k.later(460, () => {
-        const fl = sc.add.graphics().setDepth(4.6).setBlendMode(Phaser.BlendModes.ADD);
-        const e = { v: 0 };
-        sc.tweens.add({
-          targets: e, v: 1, duration: 520, ease: 'Cubic.easeOut',
-          onUpdate: () => {
-            fl.clear();
-            const R = 120 * e.v, al = 1 - e.v;
-            fl.lineStyle(2.5, C.glow, 0.8 * al).strokeEllipse(t.x, t.y, R * 2, R * 2 * KY);
-            fl.lineStyle(1.2, C.core, 0.7 * al);
-            for (let p = 0; p < 6; p++) {                                   // cánh hoa: cung nhọn từ tâm ra
-              const a0 = (p / 6) * Math.PI * 2 + e.v * 0.6;
-              fl.beginPath();
-              for (let u = 0; u <= 12; u++) {
-                const tt = u / 12, rr = R * 0.85 * Math.sin(tt * Math.PI) ** 0.6 * tt ** 0.3, aa = a0 + (tt - 0.5) * 0.9;
-                const X = t.x + Math.cos(aa) * rr * (0.2 + tt * 0.8), Y = t.y + Math.sin(aa) * rr * (0.2 + tt * 0.8) * KY;
-                if (u === 0) fl.moveTo(X, Y); else fl.lineTo(X, Y);
-              }
-              fl.strokePath();
-            }
-          },
-          onComplete: () => fl.destroy(),
-        });
-        k.glow(t.x, t.y - 10, C.glow, 110, 360);
-        k.burst(t.x, t.y - 10, [C.glow, C.core], 18, { tex: VT.SPARK, speed: [80, 240], scale: [0.35, 0] });
-        for (const o of near(s, t, 120)) if (o !== t) s.hit(o, C.glow);
       });
     });
-  }));
+  }
 };
 
 const huKhong: Fx = (s, aw) => {
