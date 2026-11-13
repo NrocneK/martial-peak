@@ -1273,9 +1273,9 @@ const phapTuong: Fx = (s, aw) => {
   });
 };
 
-/** Kiếm khí (tools/art/qi_blade.py, cùng dáng kiếm Ngự Kiếm): 3 lớp cùng khung 344×72, mũi hướng phải ở (QI_BLADE_TIP, 0.5) */
-export const QI_BLADE = { core: 'vx_qi_blade_core', rim: 'vx_qi_blade_rim', glow: 'vx_qi_blade_glow' } as const;
-const QI_BLADE_TIP = 0.977;
+/** Kiếm khí Ngự Kiếm đổi màu (tools/art/qi_blade.py): 2 lớp cùng khung 344×72, mũi hướng phải ở (QI_BLADE_TIP, 0.5) */
+export const QI_BLADE = { core: 'vx_qi_blade_core', rim: 'vx_qi_blade_rim' } as const;
+const QI_BLADE_TIP = 0.971;
 /** 9 màu viền: 7 màu cầu vồng + đen + trắng */
 const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463ce6, 0xaa46ff, 0x000000, 0xffffff];
 
@@ -1283,13 +1283,14 @@ const vanKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const R = aw ? 220 : 180;
   const drop = (p: Pt, big = 1) => {
-    // kiếm KHÍ (tools/art/qi_blade.py): lõi trong suốt sáng (cộng sáng) + viền 1 trong 9 màu ngẫu nhiên (+ quầng cùng màu)
+    // kiếm khí NGỰ KIẾM (tools/art/qi_blade.py tách từ qi_sword_light.png): lõi trắng giữ nguyên (cộng sáng) + quầng đổi
+    // sang 1 trong 9 màu ngẫu nhiên (vẽ thường để màu đen vẫn thấy)
     const col = QI_BLADE_COLORS[Math.floor(Math.random() * QI_BLADE_COLORS.length)];
-    const sc_ = 0.22 * big;
-    const parts: Phaser.GameObjects.Image[] = [];
-    if (col !== 0x000000) parts.push(k.scene.add.image(0, 0, QI_BLADE.glow).setTint(col).setBlendMode(Phaser.BlendModes.ADD));
-    parts.push(k.scene.add.image(0, 0, QI_BLADE.core).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9));
-    parts.push(k.scene.add.image(0, 0, QI_BLADE.rim).setTint(col));
+    const sc_ = 0.26 * big;
+    const parts: Phaser.GameObjects.Image[] = [
+      k.scene.add.image(0, 0, QI_BLADE.rim).setTint(col),
+      k.scene.add.image(0, 0, QI_BLADE.core).setBlendMode(Phaser.BlendModes.ADD),
+    ];
     for (const im of parts) im.setOrigin(QI_BLADE_TIP, 0.5);
     const sw = k.scene.add.container(p.x, p.y - 220, parts).setScale(sc_).setRotation(Math.PI / 2).setDepth(22);   // mũi chỉ xuống
     k.streak(p.x, p.y - 220, p.x, p.y, col === 0x000000 ? 0xffffff : col, 6 * big, 160);
