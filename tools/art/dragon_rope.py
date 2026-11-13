@@ -20,7 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 VFX = os.path.join(ROOT, 'public', 'vfx')
 OUT = os.path.join(HERE, 'out')
 OUT_W = 1024
-THICK = 1.7                    # làm dày thân theo chiều dọc (ở cỡ game thân mẫu quá mảnh)
+THICK = 1.0                    # giữ đúng tỉ lệ thon của mẫu
 VARIANTS = {
     '': {'deep': (34, 48, 104), 'spark': (120, 190, 255), 'rim': (80, 140, 255)},
     '_aw': {'deep': (62, 22, 104), 'spark': (210, 140, 255), 'rim': (170, 90, 255)},
@@ -69,7 +69,7 @@ def main():
         kk = OUT_W / img.width
         img = img.resize((OUT_W, round(img.height * kk * THICK)), Image.LANCZOS)
         ia = np.array(img).astype(float)
-        ia[..., 3] = np.clip(ia[..., 3] * 1.35, 0, 255)                        # đậm hơn trên nền tối
+        ia[..., 3] = np.clip(ia[..., 3] * 1.15, 0, 255)                        # đậm hơn chút trên nền tối
         img = Image.fromarray(ia.astype(np.uint8), 'RGBA')
         g = np.array(img.filter(ImageFilter.GaussianBlur(3))).astype(float)
         g[..., :3] = v['rim']
@@ -78,6 +78,16 @@ def main():
         fin.alpha_composite(img)
         fin.save(os.path.join(VFX, f'dragon_rope{suf}.png'))
         print(suf or 'normal', fin.size)
+    # cầu nổ tím cho cú đâm xuống của thức tỉnh: tô lại fire_blast.png theo độ sáng → dải tím sét
+    fb = np.array(Image.open(os.path.join(VFX, 'fire_blast.png')).convert('RGBA')).astype(float)
+    lum = (fb[..., 0] * 0.3 + fb[..., 1] * 0.55 + fb[..., 2] * 0.15) / 255
+    stops = [(0.0, (20, 6, 40)), (0.35, (90, 30, 170)), (0.6, (160, 80, 255)), (0.82, (220, 170, 255)), (1.0, (255, 245, 255))]
+    col = np.zeros(lum.shape + (3,))
+    for (x0, c0), (x1, c1) in zip(stops, stops[1:]):
+        m = (lum >= x0) & (lum <= x1)
+        kq = ((lum - x0) / (x1 - x0))[m][:, None]
+        col[m] = np.array(c0) * (1 - kq) + np.array(c1) * kq
+    Image.fromarray(np.dstack([col, fb[..., 3]]).astype(np.uint8), 'RGBA').save(os.path.join(VFX, 'fire_blast_purple.png'))
     pv = Image.new('RGBA', (OUT_W + 20, 2 * 520), (26, 24, 40, 255))
     for i, suf in enumerate(('', '_aw')):
         pv.alpha_composite(Image.open(os.path.join(VFX, f'dragon_rope{suf}.png')), (10, 10 + i * 515))

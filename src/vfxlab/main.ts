@@ -37,11 +37,12 @@ class LabScene extends Phaser.Scene {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
     this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
     for (const [key, f] of [[SHOCK_T3, 'shock_t3'], [SHOCK_T6, 'shock_t6']]) this.load.spritesheet(key, `/vfx/${f}.png?v=1`, { frameWidth: 256, frameHeight: 159 });
-    for (const [n, key] of Object.entries(DRAGON_TEX)) for (const sf of ['', '_aw']) this.load.image(key + sf, `/vfx/dragon_${n}${sf}.png?v=2`);
+    for (const [n, key] of Object.entries(DRAGON_TEX)) for (const sf of ['', '_aw']) this.load.image(key + sf, `/vfx/dragon_${n}${sf}.png?v=3`);
     this.load.image(ORB_BOLT, '/vfx/orb_bolt.png?v=1');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
     for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
     for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key + '_blue', `/vfx/burn_${n}_blue.png?v=1`, { frameWidth: 256, frameHeight: 201 });
+    this.load.spritesheet(FIRE_TEX.blast + '_purple', '/vfx/fire_blast_purple.png?v=1', { frameWidth: 192, frameHeight: 192 });
     this.load.spritesheet(FIRE_TEX.blast + '_blue', '/vfx/fire_blast_blue.png?v=1', { frameWidth: 192, frameHeight: 192 });
     this.load.image(FIRE_TEX.ring + '_blue', '/vfx/fire_ring_blue.png?v=1');
     this.load.spritesheet(FIRE_SWIRL, '/vfx/fire_swirl_blue.png?v=1', { frameWidth: 256, frameHeight: 200 });

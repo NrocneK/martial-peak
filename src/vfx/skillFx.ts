@@ -1309,8 +1309,8 @@ function dragonFx(s: Stage, aw: boolean): void {
   const k = s.kit, sc = k.scene;
   const P = aw ? DRAGON_PAL.awaken : DRAGON_PAL.normal;
   const life = aw ? 5200 : 4200;
-  const RANGE = aw ? 190 : 170;
-  const SEG = 46, SP = 6.5;                                             // số đốt, khoảng cách đốt (px quãng đường)
+  const RANGE = aw ? 195 : 175;
+  const SEG = 56, SP = 7;                                                // số đốt, khoảng cách đốt (px quãng đường)
   const shadow = sc.add.graphics().setDepth(2);
   const glow = sc.add.image(0, 0, VT.SOFT).setTint(P.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(15.8).setScale(1.1).setAlpha(0);
   const h0 = H(s);
@@ -1348,12 +1348,12 @@ function dragonFx(s: Stage, aw: boolean): void {
     if (phase === 'roam') {
       // bay về điểm đích; tới gần thì chọn điểm mới ngẫu nhiên trong phạm vi quanh nhân vật (elip mặt đất)
       if (Math.hypot(goal.x - head.x, goal.y - head.y) < 30) {
-        const a = Math.random() * Math.PI * 2, r = RANGE * (0.45 + 0.55 * Math.random());
+        const a = Math.atan2(head.y - hero.y, head.x - hero.x) + Math.PI * (0.55 + 0.5 * Math.random()), r = RANGE * (0.7 + 0.3 * Math.random());   // điểm đích ở phía đối diện → lượn vòng rộng
         goal = { x: hero.x + Math.cos(a) * r, y: hero.y + Math.sin(a) * r * 0.62 };
       }
       const want = Math.atan2(goal.y - head.y, goal.x - head.x);
       const turn = Phaser.Math.Angle.Wrap(want - head.a);
-      head.a += Phaser.Math.Clamp(turn, -4.2 * dt, 4.2 * dt);             // giới hạn tốc độ xoay → lượn mềm
+      head.a += Phaser.Math.Clamp(turn, -2.3 * dt, 2.3 * dt);             // xoay chậm → bán kính lượn lớn, thân không gập dồn
       const sp = el < 350 ? 160 + el : 330;
       head.x += Math.cos(head.a) * sp * dt;
       head.y += Math.sin(head.a) * sp * dt;
@@ -1401,10 +1401,15 @@ function dragonFx(s: Stage, aw: boolean): void {
       shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 10, 40 * f + 8, 12 * f + 3);
     }
     // điểm rope: đuôi → đầu (texture: đuôi bên trái, đầu bên phải); toạ độ chia cho tỉ lệ vì rope bị scale
+    // + sóng uốn lượn chạy dọc thân (đầu đứng yên, biên độ lớn dần về đuôi) → thân thướt tha như mẫu
     for (let i = 0; i < SEG; i++) {
-      const p = body[SEG - 1 - i];
-      ropePts[i].x = p.x / ROPE_S;
-      ropePts[i].y = (p.y - p.z) / ROPE_S;
+      const j = SEG - 1 - i, p = body[j];
+      const q = body[Math.min(SEG - 1, j + 1)], pp = body[Math.max(0, j - 1)];
+      const tx = pp.x - q.x, ty = (pp.y - pp.z) - (q.y - q.z), tl = Math.hypot(tx, ty) || 1;
+      const amp = 9 * Math.min(1, j / (SEG * 0.35));
+      const wv = Math.sin(j * 0.32 - el / 170) * amp;
+      ropePts[i].x = (p.x - (ty / tl) * wv) / ROPE_S;
+      ropePts[i].y = (p.y - p.z + (tx / tl) * wv) / ROPE_S;
     }
     rope.setPoints(ropePts);
     const hp = body[0], hq = body[3];
@@ -1438,11 +1443,11 @@ function dragonBlast(s: Stage, c: Pt): void {
     sp.play(key);
     sp.once('animationcomplete', () => sp.destroy());
   }
-  const BL = FIRE_TEX.blast + '_blue';                                    // cầu nổ bản xanh, nhuộm tím
+  const BL = FIRE_TEX.blast + '_purple';                                  // cầu nổ tím (tools/art/dragon_rope.py)
   if (sc.textures.exists(BL)) {
     const key = BL + '_play';
     if (!sc.anims.exists(key)) sc.anims.create({ key, frames: sc.anims.generateFrameNumbers(BL, {}), frameRate: 28 });
-    const bl = sc.add.sprite(c.x, c.y - 40, BL, 0).setDepth(18).setScale(1.3).setTint(0xd0a0ff);
+    const bl = sc.add.sprite(c.x, c.y - 40, BL, 0).setDepth(18).setScale(1.3);
     bl.play(key);
     bl.once('animationcomplete', () => bl.destroy());
   }
