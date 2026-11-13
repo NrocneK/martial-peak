@@ -118,7 +118,10 @@ def palm():
     m = ndimage.binary_fill_holes(ndimage.binary_closing(skin, iterations=2))
     lab, n = ndimage.label(m)
     m = lab == (np.argmax(ndimage.sum(m, lab, range(1, n + 1))) + 1)
-    m = ndimage.binary_dilation(m, iterations=2)                              # gồm cả viền tay của mẫu
+    # lấy trọn vùng nằm trong đường viền tím đậm bao quanh bàn tay của mẫu (gồm đầu ngón cái, mép phải)
+    outl = (B - R > 30) & (a.mean(2) < 175)
+    m = ndimage.binary_fill_holes(m | (outl & ndimage.binary_dilation(m, iterations=7)))
+    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, structure=np.ones((3, 3)), iterations=3))
     PAD = 14
     m = np.pad(m, PAD); a = np.pad(a, ((PAD, PAD), (PAD, PAD), (0, 0)), mode='edge')
     h0, w0 = m.shape
