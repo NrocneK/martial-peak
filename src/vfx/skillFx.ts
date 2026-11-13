@@ -1273,18 +1273,33 @@ const phapTuong: Fx = (s, aw) => {
   });
 };
 
+/** Kiếm khí (tools/art/qi_blade.py, cùng dáng kiếm Ngự Kiếm): 3 lớp cùng khung 344×72, mũi hướng phải ở (QI_BLADE_TIP, 0.5) */
+export const QI_BLADE = { core: 'vx_qi_blade_core', rim: 'vx_qi_blade_rim', glow: 'vx_qi_blade_glow' } as const;
+const QI_BLADE_TIP = 0.977;
+/** 9 màu viền: 7 màu cầu vồng + đen + trắng */
+const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463ce6, 0xaa46ff, 0x000000, 0xffffff];
+
 const vanKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const R = aw ? 220 : 180;
   const drop = (p: Pt, big = 1) => {
-    const sw = k.img(VT.SWORD, p.x, p.y - 220, { add: false, rot: Math.PI / 2, scale: 0.7 * big, depth: 22 });
-    k.streak(p.x, p.y - 220, p.x, p.y, 0xd8e8ff, 8 * big, 160);
+    // kiếm KHÍ (tools/art/qi_blade.py): lõi trong suốt sáng (cộng sáng) + viền 1 trong 9 màu ngẫu nhiên (+ quầng cùng màu)
+    const col = QI_BLADE_COLORS[Math.floor(Math.random() * QI_BLADE_COLORS.length)];
+    const sc_ = 0.22 * big;
+    const parts: Phaser.GameObjects.Image[] = [];
+    if (col !== 0x000000) parts.push(k.scene.add.image(0, 0, QI_BLADE.glow).setTint(col).setBlendMode(Phaser.BlendModes.ADD));
+    parts.push(k.scene.add.image(0, 0, QI_BLADE.core).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9));
+    parts.push(k.scene.add.image(0, 0, QI_BLADE.rim).setTint(col));
+    for (const im of parts) im.setOrigin(QI_BLADE_TIP, 0.5);
+    const sw = k.scene.add.container(p.x, p.y - 220, parts).setScale(sc_).setRotation(Math.PI / 2).setDepth(22);   // mũi chỉ xuống
+    k.streak(p.x, p.y - 220, p.x, p.y, col === 0x000000 ? 0xffffff : col, 6 * big, 160);
     k.scene.tweens.add({
       targets: sw, y: p.y - 30 * big, duration: 160, ease: 'Quad.easeIn', onComplete: () => {
-        k.glow(p.x, p.y, 0xd8e8ff, 50 * big, 220);
-        k.burst(p.x, p.y, 0xd8e8ff, 5, { tex: VT.SPARK, scale: [0.25, 0], speed: [60, 160], life: 220 });
+        const gc = col === 0x000000 ? 0xffffff : col;
+        k.glow(p.x, p.y, gc, 50 * big, 220);
+        k.burst(p.x, p.y, [gc, 0xffffff], 5, { tex: VT.SPARK, scale: [0.25, 0], speed: [60, 160], life: 220 });
         for (const o of near(s, p, 34 * big)) s.hit(o, 0xd8e8ff);
-        k.later(big > 1.5 ? 1600 : 700, () => k.tw(sw, { alpha: 0 }, 300));
+        k.later(big > 1.5 ? 1600 : 700, () => { k.tw(sw, { alpha: 0 }, 300); k.later(320, () => sw.destroy()); });
       },
     });
   };
