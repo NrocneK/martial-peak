@@ -1277,14 +1277,16 @@ const phapTuong: Fx = (s, aw) => {
 export const QI_BLADE = { core: 'vx_qi_blade_core', rim: 'vx_qi_blade_rim' } as const;
 const QI_BLADE_TIP = 0.971;
 /** Trận pháp dưới chân (tools/art/sword_array.py): 512×512, cộng sáng */
-export const SWORD_ARRAY = { n: 'vx_sword_array', aw: 'vx_sword_array_aw' } as const;
+export const SWORD_ARRAY = { n: 'vx_sword_array', aw: 'vx_sword_array_aw',
+  /** tâm 4 vòng tròn Phong Lâm Hoả Sơn (px ảnh, so với tâm trận) */
+  circles: [[-91, -91], [93, -93], [-93, 92], [94, 92]] as [number, number][] } as const;
 /** 9 màu viền: 7 màu cầu vồng + đen + trắng */
 const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463ce6, 0xaa46ff, 0x000000, 0xffffff];
 
 const vanKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const R = aw ? 220 : 180;
-  const drop = (p: Pt, big = 1) => {
+  const drop = (p: Pt, big = 1, track?: () => Pt, stay = 0) => {
     // kiếm khí NGỰ KIẾM (tools/art/qi_blade.py tách từ qi_sword_light.png): lõi trắng giữ nguyên (cộng sáng) + quầng đổi
     // sang 1 trong 9 màu ngẫu nhiên (vẽ thường để màu đen vẫn thấy)
     const col = QI_BLADE_COLORS[Math.floor(Math.random() * QI_BLADE_COLORS.length)];
@@ -1297,12 +1299,16 @@ const vanKiem: Fx = (s, aw) => {
     const sw = k.scene.add.container(p.x, p.y - 220, parts).setScale(sc_).setRotation(Math.PI / 2).setDepth(22);   // mũi chỉ xuống
     k.streak(p.x, p.y - 220, p.x, p.y, col === 0x000000 ? 0xffffff : col, 6 * big, 160);
     k.scene.tweens.add({
-      targets: sw, y: p.y - 30 * big, duration: 160, ease: 'Quad.easeIn', onComplete: () => {
+      targets: sw, y: p.y - (track ? 4 : 30 * big), duration: 160, ease: 'Quad.easeIn', onComplete: () => {
         const gc = col === 0x000000 ? 0xffffff : col;
         k.glow(p.x, p.y, gc, 50 * big, 220);
         k.burst(p.x, p.y, [gc, 0xffffff], 5, { tex: VT.SPARK, scale: [0.25, 0], speed: [60, 160], life: 220 });
         for (const o of near(s, p, 34 * big)) s.hit(o, 0xd8e8ff);
-        k.later(big > 1.5 ? 1600 : 700, () => { k.tw(sw, { alpha: 0 }, 300); k.later(320, () => sw.destroy()); });
+        if (track) {                                                       // cự kiếm cắm trong vòng tròn của trận → xoay theo trận
+          const fol = () => { if (!sw.active) { k.scene.events.off('update', fol); return; } const q = track(); sw.setPosition(q.x, q.y - 4); };   // mũi kiếm cắm đúng tâm vòng tròn
+          k.scene.events.on('update', fol);
+        }
+        k.later(stay || (big > 1.5 ? 1600 : 700), () => { k.tw(sw, { alpha: 0 }, 300); k.later(320, () => sw.destroy()); });
       },
     });
   };
@@ -1318,7 +1324,14 @@ const vanKiem: Fx = (s, aw) => {
   k.glow(s.hero.x, s.hero.y + 20, aw ? 0xffd870 : 0xffffff, R * 1.2, 500, { alpha: 0.5 });
   k.later(LIFE, () => k.scene.tweens.add({ targets: ground, alpha: 0, duration: 400, onComplete: () => ground.destroy() }));
   if (aw) {
-    for (let i = 0; i < 4; i++) drop(polar(h, (i / 4) * Math.PI * 2 + Math.PI / 4, R), 2.2);
+    // 4 cự kiếm cắm đúng tâm 4 vòng tròn Phong · Lâm · Hoả · Sơn của trận đồ (toạ độ trong ảnh 512, so với tâm),
+    // bám theo trận khi trận xoay trên mặt đất
+    const circle = (i: number) => () => {
+      const [cx, cy] = SWORD_ARRAY.circles[i];
+      const r = arr.rotation, c = Math.cos(r), sn = Math.sin(r);
+      return { x: ground.x + (cx * c - cy * sn) * ground.scaleX, y: ground.y + (cx * sn + cy * c) * ground.scaleY };
+    };
+    for (let i = 0; i < 4; i++) k.later(420 + i * 120, () => drop(circle(i)(), 2.2, circle(i), LIFE - 420 - i * 120 - 300));
   }
   const n = aw ? 26 : 16;
   for (let i = 0; i < n; i++) {
