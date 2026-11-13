@@ -1121,39 +1121,119 @@ const huKhong: Fx = (s, aw) => {
   });
 };
 
+/** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
+ *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng (tâm lòng bàn tay ở `cx, cy`, rộng ≈ w px ảnh) */
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.5, cy: 0.616, palmW: 340 } as const;
+
+/**
+ * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
+ * trận vàng, rồi một BÀN TAY CHƯỞNG khổng lồ từ trời giáng xuống cụm địch: bóng tay lớn dần trên đất → chưởng ập xuống
+ * → sóng chấn + bụi + rung, để lại dấu chưởng vàng trên đất mờ dần.
+ * Thức tỉnh: pháp tướng to hơn, ở lâu hơn, giáng 3 chưởng liên tiếp rồi giậm chân chấn cả màn hình.
+ */
 const phapTuong: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
+  const k = s.kit, sc = k.scene, hero = s.hero, h = H(s);
   const ts = s.targets();
-  const palm = (p: Pt, big: number, delay: number) =>
-    k.later(delay, () => {
-      const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0.0, scale: 1.4 * big, depth: 4 });
-      k.scene.tweens.add({ targets: sh, alpha: 0.45, duration: 550 });
-      k.ring(p.x, p.y, 0xffc860, 100 * big, 90 * big, 600, false, { alpha: 0.6 });
-      const im = k.img(VT.PALM, p.x, p.y - 260, { scale: 1.2 * big, add: false, alpha: 0.92, depth: 23, origin: [0.5, 0.8] });
-      k.scene.tweens.add({
-        targets: im, y: p.y, duration: 560, ease: 'Quad.easeIn', onComplete: () => {
-          k.tw(im, { alpha: 0, scale: 1.4 * big }, 320);
-          k.tw(sh, { alpha: 0 }, 300);
-          k.glow(p.x, p.y, 0xffc860, 220 * big, 420);
-          k.ring(p.x, p.y, 0xfff0c0, 20, 140 * big, 460, true);
-          k.debris(p.x, p.y, 16);
-          k.shake(240, 0.01);
-          for (const o of near(s, p, 110 * big)) s.hit(o, 0xffc860);
-        },
-      });
-    });
-  if (aw) {
-    const av = k.img(VT.SPIRIT, h.x, h.y - 70, { tint: 0xffc860, scale: 0.2, alpha: 0, depth: 3 });
-    k.scene.tweens.add({ targets: av, scale: 3.4, alpha: 0.55, duration: 400 });
-    k.later(2400, () => k.tw(av, { alpha: 0 }, 400));
-    palm(ts[2] ?? pt(h.x + 140, h.y), 1.3, 300);
-    palm(ts[5] ?? pt(h.x - 140, h.y), 1.3, 1100);
-    k.later(1800, () => { k.ring(h.x, h.y, 0xffc860, 40, 420, 600, true); k.shake(300, 0.012); for (const o of s.targets()) s.hit(o, 0xffc860); });
-  } else {
-    const c = ts[2] ?? pt(h.x + 140, h.y);
-    palm(pt(c.x - 50, c.y), 1, 0);
-    palm(pt(c.x + 50, c.y), 1, 300);
+  const KY = 0.55;
+  const LIFE = aw ? 3400 : 1900;
+  // --- pháp trận vàng dưới chân
+  const circ = sc.add.graphics({ x: hero.x, y: hero.y + 4 }).setDepth(2).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+  const RC = aw ? 95 : 75;
+  circ.lineStyle(2.5, 0xffc850, 0.9).strokeCircle(0, 0, RC);
+  circ.lineStyle(1.2, 0xffe6a0, 0.8).strokeCircle(0, 0, RC * 0.82);
+  circ.lineStyle(1, 0xffc850, 0.6).strokeCircle(0, 0, RC * 0.45);
+  for (let i = 0; i < 24; i++) {                                           // vạch phù văn giữa 2 vòng
+    const a0 = (i / 24) * Math.PI * 2;
+    const r0 = RC * 0.84, r1 = RC * (i % 3 ? 0.92 : 0.98);
+    circ.lineStyle(i % 3 ? 1 : 2, 0xffd880, 0.85).lineBetween(Math.cos(a0) * r0, Math.sin(a0) * r0, Math.cos(a0) * r1, Math.sin(a0) * r1);
   }
+  for (let i = 0; i < 6; i++) {                                            // lục giác trong
+    const a0 = (i / 6) * Math.PI * 2, a1 = ((i + 2) / 6) * Math.PI * 2;
+    circ.lineStyle(1, 0xffc850, 0.55).lineBetween(Math.cos(a0) * RC * 0.8, Math.sin(a0) * RC * 0.8, Math.cos(a1) * RC * 0.8, Math.sin(a1) * RC * 0.8);
+  }
+  circ.setScale(0.3, 0.3 * KY);
+  sc.tweens.add({ targets: circ, alpha: 1, scaleX: 1, scaleY: KY, duration: 320, ease: 'Back.easeOut' });
+  // --- pháp tướng khí vàng sau lưng
+  const AS = ((aw ? 3.6 : 3.0) * 68) / PHAP_TUONG.bodyH;                   // cao gấp ~3 nhân vật
+  const av = sc.add.image(hero.x, hero.y + 8, PHAP_TUONG.avatar).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
+    .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setScale(AS * 0.7);
+  sc.tweens.add({ targets: av, alpha: 0.85, scale: AS, duration: 420, ease: 'Cubic.easeOut' });
+  k.glow(h.x, h.y - 40, 0xffc850, 120, 500, { alpha: 0.7 });
+  const flick = (time: number) => {
+    if (!av.active) return;
+    av.setPosition(hero.x, hero.y + 8);
+    circ.setPosition(hero.x, hero.y + 4);
+    const g = av.getData('fade') ?? 1;
+    av.setAlpha(g * (0.78 + 0.1 * Math.sin(time / 90) + 0.05 * Math.sin(time / 37)));
+  };
+  av.setData('fade', 0);
+  sc.tweens.add({ targets: { v: 0 }, v: 1, duration: 420, onUpdate: (tw) => av.setData('fade', tw.getValue()) });
+  sc.events.on('update', flick);
+  // --- bàn tay chưởng
+  const PS = ((aw ? 1.9 : 1.6) * 100) / PHAP_TUONG.palmW;
+  const palm = (p: Pt, delay: number) => k.later(delay, () => {
+    const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0, scale: 0.3, depth: 4 });
+    sh.setScale(0.6, 0.6 * KY);
+    sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: 2.6 * PS * 1.6, scaleY: 2.6 * PS * 1.6 * KY, duration: 600, ease: 'Quad.easeIn' });
+    const im = sc.add.image(p.x, p.y - 330, PHAP_TUONG.palm).setOrigin(PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(23)
+      .setScale(PS * 0.75).setAlpha(0).setAngle(Phaser.Math.Between(-8, 8));
+    k.glow(p.x, p.y - 330, 0xffc850, 160, 400, { alpha: 0.6 });
+    sc.tweens.add({ targets: im, alpha: 0.95, duration: 160 });
+    sc.tweens.add({
+      targets: im, y: p.y - 10, scale: PS, duration: 600, ease: 'Quad.easeIn',
+      onComplete: () => {
+        // chạm đất
+        sc.tweens.add({ targets: im, alpha: 0, scaleX: PS * 1.15, scaleY: PS * 0.9, duration: 260, onComplete: () => im.destroy() });
+        sc.tweens.add({ targets: sh, alpha: 0, duration: 500, onComplete: () => sh.destroy() });
+        const R = PS * PHAP_TUONG.palmW * 0.55;                         // bán kính chưởng ≈ nửa bề ngang bàn tay
+        k.glow(p.x, p.y, 0xfff0c0, R * 1.6, 300);
+        k.glow(p.x, p.y, 0xffc850, R * 2.6, 520, { alpha: 0.7 });
+        const ring = sc.add.graphics().setDepth(4.5).setBlendMode(Phaser.BlendModes.ADD);
+        const e = { v: 0 };
+        sc.tweens.add({
+          targets: e, v: 1, duration: 520, ease: 'Cubic.easeOut',
+          onUpdate: () => {
+            ring.clear();
+            const rr = R * (0.3 + 1.5 * e.v), al = 1 - e.v;
+            ring.lineStyle(12 * al + 2, 0xffb840, 0.45 * al).strokeEllipse(p.x, p.y, rr * 2, rr * 2 * KY);
+            ring.lineStyle(3, 0xfff2c8, 0.9 * al).strokeEllipse(p.x, p.y, rr * 2, rr * 2 * KY);
+          },
+          onComplete: () => ring.destroy(),
+        });
+        // dấu chưởng vàng in trên đất (nằm trên mặt đất: nén dọc), mờ dần
+        const mark = sc.add.image(p.x, p.y, PHAP_TUONG.palm).setOrigin(PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(1.5)
+          .setBlendMode(Phaser.BlendModes.ADD).setScale(PS, PS * KY).setAngle(im.angle).setAlpha(0.45);
+        sc.tweens.add({ targets: mark, alpha: 0, delay: 900, duration: 1600, onComplete: () => mark.destroy() });
+        k.debris(p.x, p.y, 18);
+        k.burst(p.x, p.y, [0xffe090, 0xffc850, 0xffffff], 16, { tex: VT.SPARK, speed: [120, 320], scale: [0.4, 0] });
+        k.shake(240, 0.011);
+        for (const o of near(s, p, R)) s.hit(o, 0xffc860);
+      },
+    });
+  });
+  if (aw) {
+    palm(ts[2] ?? pt(h.x + 140, h.y), 380);
+    palm(ts[5] ?? pt(h.x - 140, h.y), 1100);
+    palm(ts[9] ?? pt(h.x, h.y + 140), 1820);
+    k.later(2700, () => {                                                  // giậm chân: chấn cả màn hình
+      const g = sc.add.graphics().setDepth(4.5).setBlendMode(Phaser.BlendModes.ADD);
+      const e = { v: 0 };
+      sc.tweens.add({
+        targets: e, v: 1, duration: 650, ease: 'Cubic.easeOut',
+        onUpdate: () => { g.clear(); const rr = 40 + 420 * e.v, al = 1 - e.v; g.lineStyle(14 * al + 2, 0xffc850, 0.5 * al).strokeEllipse(h.x, h.y + 6, rr * 2, rr * 2 * KY); },
+        onComplete: () => g.destroy(),
+      });
+      k.shake(320, 0.013);
+      for (const o of s.targets()) s.hit(o, 0xffc860);
+    });
+  } else {
+    palm(ts[2] ?? pt(h.x + 140, h.y), 380);
+  }
+  // tan
+  k.later(LIFE, () => {
+    sc.tweens.add({ targets: { v: 1 }, v: 0, duration: 420, onUpdate: (tw) => av.setData('fade', tw.getValue()), onComplete: () => { sc.events.off('update', flick); av.destroy(); } });
+    sc.tweens.add({ targets: circ, alpha: 0, duration: 420, onComplete: () => circ.destroy() });
+  });
 };
 
 const vanKiem: Fx = (s, aw) => {
