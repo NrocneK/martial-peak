@@ -1157,6 +1157,7 @@ const phapTuong: Fx = (s, aw) => {
   const AS = ((aw ? 3.6 : 3.0) * 68) / PHAP_TUONG.bodyH;                   // cao gấp ~3 nhân vật
   // pháp tướng quay cùng hướng nhân vật: bảng 8 khung, khung i = hàng i của sprite nhân vật (S, SW, W, NW, N, NE, E, SE)
   const PT_LEG_X = [0.508, 0.541, 0.501, 0.496, 0.495, 0.514, 0.516, 0.466];   // điểm giữa 2 chân theo tỉ lệ khung
+  const HERO_LEG_X = [0.497, 0.53, 0.496, 0.494, 0.497, 0.506, 0.508, 0.466];   // giữa 2 chân trong khung nhân vật
   const av_s = () => AS;
   const facing = () => (hero.texture.key === 'hero' ? Math.floor(Number(hero.frame.name) / 7) % 8 : 0);
   // đứng SAU LƯNG nhân vật: lệch về phía sau theo hướng nhìn, luôn vẽ DƯỚI nhân vật (nhân vật đứng trước pháp tướng
@@ -1169,10 +1170,14 @@ const phapTuong: Fx = (s, aw) => {
     // Hướng thấy lưng (W, NW, N, NE, E): pháp tướng phủ lên nhân vật — càng thấy lưng nhiều càng bị che nhiều.
     const f = facing();
     const back = -Math.sin(a);                                             // 1 = quay lưng hẳn (N), 0 = ngang (E/W)
-    const legX = (PT_LEG_X[f] - 0.5) * PHAP_TUONG.avW * av_s();             // lệch điểm giữa 2 chân trong khung
-    if (back < -0.1) return { x: hero.x - legX, y: hero.y - 10 * KY, front: false, cover: 1 };
+    // pháp tướng là bản phóng to của chính khung nhân vật → đặt sao cho điểm giữa 2 chân của pháp tướng TRÙNG điểm giữa
+    // 2 chân nhân vật (cả ngang lẫn dọc). Hướng chéo: 2 chân so le trên dưới nên phải khớp cả chiều dọc mới đứng giữa.
+    const legX = (PT_LEG_X[f] - 0.5) * PHAP_TUONG.avW * av_s() - (HERO_LEG_X[f] - 0.5) * 52;
+    const diag = f % 2 === 1;                                              // SW, NW, NE, SE
+    const FOOT = 23 - 8;                                                   // chân nhân vật (y + 23) − chỗ neo (+8)
+    if (back < -0.1) return { x: hero.x - legX, y: diag ? hero.y + FOOT : hero.y - 10 * KY, front: false, cover: 1 };
     const c = Math.max(0, back);                                           // E/W 0 · NE/NW 0.71 · N 1
-    return { x: hero.x - legX, y: hero.y + 3, front: true, cover: 0.42 + 0.43 * c };
+    return { x: hero.x - legX, y: diag ? hero.y + FOOT : hero.y + 3, front: true, cover: 0.72 + 0.13 * c };
   };
   const sp0 = spot();
   const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(sp0.front ? 11 : 9)
