@@ -1276,6 +1276,8 @@ const phapTuong: Fx = (s, aw) => {
 /** Kiếm khí Ngự Kiếm đổi màu (tools/art/qi_blade.py): 2 lớp cùng khung 344×72, mũi hướng phải ở (QI_BLADE_TIP, 0.5) */
 export const QI_BLADE = { core: 'vx_qi_blade_core', rim: 'vx_qi_blade_rim' } as const;
 const QI_BLADE_TIP = 0.971;
+/** Trận pháp dưới chân (tools/art/sword_array.py): 512×512, cộng sáng */
+export const SWORD_ARRAY = { n: 'vx_sword_array', aw: 'vx_sword_array_aw' } as const;
 /** 9 màu viền: 7 màu cầu vồng + đen + trắng */
 const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463ce6, 0xaa46ff, 0x000000, 0xffffff];
 
@@ -1304,10 +1306,18 @@ const vanKiem: Fx = (s, aw) => {
       },
     });
   };
+  // TRẬN PHÁP dưới chân (tools/art/sword_array.py, lấy nguyên ảnh mẫu): thường trắng · thức tỉnh vàng.
+  // Ảnh nằm trong container nén dọc (mặt đất) → xoay ảnh bên trong = trận xoay trên mặt đất.
+  const LIFE = aw ? 3000 : 2700;
+  const arr = k.scene.add.image(0, 0, aw ? SWORD_ARRAY.aw : SWORD_ARRAY.n).setBlendMode(Phaser.BlendModes.ADD);
+  const ground = k.scene.add.container(s.hero.x, s.hero.y + 20, [arr]).setDepth(2).setAlpha(0);
+  const AR = ((R + 30) * 2) / 512;
+  ground.setScale(AR * 0.4, AR * 0.4 * 0.58);
+  k.scene.tweens.add({ targets: ground, alpha: 0.85, scaleX: AR, scaleY: AR * 0.58, duration: 380, ease: 'Back.easeOut' });
+  k.scene.tweens.add({ targets: arr, rotation: aw ? 1.2 : 0.8, duration: LIFE + 400 });
+  k.glow(s.hero.x, s.hero.y + 20, aw ? 0xffd870 : 0xffffff, R * 1.2, 500, { alpha: 0.5 });
+  k.later(LIFE, () => k.scene.tweens.add({ targets: ground, alpha: 0, duration: 400, onComplete: () => ground.destroy() }));
   if (aw) {
-    const rr = k.img(VT.RUNES, h.x, h.y, { tint: 0xd8e8ff, scale: (R + 30) / 124, alpha: 0, depth: 3 });
-    k.scene.tweens.add({ targets: rr, alpha: 0.6, rotation: 1.5, duration: 2600 });
-    k.later(2600, () => k.tw(rr, { alpha: 0 }, 300));
     for (let i = 0; i < 4; i++) drop(polar(h, (i / 4) * Math.PI * 2 + Math.PI / 4, R), 2.2);
   }
   const n = aw ? 26 : 16;
