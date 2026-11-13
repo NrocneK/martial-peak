@@ -1319,6 +1319,12 @@ function dragonFx(s: Stage, aw: boolean): void {
   const ropePts = Array.from({ length: SEG }, () => new Phaser.Math.Vector2(h0.x / ROPE_S, h0.y / ROPE_S));
   const rope = sc.add.rope(0, 0, DRAGON_TEX.rope + (aw ? '_aw' : ''), undefined, ropePts, true).setScale(ROPE_S).setDepth(16).setAlpha(0);
   const ropeA = new Array<number>(SEG).fill(0);
+  // bản lật dọc (bay sang trái thì bụng/hàm phải ở dưới): KHÔNG lật tức thì (giật) mà hoà dần 2 bản trong ~0.2s,
+  // có ngưỡng trễ để không lật qua lật lại khi rồng bay gần thẳng đứng
+  const ropeF = sc.add.rope(0, 0, DRAGON_TEX.rope + (aw ? '_aw' : ''), undefined, ropePts, true).setScale(ROPE_S).setDepth(16).setAlpha(0).setFlipY(true);
+  ropeF.setColors(0xffffff);
+  const ropeFA = new Array<number>(SEG).fill(0);
+  let flipT = 0, flipW = 0;
   // xoáy mực nơi rồng chui ra (vẽ bằng các cung mực + lõi sáng)
   const portal = sc.add.graphics({ x: h0.x, y: h0.y - 4 }).setDepth(15.9).setAlpha(0);
   portal.setBlendMode(Phaser.BlendModes.ADD);
@@ -1430,14 +1436,23 @@ function dragonFx(s: Stage, aw: boolean): void {
       ropePts[i].y = (p.y - p.z + (tx / tl) * wv) / ROPE_S;
     }
     rope.setPoints(ropePts);
+    ropeF.setPoints(ropePts);
     const hp = body[0], hq = body[3];
     const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
-    rope.setFlipY(Math.cos(hrot) < 0).setAlpha(fade);
+    const c = Math.cos(hrot);
+    if (c < -0.3) flipT = 1; else if (c > 0.3) flipT = 0;                    // ngưỡng trễ
+    flipW += Phaser.Math.Clamp(flipT - flipW, -dt / 0.22, dt / 0.22);
+    const wF = flipW * flipW * (3 - 2 * flipW);                              // smoothstep
+    rope.setAlpha(fade); ropeF.setAlpha(fade);
     for (let i = 0; i < SEG; i++) {
       const j = SEG - 1 - i;                                                // j: 0 = đầu … SEG-1 = đuôi
-      ropeA[i] = Phaser.Math.Clamp((realN - 1 - j) / 6, 0, 1);
+      const a = Phaser.Math.Clamp((realN - 1 - j) / 6, 0, 1);
+      ropeA[i] = a * (1 - wF);
+      ropeFA[i] = a * wF;
     }
     rope.setAlphas(ropeA);
+    ropeF.setAlphas(ropeFA);
+    rope.setVisible(wF < 0.999); ropeF.setVisible(wF > 0.001);
     glow.setPosition(hp.x - Math.cos(hrot) * 20, hp.y - hp.z - Math.sin(hrot) * 20).setAlpha(0.3 * fade);
     if (fade > 0 && Math.random() < 0.5) {                                   // mực văng / tia sét nhỏ tách khỏi thân
       const d = body[2 + Math.floor(Math.random() * (SEG - 4))];
@@ -1446,7 +1461,7 @@ function dragonFx(s: Stage, aw: boolean): void {
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      shadow.destroy(); glow.destroy(); rope.destroy(); if (portal.active) portal.destroy();
+      shadow.destroy(); glow.destroy(); rope.destroy(); ropeF.destroy(); if (portal.active) portal.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
