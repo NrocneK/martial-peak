@@ -1051,6 +1051,9 @@ const thanThuc: Fx = (s, aw) => {
 /** Hố đen xoáy (tools/art/black_hole.py, lấy từ video mẫu): bảng khung 8 cột, 59 khung 264×204, 15 khung/s (vòng 4s);
  *  ảnh cộng sáng — tâm hố ở giữa khung, bán kính xoáy sáng ≈ 105px khung, lõi đen ≈ 20px khung (game vẽ riêng) */
 export const BLACK_HOLE = { key: 'vx_black_hole', fw: 264, fh: 204, frames: 59, swirlR: 105, coreR: 20 } as const;
+/** Vụ nổ hố đen (tools/art/black_hole_blast.py, từ video mẫu): 2 bảng khung cùng nhịp — glow (cộng sáng) + dark (phủ đen);
+ *  64 khung 210×280, 20 khung/s; tâm nổ trên mặt đất ở (0.5, oy); bán kính hoa văn tím trên đất ≈ decalR px khung */
+export const BH_BLAST = { glow: 'vx_bh_blast_glow', dark: 'vx_bh_blast_dark', fw: 210, fh: 280, frames: 64, oy: 0.695, decalR: 75 } as const;
 
 /**
  * HƯ KHÔNG LIỆT PHÙNG — hố đen (theo video mẫu) mở ra giữa cụm quái: xoáy tím sáng + lõi đen, hút quái xoắn ốc vào tâm,
@@ -1102,21 +1105,16 @@ const huKhong: Fx = (s, aw) => {
     sc.tweens.add({ targets: core, scale: 0, duration: 260, ease: 'Quad.easeIn' });
     k.later(260, () => {
       bh.destroy(); core.destroy();
-      k.glow(c.x, c.y, 0xc0a0ff, R * 2.2, 420);
-      k.glow(c.x, c.y, 0xffffff, R * 0.8, 200);
-      const ring = sc.add.graphics().setDepth(18).setBlendMode(Phaser.BlendModes.ADD);
-      const e = { v: 0 };
-      sc.tweens.add({
-        targets: e, v: 1, duration: 480, ease: 'Cubic.easeOut',
-        onUpdate: () => {
-          ring.clear();
-          const rr = R * (0.2 + 1.3 * e.v), al = 1 - e.v;
-          ring.lineStyle(10 * al + 2, 0x9a70ff, 0.5 * al).strokeEllipse(c.x, c.y, rr * 2, rr * 2 * 0.62);
-          ring.lineStyle(3, 0xe8e0ff, 0.9 * al).strokeEllipse(c.x, c.y, rr * 2, rr * 2 * 0.62);
-        },
-        onComplete: () => ring.destroy(),
-      });
-      k.burst(c.x, c.y, [0x9a70ff, 0x70e8ff, 0xffffff], aw ? 40 : 26, { tex: VT.SPARK, speed: [120, 380], scale: [0.4, 0] });
+      // VỤ NỔ theo video mẫu (tools/art/black_hole_blast.py): lớp bóng tối (khối vật chất đen) + lớp phát sáng (tím,
+      // xanh ngọc, tia sáng, vòng xung kích, hoa văn tím trên đất) chạy cùng nhịp 20 khung/s
+      for (const [key, anim] of [[BH_BLAST.dark, 'vx_bh_blast_dark'], [BH_BLAST.glow, 'vx_bh_blast_glow']] as const) {
+        if (!sc.anims.exists(anim)) sc.anims.create({ key: anim, frames: sc.anims.generateFrameNumbers(key, { start: 0, end: BH_BLAST.frames - 1 }), frameRate: 20, repeat: 0 });
+      }
+      const bs = (R * 1.15) / BH_BLAST.decalR;
+      const dark = sc.add.sprite(c.x, c.y, BH_BLAST.dark, 0).setOrigin(0.5, BH_BLAST.oy).setScale(bs).setDepth(18);
+      const glow = sc.add.sprite(c.x, c.y, BH_BLAST.glow, 0).setOrigin(0.5, BH_BLAST.oy).setScale(bs).setDepth(18.1).setBlendMode(Phaser.BlendModes.ADD);
+      dark.play('vx_bh_blast_dark'); glow.play('vx_bh_blast_glow');
+      glow.once('animationcomplete', () => { glow.destroy(); dark.destroy(); });
       k.shake(aw ? 260 : 180, aw ? 0.009 : 0.006);
       for (const o of near(s, c, R * 1.2)) s.hit(o, 0xc0a0ff);
     });
