@@ -102,90 +102,91 @@ def bez(p0, p1, p2, n=24):
     return list(map(tuple, (1 - t) ** 2 * np.array(p0) + 2 * (1 - t) * t * np.array(p1) + t ** 2 * np.array(p2)))
 
 
-SEAM_WV = (420, 650)                     # vùng có khe ngón (từ khớp ngón tới trước đầu ngón — bỏ gân mu bàn tay, móng)
-WRIST_CUT = 230                          # bỏ phần cổ tay: giữ phía dưới đường cắt chéo (0.45x + 0.9y)
+# ---- BÀN TAY NĂNG LƯỢNG: dáng canh theo hình 4 của bản phác thảo (toạ độ px trên khung phác thảo phóng ×3, 780×690),
+#      vẽ lại hoàn toàn bằng đường cong trơn — mỗi ngón là một ống cong thon dần (Bézier bậc 2), mu bàn tay là một khối
+#      bo tròn; KHÔNG dùng nét chì (không gân, không móng, không nếp da)
+HAND_BACK = [(100, 180), (225, 30), (310, 75), (460, 165), (545, 215), (610, 280), (560, 320), (470, 360), (380, 385),
+             (300, 375), (255, 370), (170, 320), (130, 250)]
+FINGERS = [  # (gốc, giữa, đầu ngón), nửa bề rộng ở gốc → ở đầu, độ hoà vào mu bàn tay
+    (((200, 330), (205, 450), (262, 598)), (46, 30), 30),     # ngón cái
+    (((365, 370), (440, 500), (503, 632)), (38, 26), 14),     # ngón trỏ
+    (((480, 340), (545, 460), (630, 612)), (39, 27), 14),     # ngón giữa
+    (((545, 250), (615, 390), (680, 560)), (28, 21), 10),     # ngón áp út
+    (((612, 282), (672, 382), (712, 472)), (21, 16), 8),     # ngón út
+]
+WRIST_FADE = (190, 300)                  # bỏ cổ tay: mờ dần theo đường chéo 0.45x + 0.9y
 
 
 def palm():
-    """Bàn tay chưởng = MU BÀN TAY úp xuống (góc nhìn từ trên của game), lấy nguyên nét vẽ từ hình 4 của bản phác thảo
-    tools/art/ref/hand_back_sketch.png, tô thành tay lửa vàng theo phong cách ảnh mẫu palm_ref.png:
-      · bóng chì của bản vẽ → độ sáng (chỗ sáng vàng trắng, chỗ đổ bóng cam)
-      · nét chì (khớp ngón, móng, gân) → nét cam đỏ đậm, giữ nguyên chi tiết
-      · viền trong sáng trắng vàng, quầng cam ngoài, vệt lửa bốc lên; cổ tay (trên trái) mờ dần"""
-    UPS = 3
-    g = np.array(Image.open(os.path.join(HERE, 'ref', 'hand_back_sketch.png')).convert('L').crop((310, 305, 570, 535))
-                 .resize((260 * UPS, 230 * UPS), Image.LANCZOS)).astype(float)
-    paper = ndimage.median_filter(g, 41)
-    ink = np.clip((paper - g - 10) / 60, 0, 1)
-    mk = Image.fromarray(((ink > 0.3) * 255).astype(np.uint8))
-    ImageDraw.Draw(mk).line([(10, 165), (25, 140), (45, 118), (130, 60), (220, 22)], fill=255, width=8)   # khép cổ tay
-    mm = ndimage.binary_dilation(np.array(mk) > 0, iterations=3)
-    f = ndimage.binary_erosion(ndimage.binary_fill_holes(mm), iterations=3)
-    lab, n = ndimage.label(f)
-    f = lab == (np.argmax(ndimage.sum(f, lab, range(1, n + 1))) + 1)
-    # đường viền NGÓN TAY (nét dài) → khe tách ngón; bỏ nét móng tay (vòng kín nhỏ) và mọi nét da / gân / nếp
-    L = ndimage.binary_dilation(ink > 0.4, iterations=1)
-    lab, n = ndimage.label(L)
-    seam = np.zeros_like(L)
-    for i, sl in enumerate(ndimage.find_objects(lab)):
-        if np.hypot(sl[0].stop - sl[0].start, sl[1].stop - sl[1].start) > 110:
-            seam[sl] |= lab[sl] == i + 1
-    nail = ndimage.binary_fill_holes(seam) & ~seam
-    nl, nn = ndimage.label(nail)
-    small = np.isin(nl, [i + 1 for i, v in enumerate(ndimage.sum(nail, nl, range(1, nn + 1))) if v < 4000])
-    seam &= ~ndimage.binary_dilation(small, iterations=6)
-    PAD = 60
-    f = np.pad(f, PAD); seam = np.pad(seam, PAD)
-    H, W = f.shape
-    yy, xx = np.mgrid[0:H, 0:W]
-    # BỎ CỔ TAY: chỉ giữ bàn tay; chỗ cắt tan thành khí (mờ dần, không viền)
-    wv = (xx - PAD) * 0.45 + (yy - PAD) * 0.9
-    wvn = wv + 22 * ndimage.gaussian_filter(np.random.default_rng(4).standard_normal((H, W)), 9) * 9   # mép tan gợn sóng
-    cutF = np.clip((wvn - WRIST_CUT) / 70, 0, 1) ** 1.3
-    f = f & (wv > WRIST_CUT - 20)
-    lab, n = ndimage.label(f)
-    f = lab == (np.argmax(ndimage.sum(f, lab, range(1, n + 1))) + 1)
-    seamIn = seam & ndimage.binary_erosion(f, iterations=4) & (wv > SEAM_WV[0]) & (wv < SEAM_WV[1])   # chỉ khe giữa các ngón
-    f2 = f & ~ndimage.binary_dilation(seamIn, iterations=1)                  # từng ngón là một khối riêng
-    fm = ndimage.gaussian_filter(f.astype(float), 1.0)
-    din = ndimage.distance_transform_edt(f2)
-    dEdge = ndimage.distance_transform_edt(f)
-    dout = ndimage.distance_transform_edt(~f)
-    # NĂNG LƯỢNG THUẦN: khối khí sáng theo độ dày (lõi trắng vàng → mép cam), vân năng lượng chảy nhẹ theo hướng ngón
-    thick = ndimage.grey_dilation(din, size=41)
-    t = np.clip(din / np.maximum(thick, 1), 0, 1)
-    rng = np.random.default_rng(9)
-    ang = 58
-    r = ndimage.rotate(rng.random((H, W)), ang, reshape=False, mode='wrap')
-    flow = ndimage.rotate(ndimage.gaussian_filter(r, (6, 30)), -ang, reshape=False, mode='wrap')
-    flow = (flow - flow.mean()) / (flow.std() + 1e-6)
-    e = np.clip(0.28 + 0.78 * t ** 0.8 + 0.06 * flow, 0, 1)
-    col = ramp(e, [(0, (225, 85, 12)), (0.35, (255, 145, 32)), (0.65, (255, 205, 75)), (0.88, (255, 243, 185)), (1.0, (255, 255, 238))])
-    sm = ndimage.gaussian_filter(seamIn.astype(float), 1.6)
-    sm = np.clip(sm * 1.6, 0, 1)
-    col = col * (1 - sm[..., None] * 0.6) + np.array([230, 105, 18.]) * sm[..., None] * 0.6   # khe giữa các ngón
-    rimIn = np.exp(-((dEdge - 2.5) / 2.2) ** 2) * f * cutF
-    col = col * (1 - rimIn[..., None] * 0.75) + np.array([255, 250, 220.]) * rimIn[..., None] * 0.75
-    col = col * cutF[..., None] + np.array([255, 140, 30.]) * (1 - cutF[..., None])   # chỗ tan: chuyển cam, không xám
-    bodyA = fm * np.clip(0.8 + 0.2 * t, 0, 1) * cutF
-    bodyA = np.maximum(bodyA, rimIn * 0.95)
-    # quầng + vệt lửa bốc lên
-    halo = np.exp(-dout / 14) * (~f)
-    src = np.maximum(f * 0.6 * cutF, halo)
+    """Bàn tay chưởng = MU BÀN TAY NĂNG LƯỢNG THUẦN úp xuống: khối khí sáng mượt (lõi trắng vàng → mép cam) theo từng
+    ngón, viền sáng mảnh, quầng + lửa bốc lên; cổ tay tan thành khí."""
+    SS = 2
+    PAD = 70
+    W, H = 780 + 2 * PAD, 690 + 2 * PAD
+    yy, xx = np.mgrid[0:H * SS, 0:W * SS].astype(float) / SS
+    X, Y = xx - PAD, yy - PAD
+    # mu bàn tay: đa giác bo tròn (làm mượt mặt nạ rồi lấy khoảng cách có dấu)
+    mk = Image.new('L', (W * SS, H * SS), 0)
+    ImageDraw.Draw(mk).polygon([((x + PAD) * SS, (y + PAD) * SS) for x, y in HAND_BACK], fill=255)
+    m = ndimage.gaussian_filter(np.array(mk).astype(float), 14 * SS) > 127
+    dPalm = (ndimage.distance_transform_edt(~m) - ndimage.distance_transform_edt(m)) / SS
+    parts = [(dPalm, 150.0)]                                                   # mu bàn tay: lõi dịu, không loá trắng
+    d = dPalm
+    for (p0, p1, p2), (w0, w1), kk in FINGERS:
+        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+        dl = np.hypot(dx, dy)
+        p0 = (p0[0] - dx / dl * 70, p0[1] - dy / dl * 70)                    # gốc ngón ăn sâu vào mu bàn tay (khớp liền)
+        w0, w1 = w0 + 3, w1 + 3
+        tt = np.linspace(0, 1, 28)
+        pts = [((1 - u) ** 2 * p0[0] + 2 * (1 - u) * u * p1[0] + u ** 2 * p2[0],
+                (1 - u) ** 2 * p0[1] + 2 * (1 - u) * u * p1[1] + u ** 2 * p2[1]) for u in tt]
+        df = np.full(X.shape, 1e9)
+        for i in range(len(pts) - 1):
+            (ax, ay), (bx, by) = pts[i], pts[i + 1]
+            dd, tseg = seg_d(X, Y, ax, ay, bx, by)
+            u = (i + tseg) / (len(pts) - 1)
+            w = (w0 + (w1 - w0) * u) * (1 + 0.07 * np.exp(-((u - 0.5) / 0.07) ** 2) + 0.05 * np.exp(-((u - 0.75) / 0.05) ** 2))   # khớp ngón hơi nở
+            w = w * np.where(u > 0.85, np.sqrt(np.clip(1 - ((u - 0.85) / 0.17) ** 2, 0.25, 1)), 1)   # đầu ngón bo tròn
+            df = np.minimum(df, dd - w)
+        parts.append((df, (w0 + w1) / 2))
+        d = smin(d, df, kk)
+    # độ "sâu" trong từng khối → lõi sáng riêng mỗi ngón; chỗ giáp nhau tự thành rãnh cam (không vẽ nét)
+    # một khối liền: sáng dần từ mép vào trong (mép cam → thân vàng → lõi vàng trắng ở giữa mu bàn tay), không có lõi
+    # riêng từng ngón (tránh ngón tay thành que phát sáng)
+    t = 0.55 * np.clip(-d / 22, 0, 1) ** 0.8 + 0.45 * np.clip(-d / 110, 0, 1)
+    t = ndimage.gaussian_filter(t, 2 * SS)
+    inside = np.clip(0.5 - d * SS / 1.5, 0, 1)
+    nz = ndimage.gaussian_filter(np.random.default_rng(12).standard_normal(X.shape), 18 * SS)
+    nz = nz / (np.abs(nz).max() + 1e-6)                                       # khí cuộn nhẹ bên trong (không sọc)
+    e = np.clip(0.14 + 0.72 * t + 0.14 * nz, 0, 1)
+    col = ramp(e, [(0, (230, 90, 15)), (0.35, (255, 148, 34)), (0.65, (255, 208, 80)), (0.88, (255, 244, 190)), (1.0, (255, 255, 240))])
+    rim = np.exp(-((d + 2.5) / 2.0) ** 2)
+    col = col * (1 - rim[..., None] * 0.7) + np.array([255, 250, 222.]) * rim[..., None] * 0.7
+    # cổ tay tan thành khí (mép gợn)
+    wv = X * 0.45 + Y * 0.9
+    wn = wv + ndimage.gaussian_filter(np.random.default_rng(4).standard_normal(X.shape), 10 * SS) * 10 * SS * 2.5
+    cut = np.clip((wn - WRIST_FADE[0]) / (WRIST_FADE[1] - WRIST_FADE[0]), 0, 1) ** 1.4
+    col = col * cut[..., None] + np.array([255, 135, 25.]) * (1 - cut[..., None])   # chỗ tan: cam, không xám
+    bodyA = np.maximum(inside * (0.82 + 0.18 * t), rim * inside * 0.95) * cut
+    # quầng + lửa bốc lên
+    rng = np.random.default_rng(5)
+    halo = np.exp(-np.maximum(d, 0) / 16) * (d > 0)
+    src = np.maximum(inside * 0.55, halo) * np.clip((wv - WRIST_FADE[0] - 40) / 80, 0, 1)
     flame = src.copy()
-    for k in range(1, 30):
-        sh = np.zeros_like(src); sh[:-k * 3] = src[k * 3:]
+    for k in range(1, 32):
+        sh = np.zeros_like(src); sh[:-k * 3 * SS] = src[k * 3 * SS:]
         flame = np.maximum(flame, sh * 0.9 ** k)
-    st = ndimage.gaussian_filter(rng.random((H, W)), (16, 2.2))
+    st = ndimage.gaussian_filter(rng.random(X.shape), (16 * SS, 2.2 * SS))
     st = (st - st.mean()) / (st.std() + 1e-6)
-    flame = np.clip(flame * np.clip(0.6 + 0.6 * st, 0, 1.5), 0, 1) * (~f)
-    fcol = ramp(flame, [(0, (120, 30, 0)), (0.4, (240, 110, 20)), (0.8, (255, 200, 70)), (1.0, (255, 240, 170))])
-    A = np.maximum(bodyA, flame * 0.75 * np.clip((wv - WRIST_CUT + 10) / 60, 0, 1))
-    rgb = np.where(f[..., None], col, fcol)
-    img = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA')
+    flame = np.clip(flame * np.clip(0.6 + 0.6 * st, 0, 1.5), 0, 1) * (1 - inside)
+    fcol = ramp(flame, [(0, (150, 50, 0)), (0.4, (245, 120, 25)), (0.8, (255, 200, 70)), (1.0, (255, 240, 170))])
+    A = np.maximum(bodyA, flame * 0.7)
+    wi = np.clip(bodyA / np.maximum(A, 1e-4), 0, 1)[..., None]
+    rgb = col * wi + fcol * (1 - wi)
+    img = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA').resize((W, H), Image.LANCZOS)
     bb = img.getbbox(); img = img.crop(bb)
-    cy0, cx0 = [c.mean() for c in np.nonzero(f)]                             # điểm chạm đất = trọng tâm bàn tay
-    cxp, cyp = (cx0 - bb[0]) / img.width, (cy0 - bb[1]) / img.height
+    ys_, xs_ = np.nonzero((inside * cut)[::SS, ::SS] > 0.5)
+    cxp, cyp = (xs_.mean() - bb[0]) / img.width, (ys_.mean() - bb[1]) / img.height
     img.save(os.path.join(VFX, 'phap_tuong_palm.png'))
     print('palm', img.size, 'center', round(cxp, 3), round(cyp, 3))
     return img
