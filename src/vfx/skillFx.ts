@@ -1318,6 +1318,18 @@ function dragonFx(s: Stage, aw: boolean): void {
   const ROPE_S = (SEG * SP) / 1024;
   const ropePts = Array.from({ length: SEG }, () => new Phaser.Math.Vector2(h0.x / ROPE_S, h0.y / ROPE_S));
   const rope = sc.add.rope(0, 0, DRAGON_TEX.rope + (aw ? '_aw' : ''), undefined, ropePts, true).setScale(ROPE_S).setDepth(16).setAlpha(0);
+  const ropeA = new Array<number>(SEG).fill(0);
+  // xoáy mực nơi rồng chui ra (vẽ bằng các cung mực + lõi sáng)
+  const portal = sc.add.graphics({ x: h0.x, y: h0.y - 4 }).setDepth(15.9).setAlpha(0);
+  portal.setBlendMode(Phaser.BlendModes.ADD);
+  for (let r = 0; r < 4; r++) {
+    portal.lineStyle(3 - r * 0.5, P.glow, 0.7 - r * 0.12);
+    portal.beginPath();
+    portal.arc(0, 0, 10 + r * 9, r * 1.4, r * 1.4 + Math.PI * 1.3);
+    portal.strokePath();
+  }
+  portal.fillStyle(P.edge, 0.5).fillCircle(0, 0, 8);
+  portal.setScale(1, 0.55);
   rope.setColors(0xffffff);
   const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
   const trail: { x: number; y: number; z: number }[] = [{ x: h0.x, y: h0.y, z: 6 }];
@@ -1334,9 +1346,15 @@ function dragonFx(s: Stage, aw: boolean): void {
         need = SP;
       } else { need -= d; cur = nx; j++; }
     }
-    while (out.length < SEG) out.push(out[out.length - 1]);
+    realN = out.length;
+    const a = out[Math.max(0, out.length - 2)], b = out[out.length - 1];
+    let dx = b.x - a.x, dy = b.y - a.y;
+    const dl = Math.hypot(dx, dy) || 1;
+    if (out.length < 2) { dx = 0; dy = 1; } else { dx /= dl; dy /= dl; }
+    while (out.length < SEG) { const q = out[out.length - 1]; out.push({ x: q.x + dx * SP, y: q.y + dy * SP, z: q.z }); }
     return out;
   };
+  let realN = 1;
   let goal = { x: h0.x + (Math.random() - 0.5) * RANGE, y: h0.y - RANGE * 0.5 };
   const hitCd = new Map<Pt, number>();
   let el = 0, phase: 'roam' | 'circle' | 'dive' | 'done' = 'roam';
@@ -1415,6 +1433,11 @@ function dragonFx(s: Stage, aw: boolean): void {
     const hp = body[0], hq = body[3];
     const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
     rope.setFlipY(Math.cos(hrot) < 0).setAlpha(fade);
+    for (let i = 0; i < SEG; i++) {
+      const j = SEG - 1 - i;                                                // j: 0 = đầu … SEG-1 = đuôi
+      ropeA[i] = Phaser.Math.Clamp((realN - 1 - j) / 6, 0, 1);
+    }
+    rope.setAlphas(ropeA);
     glow.setPosition(hp.x - Math.cos(hrot) * 20, hp.y - hp.z - Math.sin(hrot) * 20).setAlpha(0.3 * fade);
     if (fade > 0 && Math.random() < 0.5) {                                   // mực văng / tia sét nhỏ tách khỏi thân
       const d = body[2 + Math.floor(Math.random() * (SEG - 4))];
@@ -1423,11 +1446,15 @@ function dragonFx(s: Stage, aw: boolean): void {
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      shadow.destroy(); glow.destroy(); rope.destroy();
+      shadow.destroy(); glow.destroy(); rope.destroy(); if (portal.active) portal.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
-  k.glow(h0.x, h0.y - 10, P.glow, 70, 300);
+  k.glow(h0.x, h0.y - 6, P.glow, 50, 420);
+  sc.tweens.add({ targets: portal, scaleX: { from: 0.2, to: 1 }, scaleY: { from: 0.11, to: 0.55 }, alpha: { from: 0, to: 1 }, duration: 220, ease: 'Quad.easeOut' });
+  sc.tweens.add({ targets: portal, angle: -720, duration: 2200 });
+  sc.tweens.add({ targets: portal, alpha: 0, scaleX: 1.4, scaleY: 0.77, delay: 1500, duration: 600, onComplete: () => portal.destroy() });
+
   sc.events.on('update', step);
 }
 
