@@ -1048,32 +1048,78 @@ const thanThuc: Fx = (s, aw) => {
   }
 };
 
+/** Hố đen xoáy (tools/art/black_hole.py, lấy từ video mẫu): bảng khung 8 cột, 59 khung 264×204, 15 khung/s (vòng 4s);
+ *  ảnh cộng sáng — tâm hố ở giữa khung, bán kính xoáy sáng ≈ 105px khung, lõi đen ≈ 20px khung (game vẽ riêng) */
+export const BLACK_HOLE = { key: 'vx_black_hole', fw: 264, fh: 204, frames: 59, swirlR: 105, coreR: 20 } as const;
+
+/**
+ * HƯ KHÔNG LIỆT PHÙNG — hố đen (theo video mẫu) mở ra giữa cụm quái: xoáy tím sáng + lõi đen, hút quái xoắn ốc vào tâm,
+ * gây sát thương theo nhịp; hết giờ hố co sụp lại rồi nổ một vòng sóng. Thức tỉnh: hố to hơn, hút mạnh + nổ lớn hơn.
+ */
 const huKhong: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
+  const k = s.kit, sc = k.scene, h = H(s);
   const c = s.targets()[2] ?? pt(h.x + 150, h.y);
-  const R = aw ? 170 : 110;
-  const core = k.img(VT.SOFT, c.x, c.y, { tint: 0x000000, add: false, scale: 0.05, depth: 18 });
-  const rim = k.img(VT.RING_THICK, c.x, c.y, { tint: 0xa060ff, scale: 0.05, depth: 19 });
-  k.scene.tweens.add({ targets: core, scale: aw ? 1.3 : 0.6, duration: 300 });
-  k.scene.tweens.add({ targets: rim, scale: aw ? 0.5 : 0.28, duration: 300 });
-  k.scene.tweens.add({ targets: rim, rotation: 12, duration: 2400 });
-  const sw = k.scene.add.particles(c.x, c.y, VT.DOT, {
-    lifespan: 700, speed: 0, scale: { start: 0.2, end: 0.7 }, alpha: { start: 0, end: 1 }, tint: [0xa060ff, 0xe0c0ff, 0x6030c0], blendMode: Phaser.BlendModes.ADD, frequency: 8,
-    emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const a = Math.random() * 6.28, r = R; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r; p.velocityX = -p.x * 1.3 - Math.sin(a) * 120; p.velocityY = -p.y * 1.3 + Math.cos(a) * 120; },
-  }).setDepth(19);
-  k.ring(c.x, c.y, 0xa060ff, R, R * 0.9, 2200, false, { alpha: 0.35 });
-  k.later(2200, () => {
-    sw.stop();
-    k.tw(core, { scale: 0 }, 160);
-    k.tw(rim, { scale: 0 }, 160);
-    k.later(160, () => {
-      k.glow(c.x, c.y, 0xc080ff, R * 2, 420);
-      k.ring(c.x, c.y, 0xe0c0ff, 10, R * 1.1, 420, true);
-      k.burst(c.x, c.y, [0xa060ff, 0xffffff], 30, { tex: VT.SPARK, speed: [120, 380], scale: [0.4, 0] });
-      k.shake(200, 0.007);
-      for (const o of near(s, c, R)) s.hit(o, 0xa060ff);
+  const R = aw ? 170 : 115;                                                // bán kính xoáy (px game)
+  const LIFE = aw ? 3600 : 2600;
+  const S = R / BLACK_HOLE.swirlR;
+  if (!sc.anims.exists('vx_black_hole_loop')) {
+    sc.anims.create({ key: 'vx_black_hole_loop', frames: sc.anims.generateFrameNumbers(BLACK_HOLE.key, { start: 0, end: BLACK_HOLE.frames - 1 }), frameRate: 15, repeat: -1 });
+  }
+  // lõi đen (cộng sáng không vẽ được màu đen): đĩa đen mềm, nằm dưới lớp xoáy
+  const core = sc.add.image(c.x, c.y, VT.SOFT).setTint(0x000000).setDepth(17.9).setScale(0).setAlpha(0.95);
+  const coreS = (BLACK_HOLE.coreR * S * 2.6) / 128;
+  const bh = sc.add.sprite(c.x, c.y, BLACK_HOLE.key, 0).setDepth(18).setBlendMode(Phaser.BlendModes.ADD).setScale(0).setAlpha(0);
+  bh.play({ key: 'vx_black_hole_loop', startFrame: Math.floor(Math.random() * BLACK_HOLE.frames) });
+  // mở ra: xoáy nở từ tâm + xoay nhẹ
+  sc.tweens.add({ targets: bh, scale: S, alpha: 1, angle: { from: -40, to: 0 }, duration: 380, ease: 'Back.easeOut' });
+  sc.tweens.add({ targets: core, scaleX: coreS, scaleY: coreS * 0.8, duration: 300, ease: 'Quad.easeOut' });
+  k.glow(c.x, c.y, 0x8060ff, R * 1.2, 400, { alpha: 0.6 });
+  // hút quái: xoắn ốc vào tâm (càng gần càng nhanh), sát thương theo nhịp
+  let el = 0, tick = 0.2;
+  const pull = aw ? 2 : 1;
+  const step = (_t: number, dms: number) => {
+    const dt = (dms * sc.time.timeScale) / 1000;
+    el += dt * 1000;
+    if (el < LIFE) {
+      for (const o of s.targets()) {
+        const d = dist(o, c);
+        if (d > R * 1.35 || d < 2) continue;
+        const a0 = ang(c, o) + dt * (1.6 + 90 / Math.max(d, 20)) * pull;   // xoáy quanh tâm
+        const r0 = Math.max(R * 0.12, d - (40 + 3000 / Math.max(d, 25)) * dt * pull);
+        s.drag?.(o, c.x + Math.cos(a0) * r0, c.y + Math.sin(a0) * r0);
+      }
+      if ((tick -= dt) <= 0) {
+        tick = 0.45;
+        for (const o of near(s, c, R)) s.hit(o, 0xa080ff);
+      }
+    }
+  };
+  sc.events.on('update', step);
+  // co sụp + nổ
+  k.later(LIFE, () => {
+    sc.events.off('update', step);
+    sc.tweens.add({ targets: bh, scale: S * 0.15, angle: 160, duration: 260, ease: 'Quad.easeIn' });
+    sc.tweens.add({ targets: core, scale: 0, duration: 260, ease: 'Quad.easeIn' });
+    k.later(260, () => {
+      bh.destroy(); core.destroy();
+      k.glow(c.x, c.y, 0xc0a0ff, R * 2.2, 420);
+      k.glow(c.x, c.y, 0xffffff, R * 0.8, 200);
+      const ring = sc.add.graphics().setDepth(18).setBlendMode(Phaser.BlendModes.ADD);
+      const e = { v: 0 };
+      sc.tweens.add({
+        targets: e, v: 1, duration: 480, ease: 'Cubic.easeOut',
+        onUpdate: () => {
+          ring.clear();
+          const rr = R * (0.2 + 1.3 * e.v), al = 1 - e.v;
+          ring.lineStyle(10 * al + 2, 0x9a70ff, 0.5 * al).strokeEllipse(c.x, c.y, rr * 2, rr * 2 * 0.62);
+          ring.lineStyle(3, 0xe8e0ff, 0.9 * al).strokeEllipse(c.x, c.y, rr * 2, rr * 2 * 0.62);
+        },
+        onComplete: () => ring.destroy(),
+      });
+      k.burst(c.x, c.y, [0x9a70ff, 0x70e8ff, 0xffffff], aw ? 40 : 26, { tex: VT.SPARK, speed: [120, 380], scale: [0.4, 0] });
+      k.shake(aw ? 260 : 180, aw ? 0.009 : 0.006);
+      for (const o of near(s, c, R * 1.2)) s.hit(o, 0xc0a0ff);
     });
-    k.later(900, () => sw.destroy());
   });
 };
 

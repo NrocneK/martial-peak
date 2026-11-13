@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { SKILLS, skillIcon, type SkillDef } from '../config/skills';
 import { makeVfxTextures, VT } from '../vfx/textures';
 import { VfxKit, type Pt } from '../vfx/VfxKit';
-import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, DRAGON_TEX, QI_ARM, QI_AURA, FIRE_SLASH, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
+import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, DRAGON_TEX, QI_ARM, QI_AURA, FIRE_SLASH, BLACK_HOLE, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
 
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
@@ -41,6 +41,7 @@ class LabScene extends Phaser.Scene {
     this.load.image(ORB_BOLT, '/vfx/orb_bolt.png?v=1');
     this.load.image(QI_ARM, '/vfx/qi_arm.png?v=9');
     this.load.image(QI_AURA, '/vfx/qi_aura.png?v=8');
+    this.load.spritesheet(BLACK_HOLE.key, '/vfx/black_hole.png?v=1', { frameWidth: BLACK_HOLE.fw, frameHeight: BLACK_HOLE.fh });
     this.load.image(FIRE_SLASH.key, '/vfx/fire_slash.png?v=5');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
     for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
