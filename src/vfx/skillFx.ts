@@ -946,20 +946,23 @@ const nguyenAnh: Fx = (s, aw) => {
   k.later(dur + 50, () => { ev.remove(); sp.forEach((i) => i.destroy()); halo.forEach((i) => i.destroy()); });
 };
 
-/** Tay khí vàng cầm kiếm (tools/art/qi_arm.py, từ ảnh mẫu pháp tướng nhiều tay) — dựng đứng, mũi kiếm lên trên */
+/** Tay khí vàng (tools/art/qi_arm.py, từ ảnh mẫu pháp tướng nhiều tay) + luồng KIẾM KHÍ bọc nắm tay vuốt thành lưỡi
+ *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
-const QI_ARM_PIVOT: [number, number] = [0.406, 0.739];                     // cổ tay (điểm xoay khi chém)
+export const QI_AURA = 'vx_qi_aura';
+const QI_ARM_PIVOT: [number, number] = [0.39, 0.737];                      // cổ tay (điểm xoay khi chém)
+const QI_ARM_REACH = 495;                                                  // cổ tay → mũi luồng kiếm khí (px ảnh)
 
 /**
- * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ cầm kiếm: hiện ra trên đầu nhân vật, mỗi tay bay tới một kẻ địch gần đó,
- * giơ kiếm rồi bổ xuống (vệt chém vàng theo mũi kiếm), xong bay về và tan.
+ * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ, nắm tay bọc LUỒNG KIẾM KHÍ vuốt nhọn thành lưỡi: hiện ra trên đầu
+ * nhân vật, mỗi tay bay tới một kẻ địch gần đó, vung luồng kiếm khí bổ xuống (vệt chém vàng theo mũi), xong bay về và tan.
  *   thường: 2 tay (trái/phải) · thức tỉnh: 6 tay xếp như pháp tướng (3 tầng mỗi bên), chém 6 mục tiêu so le.
  */
 const thanThuc: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene, hero = s.hero;
   const N = aw ? 6 : 2;
   const SC = aw ? 0.17 : 0.16;                                             // tay+kiếm cao ≈ 110px
-  const SWORD = 679 * QI_ARM_PIVOT[1] * SC;                                 // cổ tay → mũi kiếm (px)
+  const SWORD = QI_ARM_REACH * SC;                                         // cổ tay → mũi luồng kiếm khí (px)
   // chỗ tay hiện ra quanh đầu nhân vật: [dx, dy, nghiêng]
   const SLOTS: [number, number, number][] = aw
     ? [[-34, -78, -0.25], [34, -78, 0.25], [-62, -52, -0.6], [62, -52, 0.6], [-52, -18, -1.0], [52, -18, 1.0]]
@@ -975,6 +978,18 @@ const thanThuc: Fx = (s, aw) => {
     const h0 = home();
     const arm = sc.add.image(h0.x, h0.y, QI_ARM).setOrigin(QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21)
       .setScale(SC * 0.5).setAlpha(0).setRotation(tilt).setFlipX(side < 0);
+    // luồng kiếm khí: chồng khít lên tay (cộng sáng), chớp nháy + phập phồng như lửa
+    const aura = sc.add.image(h0.x, h0.y, QI_AURA).setOrigin(QI_ARM_PIVOT[0], QI_ARM_PIVOT[1]).setDepth(21.1)
+      .setBlendMode(Phaser.BlendModes.ADD).setFlipX(side < 0).setAlpha(0);
+    const ph = Math.random() * 10;
+    const follow = (time: number) => {
+      if (!arm.active) { sc.events.off('update', follow); if (aura.active) aura.destroy(); return; }
+      const fl = 1 + 0.06 * Math.sin(time / 45 + ph) + 0.04 * Math.sin(time / 23 + ph * 2);
+      aura.setPosition(arm.x, arm.y).setRotation(arm.rotation)
+        .setScale(arm.scaleX * (0.96 + 0.08 * Math.sin(time / 60 + ph)), arm.scaleY * fl)
+        .setAlpha(arm.alpha * (0.85 + 0.15 * Math.sin(time / 37 + ph)));
+    };
+    sc.events.on('update', follow);
     const delay = aw ? i * 90 : i * 180;
     // hiện ra
     k.later(delay, () => k.glow(h0.x, h0.y - 20, 0xffc850, 50, 300, { alpha: 0.6 }));
