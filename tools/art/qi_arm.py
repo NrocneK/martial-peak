@@ -33,8 +33,7 @@ ELBOW = (75, 102)                        # khuỷu tay
 FIST_C = (53.6, 41.4)                    # cổ tay (điểm bạn đánh dấu) — trục cẳng tay: khuỷu → điểm này
 FIST = [(22, 21), (30, 17), (40, 17), (50, 23), (55, 32), (57, 38), (52, 45), (40, 47), (30, 44), (23, 36), (21, 28)]  # bàn tay (nắm đấm)
 FIST_CTR = (38.5, 31)                    # giữa nắm tay (chỗ chuôi kiếm laser)
-BLADE_L = 100                            # giữa nắm tay → mũi lưỡi
-TIP = (FIST_C[0] + (FIST_C[0] - ELBOW[0]) / 64.27 * BLADE_L, FIST_C[1] + (FIST_C[1] - ELBOW[1]) / 64.27 * BLADE_L)  # mũi (trên trục kéo dài)
+BLADE_TILT = 30                          # lưỡi khí nghiêng so với trục cẳng tay (độ, ngược kim đồng hồ: 12h → 11h)
 
 
 def main():
@@ -88,11 +87,11 @@ def main():
     fm = np.array(fmI.rotate(ang, resample=Image.BILINEAR, expand=True)).astype(float) / 255
     mk = np.array(mk.rotate(ang, resample=Image.NEAREST, expand=True))
     # thêm chỗ phía trên cho lưỡi kiếm khí
-    TOPX = 260
-    W2, H2 = armF.width, armF.height + TOPX
-    armC = Image.new('RGBA', (W2, H2), (0, 0, 0, 0)); armC.alpha_composite(armF, (0, TOPX)); armF = armC
-    fm = np.pad(fm, ((TOPX, 0), (0, 0)))
-    mk = np.pad(mk, ((TOPX, 0), (0, 0)))
+    TOPX, LEFTX = 330, 300
+    W2, H2 = armF.width + LEFTX, armF.height + TOPX
+    armC = Image.new('RGBA', (W2, H2), (0, 0, 0, 0)); armC.alpha_composite(armF, (LEFTX, TOPX)); armF = armC
+    fm = np.pad(fm, ((TOPX, 0), (LEFTX, 0)))
+    mk = np.pad(mk, ((TOPX, 0), (LEFTX, 0)))
     ey, ex = [c.mean() for c in np.nonzero(mk == 255)]
     fy, fx = [c.mean() for c in np.nonzero(mk == 128)]
 
@@ -105,7 +104,7 @@ def main():
     e = np.clip((e - 10) * 1.1, 0, 255)                                      # bỏ quầng nền rất mờ
     hh_ = e.shape[0]
     e *= np.clip((hh_ - 1 - np.arange(hh_)) / 70, 0, 1)[:, None, None] ** 1.3   # đáy luồng khí mờ dần (chỗ lưỡi kim loại)
-    BL_W, BL_H = 170, 380                                                    # kích thước luồng khí trên ảnh tay (px)
+    BL_W, BL_H = 210, 470                                                    # kích thước luồng khí trên ảnh tay (px)
     eI = Image.fromarray(e.astype(np.uint8), 'RGB').resize((BL_W, BL_H), Image.LANCZOS)
     blade = np.zeros((H2, W2, 3))
     bx0 = int(round(fx - BL_W * (63 / 130)))                                 # trục luồng khí trong mẫu ở cột ≈ 353 (63/130 khung)
@@ -126,6 +125,10 @@ def main():
     streak = (streak - streak.mean()) / (streak.std() + 1e-6)
     flame = flame * np.clip(0.8 + 0.45 * streak, 0.2, 1.5)
     flame *= np.clip(1 - np.abs(np.arange(W2)[None, :] - fx) / (40 * UP), 0, 1) ** 0.6   # gom về phía trục
+    # lưỡi khí + lửa bốc lên nghiêng về hướng 11 giờ (xoay quanh giữa nắm tay); quầng ôm tay giữ nguyên
+    rotF = lambda arr: np.array(Image.fromarray(arr.astype(np.float32), 'F').rotate(BLADE_TILT, resample=Image.BILINEAR, center=(fx, fy)))
+    flame = rotF(flame)
+    blade = np.dstack([rotF(blade[..., c]) for c in range(3)])
     flame = np.maximum(flame, wrap * np.clip(0.7 + 0.4 * streak, 0.3, 1.2))
     fys = np.nonzero(fm.max(1) > 0.5)[0]
     below = np.clip((np.arange(H2)[:, None] - fys.max() + 2 * UP) / (6 * UP), 0, 1)   # không cho lửa rủ xuống dưới nắm tay
@@ -147,12 +150,14 @@ def main():
     bb = (min(bb[0], b2[0]), min(bb[1], b2[1]), max(bb[2], b2[2]), max(bb[3], b2[3]))
     armF, auraI = armF.crop(bb), auraI.crop(bb)
     ex, ey, fx, fy = ex - bb[0], ey - bb[1], fx - bb[0], fy - bb[1]
-    col_ = np.array(auraI)[:, int(round(fx)), 3]
-    ty = float(np.nonzero(col_ > 40)[0].min())
+    bys, bxs = np.nonzero(blade.max(2) > 40)                                # mũi lưỡi khí: điểm xa nhất theo hướng nghiêng
+    dvx, dvy = -np.sin(np.radians(BLADE_TILT)), -np.cos(np.radians(BLADE_TILT))
+    j_ = np.argmax((bxs - (fx + bb[0])) * dvx + (bys - (fy + bb[1])) * dvy)
+    tx, ty = bxs[j_] - bb[0], bys[j_] - bb[1]
     armF.save(os.path.join(VFX, 'qi_arm.png'))
     auraI.save(os.path.join(VFX, 'qi_aura.png'))
     print('qi_arm', armF.size, 'tilt', round(ang, 1), 'pivot(khuỷu)', round(ex / armF.width, 3), round(ey / armF.height, 3),
-          'reach', round(float(np.hypot(ex - fx, ey - ty))), 'lệch góc', round(float(np.degrees(np.arctan2(fx - ex, ey - ty))), 2))
+          'reach', round(float(np.hypot(ex - tx, ey - ty))), 'lệch góc', round(float(np.degrees(np.arctan2(tx - ex, ey - ty))), 2))
 
     ca = np.array(armF).astype(float); cb = np.array(auraI).astype(float)
     bg = np.full(ca.shape[:2] + (3,), (26, 24, 40.))

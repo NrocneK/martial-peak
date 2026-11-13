@@ -950,9 +950,9 @@ const nguyenAnh: Fx = (s, aw) => {
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
 export const QI_AURA = 'vx_qi_aura';
-const QI_ARM_PIVOT: [number, number] = [0.626, 0.954];                    // khuỷu tay (điểm xoay khi chém)
-const QI_ARM_REACH = 596;                                                  // khuỷu → mũi kiếm khí (px ảnh)
-const QI_ARM_TIP_OFF = -0.0548;                                           // mũi kiếm lệch so với phương đứng qua khuỷu (rad)
+const QI_ARM_PIVOT: [number, number] = [0.724, 0.956];                    // khuỷu tay (điểm xoay khi chém)
+const QI_ARM_REACH = 675;                                                  // khuỷu → mũi kiếm khí (px ảnh)
+const QI_ARM_TIP_OFF = -0.3953;                                           // mũi kiếm khí lệch so với phương đứng qua khuỷu (rad) — lưỡi nghiêng hướng 11h
 
 /**
  * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ, nắm tay bọc LUỒNG KIẾM KHÍ vuốt nhọn thành lưỡi: hiện ra trên đầu
@@ -1004,7 +1004,7 @@ const thanThuc: Fx = (s, aw) => {
     const px = t.x - sd * SWORD * 0.55, py = t.y - 10 - SWORD * 0.62;
     const rRaise = -sd * 0.55, rEnd = sd * 2.25;                            // góc giơ kiếm → góc bổ xong
     k.later(delay + 240, () => {
-      sc.tweens.add({ targets: arm, x: px, y: py, rotation: rRaise, duration: 200, ease: 'Cubic.easeOut' });
+      sc.tweens.add({ targets: arm, x: px, y: py, rotation: rRaise - QI_ARM_TIP_OFF * side, duration: 200, ease: 'Cubic.easeOut' });   // bù góc lệch để MŨI KIẾM theo cung chém
       // bổ xuống
       k.later(250, () => {
         const g = sc.add.graphics().setDepth(20.5).setBlendMode(Phaser.BlendModes.ADD);
@@ -1013,7 +1013,7 @@ const thanThuc: Fx = (s, aw) => {
         const draw = (fade: number) => {
           // vệt chém: MỘT dải trăng khuyết liền (không chia khúc) bám mũi kiếm — mép ngoài sắc, đuôi thon nhọn dần
           g.clear();
-          const a1 = st.r - Math.PI / 2 + QI_ARM_TIP_OFF * side, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
+          const a1 = st.r - Math.PI / 2, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
           if (span < 0.05) return;
           const R = SWORD * 1.02;
           const outer: Phaser.Types.Math.Vector2Like[] = [], inner: Phaser.Types.Math.Vector2Like[] = [];
@@ -1031,7 +1031,7 @@ const thanThuc: Fx = (s, aw) => {
         sc.tweens.add({
           targets: [st], r: rEnd, duration: 150, ease: 'Quad.easeIn',
           onUpdate: () => {
-            arm.setRotation(st.r);
+            arm.setRotation(st.r - QI_ARM_TIP_OFF * side);
             draw(1);
             if (!hitDone && (st.r - rRaise) * sd > 1.25) {                    // mũi kiếm qua mục tiêu
               hitDone = true;
