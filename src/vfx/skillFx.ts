@@ -1122,8 +1122,8 @@ const huKhong: Fx = (s, aw) => {
 };
 
 /** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
- *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng lấy từ ảnh mẫu (bàn tay lửa úp xuống, nhìn nghiêng; điểm chạm đất `cx, cy`, rộng palmW) */
-export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.511, cy: 0.987, palmW: 617 } as const;
+ *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng = mu bàn tay úp xuống (điểm chạm đất `cx, cy` = trọng tâm bàn tay, rộng palmW) */
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.511, cy: 0.488, palmW: 856 } as const;
 
 /**
  * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
@@ -1171,9 +1171,9 @@ const phapTuong: Fx = (s, aw) => {
   sc.events.on('update', flick);
   // --- bàn tay chưởng (ảnh mẫu): úp xuống từ trời, ngón tay hướng ra xa nhân vật
   const RP = aw ? 120 : 95;                                                // bán kính chưởng (px game)
-  const PS = (RP * 2.3) / PHAP_TUONG.palmW;
+  const PS = (RP * 2.6) / PHAP_TUONG.palmW;
   const palm = (p: Pt, delay: number) => k.later(delay, () => {
-    const fl = p.x < hero.x;                                               // mẫu: ngón tay chỉ sang phải → lật khi đánh bên trái
+    const fl = p.x < hero.x;                                               // mẫu: ngón tay chỉ xuống phải → lật khi đánh bên trái
     const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0, scale: 0.3, depth: 4 });
     sh.setScale(0.6, 0.6 * KY);
     sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: (RP * 2.4) / 128, scaleY: ((RP * 2.4) / 128) * KY, duration: 600, ease: 'Quad.easeIn' });
@@ -1182,7 +1182,7 @@ const phapTuong: Fx = (s, aw) => {
     k.glow(p.x, p.y - 360, 0xffc850, 180, 420, { alpha: 0.6 });
     sc.tweens.add({ targets: im, alpha: 1, duration: 160 });
     sc.tweens.add({
-      targets: im, y: p.y + 6, scale: PS, angle: 0, duration: 600, ease: 'Quad.easeIn',
+      targets: im, y: p.y - 4, scale: PS, angle: 0, duration: 600, ease: 'Quad.easeIn',
       onComplete: () => {
         // chạm đất: tay đè bẹp xuống một nhịp rồi tan
         sc.tweens.add({ targets: im, scaleY: PS * 0.88, scaleX: PS * 1.05, duration: 90, yoyo: true });

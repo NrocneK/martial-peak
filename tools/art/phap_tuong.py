@@ -4,14 +4,15 @@ PHÁP TƯỚNG THIÊN ĐỊA — 2 hình:
   A) PHÁP TƯỚNG = chính nhân vật (public/ui/hero_b_walk.png, khung đứng hướng S — nhìn thẳng như ảnh mẫu) phóng lớn,
      hoá thành thân KHÍ VÀNG như ảnh mẫu: phóng mượt, tô vàng theo độ sáng (áo trắng → vàng trắng rực, tóc/áo tối →
      hổ phách mờ), viền sáng quanh thân, lửa vàng bốc ngược lên từ thân.     → public/vfx/phap_tuong_avatar.png
-  B) BÀN TAY CHƯỞNG: lấy nguyên từ ảnh mẫu tools/art/ref/palm_ref.png (bàn tay lửa vàng úp xuống, nhìn nghiêng).
+  B) BÀN TAY CHƯỞNG: mu bàn tay úp xuống, nét vẽ từ tools/art/ref/hand_back_sketch.png (hình 4), tô theo kiểu tay lửa
+     của ảnh mẫu tools/art/ref/palm_ref.png.
                                                                               → public/vfx/phap_tuong_palm.png
 
   python3 -I tools/art/phap_tuong.py
 """
 import os
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -102,28 +103,60 @@ def bez(p0, p1, p2, n=24):
 
 
 def palm():
-    """Bàn tay chưởng lấy NGUYÊN từ ảnh mẫu tools/art/ref/palm_ref.png (bàn tay lửa vàng nhìn nghiêng, úp xuống):
-    tách nền tối theo độ vàng (R cao, G > B) + lấp kín thân tay; mép trên (cánh tay + lửa bốc lên) và mép trái (cổ tay)
-    mờ dần vì bị khung ảnh cắt. Giữ nguyên màu và nét vẽ của mẫu."""
-    a = np.array(Image.open(os.path.join(HERE, 'ref', 'palm_ref.png')).convert('RGB')).astype(float)
-    R, G, B = a[..., 0], a[..., 1], a[..., 2]
-    y = np.clip((R - 130) / 70, 0, 1) * np.clip((G - B - 15) / 50, 0, 1)
-    m = ndimage.binary_fill_holes(ndimage.binary_closing(y > 0.5, iterations=3))
-    m = ndimage.binary_opening(m, iterations=2)
-    lab, n = ndimage.label(m)
-    sz = ndimage.sum(m, lab, range(1, n + 1))
-    m = lab == (np.argmax(sz) + 1)
-    al = np.maximum(y, ndimage.gaussian_filter(m.astype(float), 1.2))
-    H, W = al.shape
+    """Bàn tay chưởng = MU BÀN TAY úp xuống (góc nhìn từ trên của game), lấy nguyên nét vẽ từ hình 4 của bản phác thảo
+    tools/art/ref/hand_back_sketch.png, tô thành tay lửa vàng theo phong cách ảnh mẫu palm_ref.png:
+      · bóng chì của bản vẽ → độ sáng (chỗ sáng vàng trắng, chỗ đổ bóng cam)
+      · nét chì (khớp ngón, móng, gân) → nét cam đỏ đậm, giữ nguyên chi tiết
+      · viền trong sáng trắng vàng, quầng cam ngoài, vệt lửa bốc lên; cổ tay (trên trái) mờ dần"""
+    UPS = 3
+    g = np.array(Image.open(os.path.join(HERE, 'ref', 'hand_back_sketch.png')).convert('L').crop((310, 305, 570, 535))
+                 .resize((260 * UPS, 230 * UPS), Image.LANCZOS)).astype(float)
+    paper = ndimage.median_filter(g, 41)
+    ink = np.clip((paper - g - 10) / 60, 0, 1)
+    mk = Image.fromarray(((ink > 0.3) * 255).astype(np.uint8))
+    ImageDraw.Draw(mk).line([(10, 165), (25, 140), (45, 118), (130, 60), (220, 22)], fill=255, width=8)   # khép cổ tay
+    mm = ndimage.binary_dilation(np.array(mk) > 0, iterations=3)
+    f = ndimage.binary_erosion(ndimage.binary_fill_holes(mm), iterations=3)
+    lab, n = ndimage.label(f)
+    f = lab == (np.argmax(ndimage.sum(f, lab, range(1, n + 1))) + 1)
+    PAD = 60
+    f = np.pad(f, PAD); ink = np.pad(ink, PAD); shade = np.pad(ndimage.gaussian_filter(np.clip((paper - g) / 90, 0, 1), 3), PAD)
+    H, W = f.shape
+    fm = ndimage.gaussian_filter(f.astype(float), 1.0)
+    din = ndimage.distance_transform_edt(f)
+    dout = ndimage.distance_transform_edt(~f)
+    # thân: sáng ở giữa (xa mép), tối theo bóng chì
+    depth = np.clip(din / 40, 0, 1)
+    light = np.clip(0.45 + 0.5 * depth - 0.7 * shade, 0, 1)
+    body = ramp(light, [(0, (215, 75, 10)), (0.4, (250, 140, 25)), (0.7, (255, 205, 60)), (1.0, (255, 245, 190))])
+    lines = np.clip(ndimage.gaussian_filter(ink, 0.8) * 1.15, 0, 1) * (din > 2.5)
+    col = body * (1 - lines[..., None] * 0.85) + np.array([175, 55, 8.]) * lines[..., None] * 0.85
+    rimIn = np.exp(-((din - 3) / 3.0) ** 2) * f
+    col = col * (1 - rimIn[..., None] * 0.7) + np.array([255, 250, 215.]) * rimIn[..., None] * 0.7
+    # quầng + vệt lửa bốc lên từ mu bàn tay
+    rng = np.random.default_rng(5)
+    halo = np.exp(-dout / 14) * (~f)
+    src = np.maximum(f * 0.6, halo)
+    flame = src.copy()
+    for k in range(1, 30):
+        sh = np.zeros_like(src); sh[:-k * 3] = src[k * 3:]
+        flame = np.maximum(flame, sh * 0.9 ** k)
+    st = ndimage.gaussian_filter(rng.random((H, W)), (16, 2.2))
+    st = (st - st.mean()) / (st.std() + 1e-6)
+    flame = np.clip(flame * np.clip(0.6 + 0.6 * st, 0, 1.5), 0, 1) * (~f)
+    fcol = ramp(flame, [(0, (120, 30, 0)), (0.4, (240, 110, 20)), (0.8, (255, 200, 70)), (1.0, (255, 240, 170))])
+    A = np.maximum(fm, flame * 0.75)
+    rgb = np.where(f[..., None], col, fcol)
+    # cổ tay (trên trái) mờ dần
     yy, xx = np.mgrid[0:H, 0:W]
-    al *= np.clip(yy / 90, 0, 1) ** 1.3                                      # lửa / cánh tay phía trên mờ dần lên trời
-    al *= np.clip((xx - 14) / 40, 0, 1)                                      # cổ tay bị khung cắt bên trái
-    img = Image.fromarray(np.dstack([a, al * 255]).astype(np.uint8), 'RGBA')
+    wr = np.clip(((xx - PAD) * 0.45 + (yy - PAD) * 0.9 - 70) / 90, 0, 1)
+    A = A * wr
+    img = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA')
     bb = img.getbbox(); img = img.crop(bb)
-    # điểm chạm đất = giữa mép dưới lòng bàn tay
-    cxp, cyp = (330 - bb[0]) / img.width, (385 - bb[1]) / img.height
+    cy0, cx0 = [c.mean() for c in np.nonzero(f)]                             # điểm chạm đất = trọng tâm bàn tay
+    cxp, cyp = (cx0 - bb[0]) / img.width, (cy0 - bb[1]) / img.height
     img.save(os.path.join(VFX, 'phap_tuong_palm.png'))
-    print('palm', img.size, 'impact', round(cxp, 3), round(cyp, 3))
+    print('palm', img.size, 'center', round(cxp, 3), round(cyp, 3))
     return img
 
 
