@@ -5,9 +5,10 @@ có vòng xuyến) + LƯỠI KIẾM NĂNG LƯỢNG bọc nắm tay, nối dài t
   1) cắt cánh tay trên-phải (nắm đấm + vòng xuyến + cẳng tay) bằng đường viền tay vẽ theo ảnh mẫu; phần dưới khuỷu
      (cánh tay trên) mờ dần → tay khí hiện ra từ hư không
   2) quầng sáng vàng mềm quanh tay (thay quầng đỏ của nền mẫu)
-  3) KIẾM LASER: luồng sáng thẳng đều, mũi tròn, phóng ra từ GIỮA nắm tay song song trục cẳng tay; đoạn trong nắm tay
-     bị tay che (như nắm chuôi). Lõi trắng · thân vàng nhạt · quầng vàng cam.
-  4) xoay cả hình cho trục cẳng tay DỰNG ĐỨNG; điểm xoay khi chém = khuỷu tay
+  3) xoay tay cho trục cẳng tay DỰNG ĐỨNG; điểm xoay khi chém = khuỷu tay
+  4) KIẾM KHÍ theo ảnh mẫu tools/art/ref/qi_sword_ref.png (luồng năng lượng bọc lưỡi kiếm, xuất phát từ đốc): ở đây năng
+     lượng xuất phát từ BÀN TAY — quầng khí ôm sát nắm đấm, bốc ngược lên thành lưỡi lửa nhập vào luồng khí của mẫu
+     (lấy nguyên từ ảnh mẫu, tách nền tối kiểu cộng sáng) kéo dài thành hình lưỡi kiếm trên trục cẳng tay
   → public/vfx/qi_arm.png, qi_aura.png  (cùng khung để game chồng khít; lớp khí chớp nháy riêng)
 
   python3 -I tools/art/qi_arm.py
@@ -75,69 +76,96 @@ def main():
     armF = Image.fromarray(g.astype(np.uint8), 'RGBA')
     armF.alpha_composite(canvas)
 
-    # --- KIẾM LASER: luồng sáng thẳng, đều, mũi tròn, phóng ra từ GIỮA nắm tay song song trục cẳng tay.
-    #     Lõi trắng đặc · viền vàng · quầng vàng cam toả rộng. Đoạn nằm trong nắm tay bị tay che (ẩn) → như đang nắm chuôi.
-    SS = 3                                                                   # siêu mẫu chống răng cưa
-    Y, X = np.mgrid[0:CH * SS, 0:CW * SS].astype(float) / SS
-    fcx, fcy = C(*FIST_CTR)
-    u = (X - fcx) * ux + (Y - fcy) * uy                                      # dọc trục từ giữa nắm tay, + lên mũi
-    v = (X - fcx) * nx + (Y - fcy) * ny                                      # ngang trục
-    L = BLADE_L * UP                                                         # giữa nắm tay → mũi
-    R = 5 * UP                                                               # bán kính lưỡi (lõi + viền)
-    d = np.hypot(v, u - np.clip(u, 0, L)) - R                                # khoảng cách tới thân lưỡi (đầu tròn)
-    fmask = Image.new('L', (CW * SS, CH * SS), 0)
-    ImageDraw.Draw(fmask).polygon([(C(x, y)[0] * SS, C(x, y)[1] * SS) for x, y in FIST], fill=255)
-    hide = 1 - ndimage.gaussian_filter(np.array(fmask).astype(float) / 255, 1.5 * UP * SS)   # tay che chuôi
-    coreA = np.clip(0.5 - (d + R * 0.45) / 0.9, 0, 1)                        # lõi trắng (hẹp hơn thân)
-    bodyA = np.clip(0.5 - d / 0.9, 0, 1)                                     # thân (mép sắc)
-    glowA = np.exp(-np.maximum(d, 0) / (3.5 * UP)) * 0.85                    # quầng sát
-    hazeA = np.exp(-np.maximum(d, 0) / (8 * UP)) * 0.3                       # quầng toả rộng
-    A = np.clip(np.maximum.reduce([bodyA, glowA, hazeA]), 0, 1) * hide
-    c_core = np.array([255, 255, 248.]); c_body = np.array([255, 228, 140.]); c_glow = np.array([255, 170, 40.])
-    t = np.clip(d / (6 * UP), 0, 1)[..., None]
-    col = c_glow * t + c_body * (1 - t)
-    col = col * (1 - coreA[..., None]) + c_core * coreA[..., None]
-    auraI = Image.fromarray(np.dstack([np.clip(col, 0, 255), A * 255]).astype(np.uint8), 'RGBA').resize((CW, CH), Image.LANCZOS)
-
-    # đánh dấu khuỷu + mũi bằng 2 điểm phụ (để đo lại sau khi xoay), rồi xoay cho trục dựng đứng
+    # --- xoay tay cho trục cẳng tay DỰNG ĐỨNG (kèm mặt nạ nắm tay + điểm đánh dấu khuỷu / giữa nắm tay)
+    ang = np.degrees(np.arctan2(ux, -uy))
+    fmI = Image.new('L', (CW, CH), 0)
+    ImageDraw.Draw(fmI).polygon([C(x, y) for x, y in FIST], fill=255)
     mk = Image.new('L', (CW, CH), 0)
     md = ImageDraw.Draw(mk)
-    for (px, py), val in ((C(*ELBOW), 255), (C(FIST_CTR[0] + ux * BLADE_L, FIST_CTR[1] + uy * BLADE_L), 128)):
+    for (px, py), val in ((C(*ELBOW), 255), (C(*FIST_CTR), 128)):
         md.ellipse([px - 3, py - 3, px + 3, py + 3], fill=val)
-    ang = np.degrees(np.arctan2(ux, -uy))                                    # độ nghiêng trục so với phương đứng
     armF = armF.rotate(ang, resample=Image.BICUBIC, expand=True)
-    auraI = auraI.rotate(ang, resample=Image.BICUBIC, expand=True)
+    fm = np.array(fmI.rotate(ang, resample=Image.BILINEAR, expand=True)).astype(float) / 255
     mk = np.array(mk.rotate(ang, resample=Image.NEAREST, expand=True))
+    # thêm chỗ phía trên cho lưỡi kiếm khí
+    TOPX = 260
+    W2, H2 = armF.width, armF.height + TOPX
+    armC = Image.new('RGBA', (W2, H2), (0, 0, 0, 0)); armC.alpha_composite(armF, (0, TOPX)); armF = armC
+    fm = np.pad(fm, ((TOPX, 0), (0, 0)))
+    mk = np.pad(mk, ((TOPX, 0), (0, 0)))
+    ey, ex = [c.mean() for c in np.nonzero(mk == 255)]
+    fy, fx = [c.mean() for c in np.nonzero(mk == 128)]
+
+    # --- KIẾM KHÍ theo ảnh mẫu tools/art/ref/qi_sword_ref.png: lấy NGUYÊN luồng năng lượng của mẫu (phần trên đốc kiếm,
+    #     bỏ phần lưỡi kim loại), tách nền tối theo kiểu cộng sáng (năng lượng = ảnh − màu nền)
+    ref = np.array(Image.open(os.path.join(HERE, 'ref', 'qi_sword_ref.png')).convert('RGB')).astype(float)
+    reg = ref[0:488, 290:420]
+    bgc = np.median(np.concatenate([reg[:, :8], reg[:, -8:]], 1), axis=1, keepdims=True)   # màu nền từng hàng (nền loang)
+    e = np.clip(reg - bgc, 0, 255)
+    e = np.clip((e - 10) * 1.1, 0, 255)                                      # bỏ quầng nền rất mờ
+    hh_ = e.shape[0]
+    e *= np.clip((hh_ - 1 - np.arange(hh_)) / 70, 0, 1)[:, None, None] ** 1.3   # đáy luồng khí mờ dần (chỗ lưỡi kim loại)
+    BL_W, BL_H = 170, 380                                                    # kích thước luồng khí trên ảnh tay (px)
+    eI = Image.fromarray(e.astype(np.uint8), 'RGB').resize((BL_W, BL_H), Image.LANCZOS)
+    blade = np.zeros((H2, W2, 3))
+    bx0 = int(round(fx - BL_W * (63 / 130)))                                 # trục luồng khí trong mẫu ở cột ≈ 353 (63/130 khung)
+    by1 = int(round(fy - 0.0 * UP))                                          # đáy luồng khí ở giữa nắm tay
+    blade[by1 - BL_H:by1, bx0:bx0 + BL_W] = np.array(eI).astype(float)
+
+    # --- KHÍ BỌC BÀN TAY: quầng ôm sát nắm đấm + lưỡi lửa bốc ngược lên nhập vào luồng khí phía trên
+    rng = np.random.default_rng(3)
+    dist = ndimage.distance_transform_edt(fm < 0.5)
+    wrap = np.where(fm >= 0.5, 0.1, np.exp(-dist / (4 * UP)) * 0.6)                # trong tay mỏng → thấy rõ nắm tay
+    rim = np.exp(-((dist - 1.5 * UP) / (2.5 * UP)) ** 2) * (fm < 0.5)
+    wrap = np.maximum(wrap, rim * 0.55)
+    flame = wrap.copy()
+    for k_ in range(1, 26):                                                  # kéo ngược lên thành lưỡi lửa
+        sh = np.zeros_like(wrap); sh[:-k_ * 4] = wrap[k_ * 4:]
+        flame = np.maximum(flame, sh * 0.9 ** k_)
+    streak = ndimage.gaussian_filter(rng.random((H2, W2)), (9, 1.4))
+    streak = (streak - streak.mean()) / (streak.std() + 1e-6)
+    flame = flame * np.clip(0.8 + 0.45 * streak, 0.2, 1.5)
+    flame *= np.clip(1 - np.abs(np.arange(W2)[None, :] - fx) / (40 * UP), 0, 1) ** 0.6   # gom về phía trục
+    flame = np.maximum(flame, wrap * np.clip(0.7 + 0.4 * streak, 0.3, 1.2))
+    fys = np.nonzero(fm.max(1) > 0.5)[0]
+    below = np.clip((np.arange(H2)[:, None] - fys.max() + 2 * UP) / (6 * UP), 0, 1)   # không cho lửa rủ xuống dưới nắm tay
+    flame *= 1 - below
+    stops = [(0.0, (0, 0, 0)), (0.25, (150, 70, 10)), (0.5, (255, 165, 50)), (0.75, (255, 215, 120)), (1.0, (255, 250, 230))]
+    fl = np.clip(flame, 0, 1)
+    wcol = np.zeros(fl.shape + (3,))
+    for (x0, c0), (x1, c1) in zip(stops, stops[1:]):
+        mm = (fl >= x0) & (fl <= x1)
+        kq = ((fl - x0) / (x1 - x0))[mm][:, None]
+        wcol[mm] = np.array(c0) * (1 - kq) + np.array(c1) * kq
+    add = np.clip(blade + wcol, 0, 255)                                      # cộng sáng 2 lớp
+    A = add.max(2) / 255
+    rgb = add / np.maximum(A[..., None], 1e-3)
+    auraI = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA')
+
     bb = armF.getbbox()
     b2 = auraI.getbbox()
     bb = (min(bb[0], b2[0]), min(bb[1], b2[1]), max(bb[2], b2[2]), max(bb[3], b2[3]))
     armF, auraI = armF.crop(bb), auraI.crop(bb)
-    mk = mk[bb[1]:bb[3], bb[0]:bb[2]]
-    ey, ex = [c.mean() for c in np.nonzero(mk == 255)]
-    ty, tx = [c.mean() for c in np.nonzero(mk == 128)]
+    ex, ey, fx, fy = ex - bb[0], ey - bb[1], fx - bb[0], fy - bb[1]
+    col_ = np.array(auraI)[:, int(round(fx)), 3]
+    ty = float(np.nonzero(col_ > 40)[0].min())
     armF.save(os.path.join(VFX, 'qi_arm.png'))
     auraI.save(os.path.join(VFX, 'qi_aura.png'))
     print('qi_arm', armF.size, 'tilt', round(ang, 1), 'pivot(khuỷu)', round(ex / armF.width, 3), round(ey / armF.height, 3),
-          'mũi', round(tx, 1), round(ty, 1), 'reach', round(float(np.hypot(ex - tx, ey - ty))), 'lệch góc', round(float(np.degrees(np.arctan2(tx - ex, ey - ty))), 2))
+          'reach', round(float(np.hypot(ex - fx, ey - ty))), 'lệch góc', round(float(np.degrees(np.arctan2(fx - ex, ey - ty))), 2))
 
     ca = np.array(armF).astype(float); cb = np.array(auraI).astype(float)
     bg = np.full(ca.shape[:2] + (3,), (26, 24, 40.))
     m1 = bg * (1 - ca[..., 3:] / 255) + ca[..., :3] * ca[..., 3:] / 255
     m1 = np.clip(m1 + cb[..., :3] * cb[..., 3:] / 255, 0, 255)                  # cộng sáng như trong game
     comb = Image.fromarray(np.dstack([m1, np.full(ca.shape[:2], 255.)]).astype(np.uint8), 'RGBA')
+    m2 = np.clip(bg + cb[..., :3] * cb[..., 3:] / 255, 0, 255)
+    auraV = Image.fromarray(np.dstack([m2, np.full(ca.shape[:2], 255.)]).astype(np.uint8), 'RGBA')
     pv = Image.new('RGBA', (comb.width * 3 + 40, comb.height + 20), (26, 24, 40, 255))
     pv.alpha_composite(armF, (10, 10))
-    pv.alpha_composite(auraI, (comb.width + 20, 10))
+    pv.alpha_composite(auraV, (comb.width + 20, 10))
     pv.alpha_composite(comb, (comb.width * 2 + 30, 10))
     pv.save(os.path.join(OUT, 'qi_arm_preview.png'))
-    # ảnh kiểm tra trục trên ảnh mẫu (chưa xoay)
-    chk = Image.open(os.path.join(HERE, 'ref', 'phap_tuong_arms.png')).convert('RGB').resize((332 * 3, 328 * 3), Image.LANCZOS)
-    dc = ImageDraw.Draw(chk)
-    P = lambda x, y: ((x + CROP[0]) * 3, (y + CROP[1]) * 3)
-    dc.line([P(*ELBOW), P(*TIP)], fill=(0, 255, 120), width=3)
-    for p in (ELBOW, FIST_C, TIP):
-        x, y = P(*p); dc.ellipse([x - 6, y - 6, x + 6, y + 6], fill=(255, 40, 40))
-    chk.crop((450, 0, 950, 600)).save(os.path.join(OUT, 'qi_axis_check.png'))
 
 
 if __name__ == '__main__':

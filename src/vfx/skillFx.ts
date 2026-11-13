@@ -950,9 +950,9 @@ const nguyenAnh: Fx = (s, aw) => {
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
 export const QI_AURA = 'vx_qi_aura';
-const QI_ARM_PIVOT: [number, number] = [0.626, 0.957];                    // khuỷu tay (điểm xoay khi chém)
-const QI_ARM_REACH = 539;                                                  // khuỷu → mũi kiếm laser (px ảnh)
-const QI_ARM_TIP_OFF = -0.0607;                                           // mũi kiếm lệch so với phương đứng qua khuỷu (rad)
+const QI_ARM_PIVOT: [number, number] = [0.626, 0.954];                    // khuỷu tay (điểm xoay khi chém)
+const QI_ARM_REACH = 596;                                                  // khuỷu → mũi kiếm khí (px ảnh)
+const QI_ARM_TIP_OFF = -0.0548;                                           // mũi kiếm lệch so với phương đứng qua khuỷu (rad)
 
 /**
  * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ, nắm tay bọc LUỒNG KIẾM KHÍ vuốt nhọn thành lưỡi: hiện ra trên đầu
