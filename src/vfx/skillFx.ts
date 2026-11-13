@@ -1163,7 +1163,10 @@ const phapTuong: Fx = (s, aw) => {
   const BACK = 34;
   const spot = () => {
     const a = FACE_A[facing()];
-    return { x: hero.x - Math.cos(a) * BACK, y: hero.y - Math.max(4, Math.sin(a) * BACK) * KY };
+    // luôn ở PHÍA TRÊN nhân vật trên màn hình (sau lưng theo góc nhìn), lệch ngang: nhìn xuống → về phía sau lưng,
+    // quay lưng (nhìn lên) → về phía nhân vật đang hướng tới (NE → phải, NW → trái, N → chính giữa)
+    const up = Math.sin(a) < -0.1;
+    return { x: hero.x + (up ? 1 : -1) * Math.cos(a) * BACK, y: hero.y - Math.max(6, Math.abs(Math.sin(a)) * BACK) * KY };
   };
   const sp0 = spot();
   const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
