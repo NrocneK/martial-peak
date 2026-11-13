@@ -1156,17 +1156,23 @@ const phapTuong: Fx = (s, aw) => {
   // --- pháp tướng khí vàng sau lưng
   const AS = ((aw ? 3.6 : 3.0) * 68) / PHAP_TUONG.bodyH;                   // cao gấp ~3 nhân vật
   // pháp tướng quay cùng hướng nhân vật: bảng 8 khung, khung i = hàng i của sprite nhân vật (S, SW, W, NW, N, NE, E, SE)
+  const PT_LEG_X = [0.508, 0.541, 0.501, 0.496, 0.495, 0.514, 0.516, 0.466];   // điểm giữa 2 chân theo tỉ lệ khung
+  const av_s = () => AS;
   const facing = () => (hero.texture.key === 'hero' ? Math.floor(Number(hero.frame.name) / 7) % 8 : 0);
   // đứng SAU LƯNG nhân vật: lệch về phía sau theo hướng nhìn, luôn vẽ DƯỚI nhân vật (nhân vật đứng trước pháp tướng
   // như ảnh mẫu); khi nhân vật nhìn lên, pháp tướng không lấn xuống trước mặt mà đứng sát sau lưng
   const FACE_A = [90, 135, 180, 225, 270, 315, 0, 45].map((d) => (d * Math.PI) / 180);
   const spot = () => {
     const a = FACE_A[facing()];
-    // đứng SAU LƯNG nhân vật trên mặt đất (ngược hướng nhìn). Nhân vật nhìn xuống → pháp tướng ở trên, nhân vật che
-    // phía trước; nhân vật quay lưng (nhìn lên) → pháp tướng ở phía dưới (gần máy quay hơn) và phủ mờ lên nhân vật.
-    const bx = -Math.cos(a), by = -Math.sin(a);
-    const d = by < 0 ? 10 : 30;                                              // phía trên: sát sau lưng · phía dưới: lùi ra
-    return { x: hero.x + bx * d, y: hero.y + by * d * KY, front: by > 0.1 };
+    // nhân vật LUÔN đứng giữa 2 chân pháp tướng (thẳng trục với điểm giữa 2 chân của từng khung).
+    // Hướng thấy mặt (S, SW, SE): pháp tướng lùi sát sau lưng, nhân vật đứng trước.
+    // Hướng thấy lưng (W, NW, N, NE, E): pháp tướng phủ lên nhân vật — càng thấy lưng nhiều càng bị che nhiều.
+    const f = facing();
+    const back = -Math.sin(a);                                             // 1 = quay lưng hẳn (N), 0 = ngang (E/W)
+    const legX = (PT_LEG_X[f] - 0.5) * PHAP_TUONG.avW * av_s();             // lệch điểm giữa 2 chân trong khung
+    if (back < -0.1) return { x: hero.x - legX, y: hero.y - 10 * KY, front: false, cover: 1 };
+    const c = Math.max(0, back);                                           // E/W 0 · NE/NW 0.71 · N 1
+    return { x: hero.x - legX, y: hero.y + 3, front: true, cover: 0.42 + 0.43 * c };
   };
   const sp0 = spot();
   const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(sp0.front ? 11 : 9)
@@ -1176,7 +1182,7 @@ const phapTuong: Fx = (s, aw) => {
   const flick = (time: number) => {
     if (!av.active) return;
     const spn = spot();
-    av.setPosition(spn.x, spn.y + 8).setDepth(spn.front ? 11 : 9).setData('cover', spn.front ? 0.55 : 1);
+    av.setPosition(spn.x, spn.y + 8).setDepth(spn.front ? 11 : 9).setData('cover', spn.cover);
     if (Number(av.frame.name) !== facing()) av.setFrame(facing());
     circ.setPosition(hero.x, hero.y + 4);
     const g = av.getData('fade') ?? 1;
