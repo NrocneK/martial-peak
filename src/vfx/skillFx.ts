@@ -990,13 +990,13 @@ const thanThuc: Fx = (s, aw) => {
       const fl = 1 + 0.06 * Math.sin(time / 45 + ph) + 0.04 * Math.sin(time / 23 + ph * 2);
       aura.setPosition(arm.x, arm.y).setRotation(arm.rotation)
         .setScale(arm.scaleX * (0.96 + 0.08 * Math.sin(time / 60 + ph)), arm.scaleY * fl)
-        .setAlpha(arm.alpha * (0.85 + 0.15 * Math.sin(time / 37 + ph)));
+        .setAlpha(arm.alpha * 1.1 * (0.85 + 0.15 * Math.sin(time / 37 + ph)));
     };
     sc.events.on('update', follow);
     const delay = aw ? i * 90 : i * 180;
     // hiện ra
     k.later(delay, () => k.glow(h0.x, h0.y - 20, 0xffc850, 50, 300, { alpha: 0.6 }));
-    sc.tweens.add({ targets: arm, alpha: 0.92, scale: SC, delay, duration: 220, ease: 'Back.easeOut' });
+    sc.tweens.add({ targets: arm, alpha: 0.65, scale: SC, delay, duration: 220, ease: 'Back.easeOut' });
     if (!t) {                                                               // không có địch gần: giơ kiếm rồi tan
       sc.tweens.add({ targets: arm, alpha: 0, delay: delay + 700, duration: 300, onComplete: () => arm.destroy() });
       continue;
@@ -1019,7 +1019,7 @@ const thanThuc: Fx = (s, aw) => {
         let hitDone = false;
         const draw = (fade: number, extra = 0) => {
           const a1 = st.r - Math.PI / 2 + sd * extra, swept = Math.max(0, (st.r - rRaise) * sd);
-          fs.setRotation(a1 - head).setAlpha(Math.min(1, swept / 1.1) * fade);
+          fs.setRotation(a1 - head).setAlpha(Math.min(1, swept / 1.1) * fade * 0.6);
         };
         sc.tweens.add({
           targets: [st], r: rEnd, duration: 150, ease: 'Quad.easeIn',
