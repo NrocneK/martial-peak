@@ -1176,9 +1176,12 @@ const phapTuong: Fx = (s, aw) => {
     const diag = f % 2 === 1;                                              // SW, NW, NE, SE
     const FOOT = 23 - 8;                                                   // chân nhân vật (y + 23) − chỗ neo (+8)
     if (back < -0.1) {
-      // SW / SE: nhích pháp tướng thêm theo hướng nhìn để khe giữa 2 chân (không phải bàn chân trước) trùng nhân vật
-      const nud = diag ? 7 : 0;
-      return { x: hero.x - legX + Math.cos(a) * nud, y: (diag ? hero.y + FOOT : hero.y - 10 * KY) + Math.sin(a) * nud * KY, front: false, cover: 1 };
+      // SW / SE: đo trên ảnh phóng to — điểm giữa bàn chân trước và bàn chân sau của pháp tướng phải trùng chân nhân vật
+      // (toạ độ chỗ neo so với nhân vật, đo ở cỡ thường, nhân theo tỉ lệ khi thức tỉnh)
+      const k = AS / ((3.0 * 68) / PHAP_TUONG.bodyH);
+      if (f === 1) return { x: hero.x + 7.8 * k, y: hero.y + (31.4 - 23) * k + 23 - 8, front: false, cover: 1 };
+      if (f === 7) return { x: hero.x - 2.5 * k, y: hero.y + (30 - 23) * k + 23 - 8, front: false, cover: 1 };
+      return { x: hero.x - legX, y: hero.y - 10 * KY, front: false, cover: 1 };
     }
     const c = Math.max(0, back);                                           // E/W 0 · NE/NW 0.71 · N 1
     return { x: hero.x - legX, y: diag ? hero.y + FOOT : hero.y + 3, front: true, cover: 0.72 + 0.13 * c };
