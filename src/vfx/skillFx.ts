@@ -1162,24 +1162,25 @@ const phapTuong: Fx = (s, aw) => {
   const FACE_A = [90, 135, 180, 225, 270, 315, 0, 45].map((d) => (d * Math.PI) / 180);
   const spot = () => {
     const a = FACE_A[facing()];
-    // như ảnh mẫu: pháp tướng là phông nền khổng lồ đứng NGAY SAU nhân vật, thẳng trục với nhân vật, xa máy quay hơn
-    // một chút; nhân vật luôn đứng phía trước (vẽ đè lên). Hướng nào cũng vậy, chỉ đổi khung quay mặt cho cùng hướng.
-    void a;
-    return { x: hero.x, y: hero.y - 10 * KY };
+    // đứng SAU LƯNG nhân vật trên mặt đất (ngược hướng nhìn). Nhân vật nhìn xuống → pháp tướng ở trên, nhân vật che
+    // phía trước; nhân vật quay lưng (nhìn lên) → pháp tướng ở phía dưới (gần máy quay hơn) và phủ mờ lên nhân vật.
+    const bx = -Math.cos(a), by = -Math.sin(a);
+    const d = by < 0 ? 10 : 30;                                              // phía trên: sát sau lưng · phía dưới: lùi ra
+    return { x: hero.x + bx * d, y: hero.y + by * d * KY, front: by > 0.1 };
   };
   const sp0 = spot();
-  const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
+  const av = sc.add.image(sp0.x, sp0.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(sp0.front ? 11 : 9)
     .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setScale(AS * 0.7);
   sc.tweens.add({ targets: av, alpha: 0.85, scale: AS, duration: 420, ease: 'Cubic.easeOut' });
   k.glow(sp0.x, sp0.y - 60, 0xffc850, 120, 500, { alpha: 0.7 });
   const flick = (time: number) => {
     if (!av.active) return;
     const spn = spot();
-    av.setPosition(spn.x, spn.y + 8);
+    av.setPosition(spn.x, spn.y + 8).setDepth(spn.front ? 11 : 9).setData('cover', spn.front ? 0.55 : 1);
     if (Number(av.frame.name) !== facing()) av.setFrame(facing());
     circ.setPosition(hero.x, hero.y + 4);
     const g = av.getData('fade') ?? 1;
-    av.setAlpha(g * (0.78 + 0.1 * Math.sin(time / 90) + 0.05 * Math.sin(time / 37)));
+    av.setAlpha(g * (av.getData('cover') ?? 1) * (0.78 + 0.1 * Math.sin(time / 90) + 0.05 * Math.sin(time / 37)));
   };
   av.setData('fade', 0);
   sc.tweens.add({ targets: { v: 0 }, v: 1, duration: 420, onUpdate: (tw) => av.setData('fade', tw.getValue()) });
