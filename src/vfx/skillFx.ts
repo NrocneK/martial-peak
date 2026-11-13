@@ -1122,8 +1122,8 @@ const huKhong: Fx = (s, aw) => {
 };
 
 /** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
- *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng (tâm lòng bàn tay ở `cx, cy`, rộng ≈ w px ảnh) */
-export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.5, cy: 0.616, palmW: 340 } as const;
+ *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng lấy từ ảnh mẫu (bàn tay lửa úp xuống, nhìn nghiêng; điểm chạm đất `cx, cy`, rộng palmW) */
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.511, cy: 0.987, palmW: 617 } as const;
 
 /**
  * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
@@ -1169,23 +1169,26 @@ const phapTuong: Fx = (s, aw) => {
   av.setData('fade', 0);
   sc.tweens.add({ targets: { v: 0 }, v: 1, duration: 420, onUpdate: (tw) => av.setData('fade', tw.getValue()) });
   sc.events.on('update', flick);
-  // --- bàn tay chưởng
-  const PS = ((aw ? 1.9 : 1.6) * 100) / PHAP_TUONG.palmW;
+  // --- bàn tay chưởng (ảnh mẫu): úp xuống từ trời, ngón tay hướng ra xa nhân vật
+  const RP = aw ? 120 : 95;                                                // bán kính chưởng (px game)
+  const PS = (RP * 2.3) / PHAP_TUONG.palmW;
   const palm = (p: Pt, delay: number) => k.later(delay, () => {
+    const fl = p.x < hero.x;                                               // mẫu: ngón tay chỉ sang phải → lật khi đánh bên trái
     const sh = k.img(VT.SOFT, p.x, p.y, { tint: 0x000000, add: false, alpha: 0, scale: 0.3, depth: 4 });
     sh.setScale(0.6, 0.6 * KY);
-    sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: 2.6 * PS * 1.6, scaleY: 2.6 * PS * 1.6 * KY, duration: 600, ease: 'Quad.easeIn' });
-    const im = sc.add.image(p.x, p.y - 330, PHAP_TUONG.palm).setOrigin(PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(23)
-      .setScale(PS * 0.75).setAlpha(0).setAngle(Phaser.Math.Between(-8, 8));
-    k.glow(p.x, p.y - 330, 0xffc850, 160, 400, { alpha: 0.6 });
-    sc.tweens.add({ targets: im, alpha: 0.95, duration: 160 });
+    sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: (RP * 2.4) / 128, scaleY: ((RP * 2.4) / 128) * KY, duration: 600, ease: 'Quad.easeIn' });
+    const im = sc.add.image(p.x, p.y - 340, PHAP_TUONG.palm).setOrigin(fl ? 1 - PHAP_TUONG.cx : PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(23)
+      .setScale(PS * 0.8).setFlipX(fl).setAlpha(0).setAngle(fl ? 6 : -6);
+    k.glow(p.x, p.y - 360, 0xffc850, 180, 420, { alpha: 0.6 });
+    sc.tweens.add({ targets: im, alpha: 1, duration: 160 });
     sc.tweens.add({
-      targets: im, y: p.y - 10, scale: PS, duration: 600, ease: 'Quad.easeIn',
+      targets: im, y: p.y + 6, scale: PS, angle: 0, duration: 600, ease: 'Quad.easeIn',
       onComplete: () => {
-        // chạm đất
-        sc.tweens.add({ targets: im, alpha: 0, scaleX: PS * 1.15, scaleY: PS * 0.9, duration: 260, onComplete: () => im.destroy() });
+        // chạm đất: tay đè bẹp xuống một nhịp rồi tan
+        sc.tweens.add({ targets: im, scaleY: PS * 0.88, scaleX: PS * 1.05, duration: 90, yoyo: true });
+        sc.tweens.add({ targets: im, alpha: 0, delay: 180, duration: 320, onComplete: () => im.destroy() });
         sc.tweens.add({ targets: sh, alpha: 0, duration: 500, onComplete: () => sh.destroy() });
-        const R = PS * PHAP_TUONG.palmW * 0.55;                         // bán kính chưởng ≈ nửa bề ngang bàn tay
+        const R = RP;
         k.glow(p.x, p.y, 0xfff0c0, R * 1.6, 300);
         k.glow(p.x, p.y, 0xffc850, R * 2.6, 520, { alpha: 0.7 });
         const ring = sc.add.graphics().setDepth(4.5).setBlendMode(Phaser.BlendModes.ADD);
@@ -1200,10 +1203,10 @@ const phapTuong: Fx = (s, aw) => {
           },
           onComplete: () => ring.destroy(),
         });
-        // dấu chưởng vàng in trên đất (nằm trên mặt đất: nén dọc), mờ dần
-        const mark = sc.add.image(p.x, p.y, PHAP_TUONG.palm).setOrigin(PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(1.5)
-          .setBlendMode(Phaser.BlendModes.ADD).setScale(PS, PS * KY).setAngle(im.angle).setAlpha(0.45);
-        sc.tweens.add({ targets: mark, alpha: 0, delay: 900, duration: 1600, onComplete: () => mark.destroy() });
+        // vết chưởng cháy vàng trên đất, mờ dần
+        const mark = k.img(VT.SOFT, p.x, p.y, { tint: 0xffb030, alpha: 0.5, depth: 1.5 });
+        mark.setScale((R * 2.2) / 128, ((R * 2.2) / 128) * KY);
+        sc.tweens.add({ targets: mark, alpha: 0, delay: 700, duration: 1400, onComplete: () => mark.destroy() });
         k.debris(p.x, p.y, 18);
         k.burst(p.x, p.y, [0xffe090, 0xffc850, 0xffffff], 16, { tex: VT.SPARK, speed: [120, 320], scale: [0.4, 0] });
         k.shake(240, 0.011);

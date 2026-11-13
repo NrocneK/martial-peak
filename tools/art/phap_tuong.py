@@ -4,8 +4,7 @@ PHÁP TƯỚNG THIÊN ĐỊA — 2 hình:
   A) PHÁP TƯỚNG = chính nhân vật (public/ui/hero_b_walk.png, khung đứng hướng S — nhìn thẳng như ảnh mẫu) phóng lớn,
      hoá thành thân KHÍ VÀNG như ảnh mẫu: phóng mượt, tô vàng theo độ sáng (áo trắng → vàng trắng rực, tóc/áo tối →
      hổ phách mờ), viền sáng quanh thân, lửa vàng bốc ngược lên từ thân.     → public/vfx/phap_tuong_avatar.png
-  B) BÀN TAY CHƯỞNG: vẽ bằng hàm khoảng cách (mép sắc, cân đối) — lòng bàn tay mở, 4 ngón có đốt, ngón cái chếch ra,
-     chỉ tay (đường tâm đạo, trí đạo, sinh đạo), nếp đốt ngón; thân vàng kim đổ bóng nổi khối, viền đậm, quầng sáng.
+  B) BÀN TAY CHƯỞNG: lấy nguyên từ ảnh mẫu tools/art/ref/palm_ref.png (bàn tay lửa vàng úp xuống, nhìn nghiêng).
                                                                               → public/vfx/phap_tuong_palm.png
 
   python3 -I tools/art/phap_tuong.py
@@ -103,84 +102,28 @@ def bez(p0, p1, p2, n=24):
 
 
 def palm():
-    U = 170                                                                    # px cho 1 đơn vị (bề ngang lòng bàn tay)
-    SS = 3
-    W, H = int(2.0 * U), int(2.75 * U)
-    ys, xs = np.mgrid[0:H * SS, 0:W * SS].astype(float) / SS
-    X = (xs - W / 2) / U
-    Y = (ys - H * 0.07) / U - 0.95                                             # y = 0 ở chân ngón tay; y tăng xuống dưới
-    # lòng bàn tay: hình thang bo góc (trên rộng 1.0, dưới 0.84), cao 1.05
-    yy = np.clip(Y, 0, 1.05)
-    half = 0.5 - 0.08 * (yy / 1.05)
-    rr = 0.13
-    qx = np.abs(X) - (half - rr); qy = np.abs(Y - 0.525) - (0.525 - rr)
-    dP = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - rr
-    # cổ tay
-    qx = np.abs(X) - 0.36; qy = np.abs(Y - 1.3) - 0.3
-    dW = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - 0.04
-    d = smin(dP, dW, 0.22)
-    creases = []
-    # 4 ngón: tâm chân ngón, nửa bề rộng, dài, góc nghiêng (độ, + = nghiêng phải)
-    for fx, fw, fl, fa in ((-0.36, 0.122, 0.80, -7), (-0.12, 0.13, 0.92, -2), (0.12, 0.126, 0.86, 3), (0.36, 0.108, 0.66, 9)):
-        ux, uy = np.sin(np.radians(fa)), -np.cos(np.radians(fa))
-        ax, ay = fx, 0.12
-        bx, by = ax + ux * fl, ay + uy * fl
-        dd, t = seg_d(X, Y, ax, ay, bx, by)
-        dF = dd - fw * (1 - 0.18 * t)
-        d = smin(d, dF, 0.035)
-        for jt in (0.30, 0.62):                                               # nếp đốt ngón
-            cx, cy = ax + ux * fl * jt, ay + uy * fl * jt
-            w = fw * (1 - 0.18 * jt) * 0.75
-            creases.append(((cx - uy * 0 - ux * 0 - w * -uy, cy - w * ux), (cx + w * -uy, cy + w * ux), 0.010))
-    # ngón cái: chếch ra trái
-    ta = np.radians(-48)
-    ux, uy = np.sin(ta), -np.cos(ta)
-    ax, ay = -0.40, 0.78
-    bx, by = ax + ux * 0.66, ay + uy * 0.66
-    dd, t = seg_d(X, Y, ax, ay, bx, by)
-    dT = dd - 0.145 * (1 - 0.2 * t)
-    d = smin(d, dT, 0.09)
-    cx, cy = ax + ux * 0.66 * 0.55, ay + uy * 0.66 * 0.55
-    w = 0.09
-    creases.append(((cx - w * -uy, cy - w * ux), (cx + w * -uy, cy + w * ux), 0.010))
-    # chỉ tay
-    lines = [bez((0.49, 0.36), (0.15, 0.24), (-0.22, 0.30)),                  # tâm đạo
-             bez((-0.47, 0.50), (0.0, 0.46), (0.33, 0.60)),                   # trí đạo
-             bez((-0.44, 0.50), (-0.18, 0.85), (-0.12, 1.12)),                # sinh đạo (vòng quanh gò ngón cái)
-             bez((0.05, 1.05), (0.06, 0.75), (0.02, 0.50))]                   # định mệnh (mờ)
-    dl = np.full(X.shape, 1e9)
-    for i, ln in enumerate(lines):
-        dl = np.minimum(dl, polyline_d(X, Y, ln) + (0.004 if i == 3 else 0))
-    dc = np.full(X.shape, 1e9)
-    for p0, p1, wdt in creases:
-        dc = np.minimum(dc, seg_d(X, Y, *p0, *p1)[0])
-    px = 1.0 / U
-    inside = np.clip(0.5 - d / px, 0, 1)
-    # tô khối: vàng kim, sáng ở giữa, tối dần về mép (nổi khối), ánh sáng từ trên trái
-    depth = np.clip(-d / 0.10, 0, 1)
-    light = np.clip(0.55 + 0.45 * depth - 0.12 * Y + 0.08 * (-X), 0, 1.2)
-    base = ramp(np.clip(light, 0, 1), [(0, (120, 60, 8)), (0.45, (215, 145, 35)), (0.75, (255, 205, 90)), (1.0, (255, 240, 185))])
-    lineA = np.exp(-(dl / 0.012) ** 2) * 0.85 * (d < -0.02)
-    crA = np.exp(-(dc / 0.010) ** 2) * 0.7 * (d < -0.01)
-    col = base * (1 - lineA[..., None]) + np.array([150, 75, 10.]) * lineA[..., None]
-    col = col * (1 - crA[..., None]) + np.array([160, 85, 15.]) * crA[..., None]
-    # viền đậm + viền sáng mảnh phía trong
-    edge = np.exp(-((d + 0.006) / 0.009) ** 2)
-    col = col * (1 - edge[..., None] * 0.8) + np.array([110, 50, 5.]) * edge[..., None] * 0.8
-    inner = np.exp(-((d + 0.03) / 0.012) ** 2) * (d < 0)
-    col = np.clip(col + np.array([60, 50, 30.]) * inner[..., None], 0, 255)
-    # quầng sáng ngoài
-    glow = np.exp(-np.maximum(d, 0) / 0.09) * (d > 0)
-    gcol = np.array([255, 190, 60.])
-    A = np.maximum(inside * 0.96, glow * 0.55)
-    out_rgb = col * inside[..., None] + gcol * (1 - inside[..., None])
-    img = Image.fromarray(np.dstack([np.clip(out_rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA').resize((W, H), Image.LANCZOS)
+    """Bàn tay chưởng lấy NGUYÊN từ ảnh mẫu tools/art/ref/palm_ref.png (bàn tay lửa vàng nhìn nghiêng, úp xuống):
+    tách nền tối theo độ vàng (R cao, G > B) + lấp kín thân tay; mép trên (cánh tay + lửa bốc lên) và mép trái (cổ tay)
+    mờ dần vì bị khung ảnh cắt. Giữ nguyên màu và nét vẽ của mẫu."""
+    a = np.array(Image.open(os.path.join(HERE, 'ref', 'palm_ref.png')).convert('RGB')).astype(float)
+    R, G, B = a[..., 0], a[..., 1], a[..., 2]
+    y = np.clip((R - 130) / 70, 0, 1) * np.clip((G - B - 15) / 50, 0, 1)
+    m = ndimage.binary_fill_holes(ndimage.binary_closing(y > 0.5, iterations=3))
+    m = ndimage.binary_opening(m, iterations=2)
+    lab, n = ndimage.label(m)
+    sz = ndimage.sum(m, lab, range(1, n + 1))
+    m = lab == (np.argmax(sz) + 1)
+    al = np.maximum(y, ndimage.gaussian_filter(m.astype(float), 1.2))
+    H, W = al.shape
+    yy, xx = np.mgrid[0:H, 0:W]
+    al *= np.clip(yy / 90, 0, 1) ** 1.3                                      # lửa / cánh tay phía trên mờ dần lên trời
+    al *= np.clip((xx - 14) / 40, 0, 1)                                      # cổ tay bị khung cắt bên trái
+    img = Image.fromarray(np.dstack([a, al * 255]).astype(np.uint8), 'RGBA')
     bb = img.getbbox(); img = img.crop(bb)
-    # tâm lòng bàn tay (điểm chạm đất) theo tỉ lệ ảnh
-    cxp = (W / 2 - bb[0]) / img.width
-    cyp = ((0.55 + 0.95) * U + H * 0.07 - bb[1]) / img.height
+    # điểm chạm đất = giữa mép dưới lòng bàn tay
+    cxp, cyp = (330 - bb[0]) / img.width, (385 - bb[1]) / img.height
     img.save(os.path.join(VFX, 'phap_tuong_palm.png'))
-    print('palm', img.size, 'palm-center', round(cxp, 3), round(cyp, 3))
+    print('palm', img.size, 'impact', round(cxp, 3), round(cyp, 3))
     return img
 
 
