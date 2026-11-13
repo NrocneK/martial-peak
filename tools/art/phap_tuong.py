@@ -32,8 +32,23 @@ def ramp(x, stops):
 
 
 def avatar():
+    """Pháp tướng cho đủ 8 hướng: mỗi hàng của hero_b_walk.png (khung đứng) hoá thân khí vàng; ghép thành bảng 8 khung
+    cùng kích thước, cùng chỗ đặt chân (hàng 0..7 = S, SW, W, NW, N, NE, E, SE — trùng thứ tự hàng của sprite nhân vật)"""
     sheet = Image.open(os.path.join(ROOT, 'public', 'ui', 'hero_b_walk.png')).convert('RGBA')
-    fr = sheet.crop((6 * 52, 0, 7 * 52, 68))                                  # hàng 0 = hướng S, khung 6 = đứng
+    outs = [avatar_one(sheet.crop((6 * 52, r * 68, 7 * 52, (r + 1) * 68))) for r in range(8)]
+    bbs = [o.getbbox() for o, _ in outs]
+    bb = (min(b[0] for b in bbs), min(b[1] for b in bbs), max(b[2] for b in bbs), max(b[3] for b in bbs))
+    fw, fh = bb[2] - bb[0], bb[3] - bb[1]
+    sh = Image.new('RGBA', (fw * 8, fh), (0, 0, 0, 0))
+    for i, (o, _) in enumerate(outs):
+        sh.paste(o.crop(bb), (i * fw, 0))
+    sh.save(os.path.join(VFX, 'phap_tuong_avatar.png'))
+    foot = (outs[0][1] - bb[1]) / fh
+    print('avatar sheet', sh.size, 'frame', fw, fh, 'foot', round(foot, 3), 'cx', round((outs[0][0].width / 2 - bb[0]) / fw, 3))
+    return sh
+
+
+def avatar_one(fr):
     UPS = 6
     big = fr.resize((52 * 2, 68 * 2), Image.NEAREST).resize((52 * UPS, 68 * UPS), Image.LANCZOS)
     big = big.filter(ImageFilter.MedianFilter(3)).filter(ImageFilter.GaussianBlur(1.4))   # mượt nét pixel, vẫn giữ chi tiết
@@ -70,12 +85,7 @@ def avatar():
     add = np.clip(add, 0, 255)
     A = add.max(2) / 255
     out = Image.fromarray(np.dstack([add / np.maximum(A[..., None], 1e-3), A * 255]).clip(0, 255).astype(np.uint8), 'RGBA')
-    bb = out.getbbox(); out = out.crop(bb)
-    # chân nhân vật (đáy thân) theo tỉ lệ ảnh → game đặt chân pháp tướng
-    foot = (PADT + H0 * 0.97 - bb[1]) / out.height
-    out.save(os.path.join(VFX, 'phap_tuong_avatar.png'))
-    print('avatar', out.size, 'foot', round(foot, 3))
-    return out
+    return out, PADT + H0 * 0.97                                              # ảnh (chưa cắt) + toạ độ chân
 
 
 # ---------------- BÀN TAY ----------------

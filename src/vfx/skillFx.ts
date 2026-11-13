@@ -1123,7 +1123,7 @@ const huKhong: Fx = (s, aw) => {
 
 /** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
  *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng = mu bàn tay úp xuống (điểm chạm đất `cx, cy` = trọng tâm bàn tay, rộng palmW) */
-export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.531, cy: 0.533, palmW: 710 } as const;
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', avW: 312, avH: 547, palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.531, cy: 0.533, palmW: 710 } as const;
 
 /**
  * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
@@ -1155,13 +1155,16 @@ const phapTuong: Fx = (s, aw) => {
   sc.tweens.add({ targets: circ, alpha: 1, scaleX: 1, scaleY: KY, duration: 320, ease: 'Back.easeOut' });
   // --- pháp tướng khí vàng sau lưng
   const AS = ((aw ? 3.6 : 3.0) * 68) / PHAP_TUONG.bodyH;                   // cao gấp ~3 nhân vật
-  const av = sc.add.image(hero.x, hero.y + 8, PHAP_TUONG.avatar).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
+  // pháp tướng quay cùng hướng nhân vật: bảng 8 khung, khung i = hàng i của sprite nhân vật (S, SW, W, NW, N, NE, E, SE)
+  const facing = () => (hero.texture.key === 'hero' ? Math.floor(Number(hero.frame.name) / 7) % 8 : 0);
+  const av = sc.add.image(hero.x, hero.y + 8, PHAP_TUONG.avatar, facing()).setOrigin(0.5, PHAP_TUONG.foot).setDepth(9)
     .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setScale(AS * 0.7);
   sc.tweens.add({ targets: av, alpha: 0.85, scale: AS, duration: 420, ease: 'Cubic.easeOut' });
   k.glow(h.x, h.y - 40, 0xffc850, 120, 500, { alpha: 0.7 });
   const flick = (time: number) => {
     if (!av.active) return;
     av.setPosition(hero.x, hero.y + 8);
+    if (Number(av.frame.name) !== facing()) av.setFrame(facing());
     circ.setPosition(hero.x, hero.y + 4);
     const g = av.getData('fade') ?? 1;
     av.setAlpha(g * (0.78 + 0.1 * Math.sin(time / 90) + 0.05 * Math.sin(time / 37)));
