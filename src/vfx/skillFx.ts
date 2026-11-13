@@ -950,6 +950,8 @@ const nguyenAnh: Fx = (s, aw) => {
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
 export const QI_AURA = 'vx_qi_aura';
+/** Vệt chém lửa (tools/art/fire_slash.py): tâm cung theo tỉ lệ ảnh, bán kính MÉP NGOÀI ở đầu cung (px ảnh), góc đầu cung (rad) */
+export const FIRE_SLASH = { key: 'vx_fire_slash', ox: 0.595, oy: 0.426, rOut: 160, head: (92 * Math.PI) / 180 } as const;
 const QI_ARM_PIVOT: [number, number] = [0.724, 0.956];                    // khuỷu tay (điểm xoay khi chém)
 const QI_ARM_REACH = 675;                                                  // khuỷu → mũi kiếm khí (px ảnh)
 const QI_ARM_TIP_OFF = -0.3953;                                           // mũi kiếm khí lệch so với phương đứng qua khuỷu (rad) — lưỡi nghiêng hướng 11h
@@ -1007,26 +1009,17 @@ const thanThuc: Fx = (s, aw) => {
       sc.tweens.add({ targets: arm, x: px, y: py, rotation: rRaise - QI_ARM_TIP_OFF * side, duration: 200, ease: 'Cubic.easeOut' });   // bù góc lệch để MŨI KIẾM theo cung chém
       // bổ xuống
       k.later(250, () => {
-        const g = sc.add.graphics().setDepth(20.5).setBlendMode(Phaser.BlendModes.ADD);
+        // VỆT CHÉM LỬA (tools/art/fire_slash.py, lấy từ ảnh mẫu): tâm cung đặt ở khuỷu (tâm xoay), đầu cung bám mũi kiếm,
+        // giữ nguyên màu mẫu (cả vệt khói tối); hiện dần theo cú quét, chém xong cháy tiếp một nhịp rồi tan.
+        // Thân lửa đặc của mẫu dài ≈ 130° sau đầu cung ≈ cung quét của cú chém → không cần mặt nạ (không có mép cắt cứng)
+        const fs = sc.add.image(px, py, FIRE_SLASH.key).setOrigin(sd < 0 ? 1 - FIRE_SLASH.ox : FIRE_SLASH.ox, FIRE_SLASH.oy).setDepth(20.5)
+          .setScale(SWORD / FIRE_SLASH.rOut).setFlipX(sd < 0).setAlpha(0);
+        const head = sd > 0 ? FIRE_SLASH.head : Math.PI - FIRE_SLASH.head;   // góc đầu cung (lật ảnh thì soi gương)
         const st = { r: rRaise };
         let hitDone = false;
-        const draw = (fade: number) => {
-          // vệt chém: MỘT dải trăng khuyết liền (không chia khúc) bám mũi kiếm — mép ngoài sắc, đuôi thon nhọn dần
-          g.clear();
-          const a1 = st.r - Math.PI / 2, span = Math.max(0, (st.r - rRaise) * sd) * 0.75, n = 24;
-          if (span < 0.05) return;
-          const R = SWORD * 1.02;
-          const outer: Phaser.Types.Math.Vector2Like[] = [], inner: Phaser.Types.Math.Vector2Like[] = [];
-          for (let q = 0; q <= n; q++) {
-            const f = q / n, b = a1 - sd * span * f, wdt = SWORD * 0.3 * (1 - f) ** 1.3;
-            outer.push({ x: px + Math.cos(b) * R, y: py + Math.sin(b) * R });
-            inner.push({ x: px + Math.cos(b) * (R - wdt), y: py + Math.sin(b) * (R - wdt) });
-          }
-          g.fillStyle(0xffb030, 0.4 * fade).fillPoints([...outer, ...inner.reverse()], true);
-          inner.reverse();
-          const mid = outer.map((o, q) => ({ x: (o.x * 2 + inner[q].x) / 3, y: (o.y * 2 + inner[q].y) / 3 }));
-          g.fillStyle(0xffe08a, 0.7 * fade).fillPoints([...outer, ...mid.reverse()], true);
-          g.lineStyle(2, 0xfffbe8, fade).strokePoints(outer.slice(0, Math.ceil(n * 0.6)));
+        const draw = (fade: number, extra = 0) => {
+          const a1 = st.r - Math.PI / 2 + sd * extra, swept = Math.max(0, (st.r - rRaise) * sd);
+          fs.setRotation(a1 - head).setAlpha(Math.min(1, swept / 1.1) * fade);
         };
         sc.tweens.add({
           targets: [st], r: rEnd, duration: 150, ease: 'Quad.easeIn',
@@ -1042,8 +1035,8 @@ const thanThuc: Fx = (s, aw) => {
             }
           },
           onComplete: () => {
-            const ff = { v: 1 };
-            sc.tweens.add({ targets: ff, v: 0, duration: 220, onUpdate: () => draw(ff.v), onComplete: () => g.destroy() });
+            const ff = { v: 1, x: 0 };
+            sc.tweens.add({ targets: ff, v: 0, x: 0.35, duration: 280, ease: 'Quad.easeOut', onUpdate: () => draw(ff.v, ff.x), onComplete: () => fs.destroy() });
             // bay về trên đầu rồi tan
             const hb = home();
             sc.tweens.add({ targets: arm, x: hb.x, y: hb.y, rotation: tilt, delay: 120, duration: 260, ease: 'Cubic.easeInOut' });
