@@ -5,9 +5,9 @@ có vòng xuyến) + LƯỠI KIẾM NĂNG LƯỢNG bọc nắm tay, nối dài t
   1) cắt cánh tay trên-phải (nắm đấm + vòng xuyến + cẳng tay) bằng đường viền tay vẽ theo ảnh mẫu; phần dưới khuỷu
      (cánh tay trên) mờ dần → tay khí hiện ra từ hư không
   2) quầng sáng vàng mềm quanh tay (thay quầng đỏ của nền mẫu)
-  3) lưỡi kiếm năng lượng: hình tam giác dài, CHÂN bo tròn ôm trọn nắm đấm, hai mép hơi lõm vuốt về một mũi nhọn nằm
-     trên trục cẳng tay (theo phác thảo của bạn). Dựng bằng hàm khoảng cách → mép sắc, cân đối.
-     Lớp vẽ: quầng ngoài · thân vàng (trong suốt dần về phía nắm tay để thấy tay) · viền sáng mảnh · sống kiếm trắng
+  3) KIẾM KHÍ BAO BỌC BÀN TAY: lớp khí mỏng ôm sát đường viền nắm đấm (viền sáng, trong để thấy tay), từ mép trên
+     bàn tay mọc ra một lưỡi kiếm thẳng nằm đúng trên trục cẳng tay. Dựng bằng hàm khoảng cách → mép sắc, cân đối.
+     Lớp vẽ: quầng ngoài · thân vàng · viền sáng mảnh · sống kiếm trắng · vân khí chạy dọc
   4) xoay cả hình cho trục cẳng tay DỰNG ĐỨNG; điểm xoay khi chém = khuỷu tay
   → public/vfx/qi_arm.png, qi_aura.png  (cùng khung để game chồng khít; lớp khí chớp nháy riêng)
 
@@ -30,10 +30,11 @@ ARM = [(22, 21), (30, 17), (40, 17), (50, 23), (55, 32), (57, 37), (66, 38), (76
        (72, 60), (73, 70), (74, 82), (72, 95), (68, 106), (61, 116), (50, 121), (38, 120), (28, 115),
        (29, 104), (37, 92), (44, 80), (44, 70), (36, 66), (33, 58), (36, 51), (32, 44), (25, 36), (21, 28)]
 ELBOW = (75, 102)                        # khuỷu tay
-FIST_C = (53.6, 41.4)                    # tâm nắm đấm — trục cẳng tay: khuỷu → tâm nắm đấm
-TIP = (8.8, -89.8)                       # mũi lưỡi kiếm (trên trục kéo dài)
-BASE_W = 25                              # nửa bề rộng chân lưỡi (ôm nắm đấm)
-BASE_R = 13                              # bán kính bo chân lưỡi phía dưới tâm nắm đấm
+FIST_C = (53.6, 41.4)                    # cổ tay (điểm bạn đánh dấu) — trục cẳng tay: khuỷu → điểm này
+FIST = [(22, 21), (30, 17), (40, 17), (50, 23), (55, 32), (57, 38), (52, 45), (40, 47), (30, 44), (23, 36), (21, 28)]  # bàn tay (nắm đấm)
+BLADE_U0 = 21                            # chân lưỡi: khoảng cách (dọc trục, từ FIST_C) tới mép trên nắm đấm
+BLADE_L = 110                            # FIST_C → mũi lưỡi
+TIP = (FIST_C[0] + (FIST_C[0] - ELBOW[0]) / 64.27 * BLADE_L, FIST_C[1] + (FIST_C[1] - ELBOW[1]) / 64.27 * BLADE_L)  # mũi (trên trục kéo dài)
 
 
 def main():
@@ -81,25 +82,34 @@ def main():
     fcx, fcy = C(*FIST_C)
     u = (X - fcx) * ux + (Y - fcy) * uy                                      # dọc trục từ tâm nắm đấm, + lên mũi
     v = (X - fcx) * nx + (Y - fcy) * ny                                      # ngang trục
-    L = np.hypot(TIP[0] - FIST_C[0], TIP[1] - FIST_C[1]) * UP                # tâm nắm đấm → mũi
-    Wb, Rb = BASE_W * UP, BASE_R * UP
-    up = np.clip(u / L, 0, 1)
-    hw = np.where(u >= 0, Wb * (1 - up) ** 1.25,                             # hai mép hơi lõm vuốt về mũi
-                  Wb * np.sqrt(np.clip(1 - (u / Rb) ** 2, 0, 1)))           # chân bo tròn ôm nắm đấm
-    d = np.where(u <= L, np.abs(v) - hw, np.hypot(v, u - L))
-    d = np.where(u < -Rb, np.hypot(v, u + Rb) + Wb * 0, d)
-    d = np.maximum(d, -Wb * 2)
+    L = BLADE_L * UP                                                         # tâm cổ tay → mũi
+    # (a) VỎ KIẾM KHÍ ôm sát bàn tay: khoảng cách tới mặt nạ nắm đấm (bo tròn góc), nở ra 3px
+    fmask = Image.new('L', (CW * SS, CH * SS), 0)
+    ImageDraw.Draw(fmask).polygon([(C(x, y)[0] * SS, C(x, y)[1] * SS) for x, y in FIST], fill=255)
+    fm = ndimage.gaussian_filter(np.array(fmask).astype(float), 2.5 * UP * SS) > 127
+    dE = (ndimage.distance_transform_edt(~fm) - ndimage.distance_transform_edt(fm)) / SS - 3 * UP
+    # (b) LƯỠI KIẾM thẳng trên trục cẳng tay, mọc ra từ mép trên bàn tay: hai mép song song, vát nhọn 22% cuối,
+    #     loe sáng ở chân; phần dưới chân chìm vào vỏ
+    u0 = BLADE_U0 * UP                                                       # chỗ trục ló ra khỏi mép trên nắm đấm
+    W = 6.5 * UP
+    taper = W * (1 - 0.2 * np.clip((u - u0) / (L * 0.78), 0, 1))
+    hw = np.where(u < L * 0.78, taper, W * 0.8 * np.clip((L - u) / (L * 0.22), 0, 1))
+    hw = hw + 2.5 * UP * np.exp(-np.maximum(u - u0, 0) / (6 * UP))                  # loe sáng ở chân lưỡi
+    dB = np.where(u < L, np.abs(v) - hw, np.hypot(v, u - L)) + np.maximum(u0 + 6 * UP - u, 0) ** 1.5 / (2 * UP) ** 0.5
+    k = 8 * UP                                                               # hợp mượt vỏ + lưỡi
+    hh = np.clip(0.5 + 0.5 * (dE - dB) / k, 0, 1)
+    d = dE * (1 - hh) + dB * hh - k * hh * (1 - hh)
     aa = 0.9
     fill = np.clip(0.5 - d / aa, 0, 1)                                       # bên trong (mép sắc)
     rim = np.exp(-(d / (1.1 * UP)) ** 2)                                     # viền sáng mảnh
     glowO = np.exp(-np.maximum(d, 0) / (6 * UP)) * (d > 0)                   # quầng ngoài
-    inner = np.clip(-d / np.maximum(hw, 1e-3), 0, 1)                         # 0 ở mép → 1 ở sống kiếm
-    # thân lưỡi đặc dần từ nắm tay lên (nắm tay nằm trong lưỡi vẫn nhìn rõ)
-    solid = np.clip((u - 4 * UP) / (50 * UP), 0, 1) ** 0.8
-    bodyA = fill * (0.1 + 0.75 * solid) * (0.75 + 0.25 * inner)
-    core = np.exp(-(v / (1.5 * UP)) ** 2) * np.clip((u - 4 * UP) / (14 * UP), 0, 1) * np.clip((L * 0.97 - u) / (L * 0.12), 0, 1)
-    vein = (0.5 + 0.5 * np.sin(v / (2.2 * UP) * np.pi + np.sin(u / (11 * UP)) * 1.5)) * 0.22 * solid
-    A = np.clip(np.maximum.reduce([bodyA, rim * 0.95, glowO * 0.4, core]), 0, 1)
+    inner = np.clip(-d / W, 0, 1)                                            # 0 ở mép → 1 ở sống kiếm
+    # thân: lưỡi đặc; vỏ quanh bàn tay chỉ là lớp khí mỏng + viền sáng (thấy rõ tay bên trong)
+    solid = hh ** 1.5
+    bodyA = fill * (0.16 + 0.66 * solid) * (0.75 + 0.25 * inner)
+    core = np.exp(-(v / (1.4 * UP)) ** 2) * np.clip((u - u0 + 4 * UP) / (10 * UP), 0, 1) * np.clip((L * 0.97 - u) / (L * 0.12), 0, 1) * solid
+    vein = (0.5 + 0.5 * np.sin(v / (1.8 * UP) * np.pi + np.sin(u / (11 * UP)) * 1.5)) * 0.22 * solid
+    A = np.clip(np.maximum.reduce([bodyA, rim * (0.6 + 0.35 * solid), glowO * (0.3 + 0.15 * solid), core]), 0, 1)
     c_out = np.array([255, 150, 40.]); c_body = np.array([255, 200, 85.]); c_hot = np.array([255, 242, 190.])
     tt = np.clip(inner * 1.3 + vein, 0, 1)[..., None]
     col = c_body * (1 - tt) + c_hot * tt
