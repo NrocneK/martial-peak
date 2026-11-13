@@ -35,17 +35,21 @@ def main():
     alpha = np.clip((238 - lum) / 125, 0, 1)
     alpha = np.maximum(alpha, np.clip((sat - 30) / 70, 0, 1) * (lum < 248))
     h, w = alpha.shape
-    # ---- căn thẳng
+    # ---- duỗi thẳng HOÀN TOÀN: tâm thân mỗi cột = trọng tâm phần mực ĐẶC (bỏ râu/tua mảnh để tâm không bị kéo lệch),
+    #      làm mượt nhẹ (chỉ bỏ nhiễu, KHÔNG giữ độ uốn) → dời từng cột về giữa. Uốn lượn để code trong game lo.
     yy = np.arange(h)[:, None]
-    wsum = alpha.sum(0)
-    cen = (alpha * yy).sum(0) / np.maximum(wsum, 1e-3)
+    core = np.clip((alpha - 0.45) / 0.4, 0, 1) ** 2
+    wsum = core.sum(0)
+    cen = (core * yy).sum(0) / np.maximum(wsum, 1e-3)
     idx = np.arange(w)
-    good = wsum > 8
+    good = wsum > 20
     cen = np.interp(idx, idx[good], cen[good])
-    k = 301
+    k = 81
     cen = np.convolve(np.pad(cen, k // 2, mode='edge'), np.ones(k) / k, mode='valid')
-    head0 = int(w * 0.8)
-    cen[head0:] = cen[head0]                                                # đầu: không dời
+    # đầu rồng (từ cổ trở đi) dời nguyên khối theo tâm ở cổ để đầu không bị méo; chuyển tiếp mượt qua 80px
+    head0 = int(w * 0.84)
+    t = np.clip((idx - (head0 - 80)) / 80, 0, 1)
+    cen = cen * (1 - t) + cen[head0] * t
     shift = cen - h / 2
     out = np.zeros((h, w, 4))
     for x in range(w):
