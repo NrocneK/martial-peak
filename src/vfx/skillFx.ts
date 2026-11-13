@@ -1286,10 +1286,10 @@ const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463
 const vanKiem: Fx = (s, aw) => {
   const k = s.kit, h = H(s);
   const R = aw ? 220 : 180;
-  const drop = (p: Pt, big = 1, track?: () => Pt, stay = 0) => {
+  const drop = (p: Pt, big = 1, track?: () => Pt, stay = 0, color?: number) => {
     // kiếm khí NGỰ KIẾM (tools/art/qi_blade.py tách từ qi_sword_light.png): lõi trắng giữ nguyên (cộng sáng) + quầng đổi
     // sang 1 trong 9 màu ngẫu nhiên (vẽ thường để màu đen vẫn thấy)
-    const col = QI_BLADE_COLORS[Math.floor(Math.random() * QI_BLADE_COLORS.length)];
+    const col = color ?? QI_BLADE_COLORS[Math.floor(Math.random() * QI_BLADE_COLORS.length)];
     const sc_ = 0.26 * big;
     const parts: Phaser.GameObjects.Image[] = [
       k.scene.add.image(0, 0, QI_BLADE.rim).setTint(col),
@@ -1331,7 +1331,9 @@ const vanKiem: Fx = (s, aw) => {
       const r = arr.rotation, c = Math.cos(r), sn = Math.sin(r);
       return { x: ground.x + (cx * c - cy * sn) * ground.scaleX, y: ground.y + (cx * sn + cy * c) * ground.scaleY };
     };
-    for (let i = 0; i < 4; i++) k.later(420 + i * 120, () => drop(circle(i)(), 2.2, circle(i), LIFE - 420 - i * 120 - 300));
+    // màu cố định, đối xứng qua tâm trận: đen ↔ trắng, tím ↔ lá (vòng 0↔3, 1↔2 là 2 cặp đối nhau)
+    const GIANT_COL = [0x000000, 0xaa46ff, 0x3ce650, 0xffffff];
+    for (let i = 0; i < 4; i++) k.later(420 + i * 120, () => drop(circle(i)(), 2.2, circle(i), LIFE - 420 - i * 120 - 300, GIANT_COL[i]));
   }
   const n = aw ? 26 : 16;
   for (let i = 0; i < n; i++) {
