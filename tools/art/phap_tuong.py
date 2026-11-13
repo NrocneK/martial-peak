@@ -102,13 +102,18 @@ def bez(p0, p1, p2, n=24):
     return list(map(tuple, (1 - t) ** 2 * np.array(p0) + 2 * (1 - t) * t * np.array(p1) + t ** 2 * np.array(p2)))
 
 
+K_GROUND = 0.6                           # nén mặt đất của góc nhìn game
+# mẫu = hướng SW (ngón tay chỉ xuống trái); xoay trên mặt đất ngược chiều kim đồng hồ 45° mỗi hướng
+PALM_DIRS = [('sw', 0), ('s', 45), ('se', 90), ('e', 135), ('ne', 180), ('n', 225), ('nw', 270), ('w', 315)]
+
+
 def palm():
     """Bàn tay chưởng = MU BÀN TAY úp xuống, ngón duỗi thẳng — lấy nguyên dáng + khối sáng tối từ ảnh mẫu
     tools/art/ref/hand_back_ref.png (bàn tay thật trong tia sét tím), hoá thành tay NĂNG LƯỢNG VÀNG:
       · tách tay theo màu da (bỏ sét tím + nền trắng), phóng ×UPS, làm mượt viền
       · độ sáng của da (khe ngón, khớp, khối mu bàn tay) → độ sáng năng lượng (làm mịn để mất vân da, giữ dáng ngón)
       · viền sáng, quầng + lửa vàng bốc lên; phía cổ tay (bên phải) tan thành khí"""
-    UPS = 6
+    UPS = 4
     src = Image.open(os.path.join(HERE, 'ref', 'hand_back_ref.png')).convert('RGB')
     a = np.array(src).astype(float)
     R, G, B = a[..., 0], a[..., 1], a[..., 2]
@@ -128,33 +133,50 @@ def palm():
     H, W = h0 * UPS, w0 * UPS
     mb = np.array(Image.fromarray((m * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)).astype(float) / 255
     mb = ndimage.gaussian_filter(mb, 4.0 * UPS / 3)                           # viền trơn (ảnh mẫu rất nhỏ, viền răng cưa)
-    f = mb > 0.5
+    f0 = mb > 0.5
     lum = np.array(Image.fromarray(a.mean(2).astype(np.uint8)).resize((W, H), Image.BICUBIC)).astype(float)
     lum = ndimage.gaussian_filter(lum, 1.6 * UPS / 3)                         # mất vân da, giữ khe ngón + khối
-    inside_l = lum[f]
-    ln = np.clip((lum - np.percentile(inside_l, 5)) / (np.percentile(inside_l, 97) - np.percentile(inside_l, 5)), 0, 1)
+    inside_l = lum[f0]
+    ln0 = np.clip((lum - np.percentile(inside_l, 5)) / (np.percentile(inside_l, 97) - np.percentile(inside_l, 5)), 0, 1)
+    out = {}
+    for name, rot in PALM_DIRS:
+        mbr, ln = ground_rot(mb, rot), ground_rot(ln0 * f0, rot)
+        out[name] = palm_render(mbr, ln, UPS)
+    return out
+
+
+def ground_rot(img, deg):
+    """Xoay trên MẶT ĐẤT (không phải trên màn hình): giãn dọc 1/K → xoay → nén dọc K; khung đủ rộng để không bị xén."""
+    h, w = img.shape
+    S = int(np.hypot(h, w / 1.0) / K_GROUND * 1.05) + 8
+    im = Image.fromarray(img.astype(np.float32), 'F').resize((w, int(round(h / K_GROUND))), Image.BICUBIC)
+    can = Image.new('F', (S, S), 0.0)
+    can.paste(im, ((S - im.width) // 2, (S - im.height) // 2))
+    can = can.rotate(deg, resample=Image.BICUBIC)
+    can = can.resize((S, int(round(S * K_GROUND))), Image.BICUBIC)
+    return np.array(can).astype(float)
+
+
+def palm_render(mb, ln, UPS):
+    """Tô năng lượng vàng cho mặt nạ bàn tay mb (0..1) + độ sáng ln: lõi theo độ sáng da mẫu, viền sáng, quầng + lửa
+    bốc thẳng lên (lửa vẽ SAU khi xoay nên luôn bốc lên trên màn hình)."""
+    H, W = mb.shape
+    f = mb > 0.5
     din = ndimage.distance_transform_edt(f)
     dout = ndimage.distance_transform_edt(~f)
     fm = ndimage.gaussian_filter(f.astype(float), 1.0)
-    e = np.clip(0.08 + 0.62 * ln ** 1.25 + 0.14 * np.clip(din / 60, 0, 1), 0, 1)
+    e = np.clip(0.08 + 0.62 * np.clip(ln, 0, 1) ** 1.25 + 0.14 * np.clip(din / (10 * UPS), 0, 1), 0, 1)
     col = ramp(e, [(0, (225, 85, 12)), (0.35, (255, 145, 32)), (0.65, (255, 205, 78)), (0.88, (255, 243, 188)), (1.0, (255, 255, 238))])
-    rim = np.exp(-((din - 2.5) / 2.2) ** 2) * f
+    rim = np.exp(-((din - 2.0) / 1.8) ** 2) * f
     col = col * (1 - rim[..., None] * 0.7) + np.array([255, 250, 222.]) * rim[..., None] * 0.7
-    # cổ tay (bên phải) tan thành khí, mép gợn
-    yy, xx = np.mgrid[0:H, 0:W]
-    xs = np.nonzero(f.any(0))[0]
-    x1 = xs.max()
-    wn = xx + ndimage.gaussian_filter(np.random.default_rng(4).standard_normal((H, W)), 8 * UPS / 3) * 220
-    cut = np.ones((H, W))                                                     # mẫu không có cổ tay → giữ trọn bàn tay
-    col = col * cut[..., None] + np.array([255, 135, 25.]) * (1 - cut[..., None])
-    bodyA = np.maximum(fm * (0.85 + 0.15 * ln), rim * 0.95) * cut
-    # quầng + lửa bốc lên
+    bodyA = np.maximum(fm * (0.85 + 0.15 * np.clip(ln, 0, 1)), rim * 0.95)
     rng = np.random.default_rng(5)
     halo = np.exp(-dout / (3 * UPS)) * (~f)
-    srcF = np.maximum(f * 0.55, halo) * cut
+    srcF = np.maximum(f * 0.55, halo)
     flame = srcF.copy()
+    step = max(1, UPS // 2)
     for k in range(1, 30):
-        sh = np.zeros_like(srcF); sh[:-k * UPS // 2] = srcF[k * UPS // 2:]
+        sh = np.zeros_like(srcF); sh[:-k * step] = srcF[k * step:]
         flame = np.maximum(flame, sh * 0.9 ** k)
     st = ndimage.gaussian_filter(rng.random((H, W)), (3 * UPS, 0.5 * UPS))
     st = (st - st.mean()) / (st.std() + 1e-6)
@@ -165,24 +187,34 @@ def palm():
     rgb = col * wi + fcol * (1 - wi)
     img = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), A * 255]).astype(np.uint8), 'RGBA')
     bb = img.getbbox(); img = img.crop(bb)
-    ys_, xs_ = np.nonzero(f & (cut > 0.5))
-    cxp, cyp = (xs_.mean() - bb[0]) / img.width, (ys_.mean() - bb[1]) / img.height
-    img.save(os.path.join(VFX, 'phap_tuong_palm.png'))
-    print('palm', img.size, 'center', round(cxp, 3), round(cyp, 3))
-    return img
+    ys_, xs_ = np.nonzero(f)
+    return img, ((xs_.mean() - bb[0]) / img.width, (ys_.mean() - bb[1]) / img.height)
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    av = avatar()
-    pm = palm()
-    pv = Image.new('RGBA', (av.width + pm.width + 30, max(av.height, pm.height) + 20), (26, 24, 40, 255))
-    a = np.array(av).astype(float)
-    bgp = np.full(a.shape[:2] + (3,), (26, 24, 40.))
-    m = np.clip(bgp + a[..., :3] * a[..., 3:] / 255, 0, 255)
-    pv.paste(Image.fromarray(m.astype(np.uint8)), (10, 10))
-    pv.alpha_composite(pm, (av.width + 20, 10))
-    pv.save(os.path.join(OUT, 'phap_tuong_preview.png'))
+    avatar()
+    res = palm()
+    tiles = []
+    for name, _ in PALM_DIRS:
+        img, (cx, cy) = res[name]
+        img.save(os.path.join(VFX, f'phap_tuong_palm_{name}.png'))
+        print('palm', name, img.size, 'center', round(cx, 3), round(cy, 3))
+        ia = np.array(img).astype(float)
+        bg = np.full(ia.shape[:2] + (3,), (26, 24, 40.))
+        tiles.append((name, Image.fromarray(np.clip(bg + ia[..., :3] * ia[..., 3:] / 255, 0, 255).astype(np.uint8))))
+    TW = max(t.width for _, t in tiles); TH = max(t.height for _, t in tiles)
+    pv = Image.new('RGB', (TW * 4, TH * 2), (26, 24, 40))
+    d = ImageDraw.Draw(pv)
+    order = ['nw', 'n', 'ne', 'e', 'w', 'sw', 's', 'se']
+    tm = dict(tiles)
+    for i, n_ in enumerate(order):
+        t = tm[n_]
+        x, y = (i % 4) * TW, (i // 4) * TH
+        pv.paste(t, (x + (TW - t.width) // 2, y + (TH - t.height) // 2))
+        d.text((x + 10, y + 10), n_.upper(), fill=(255, 255, 255))
+    pv.thumbnail((2000, 2000))
+    pv.save(os.path.join(OUT, 'palm_8dirs.png'))
 
 
 if __name__ == '__main__':
