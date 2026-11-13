@@ -1123,7 +1123,7 @@ const huKhong: Fx = (s, aw) => {
 
 /** Pháp tướng (tools/art/phap_tuong.py): nhân vật hoá thân khí vàng (ảnh cộng sáng, chân ở `foot` theo tỉ lệ ảnh;
  *  thân cao ≈ bodyH px ảnh) + bàn tay chưởng = mu bàn tay úp xuống (điểm chạm đất `cx, cy` = trọng tâm bàn tay, rộng palmW) */
-export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.511, cy: 0.488, palmW: 856 } as const;
+export const PHAP_TUONG = { avatar: 'vx_phap_tuong_avatar', palm: 'vx_phap_tuong_palm', foot: 0.945, bodyH: 408, cx: 0.473, cy: 0.46, palmW: 754 } as const;
 
 /**
  * PHÁP TƯỚNG THIÊN ĐỊA — pháp tướng khí vàng khổng lồ (chính nhân vật hoá thân, như ảnh mẫu) hiện sau lưng trên một pháp
@@ -1178,7 +1178,7 @@ const phapTuong: Fx = (s, aw) => {
     sh.setScale(0.6, 0.6 * KY);
     sc.tweens.add({ targets: sh, alpha: 0.5, scaleX: (RP * 2.4) / 128, scaleY: ((RP * 2.4) / 128) * KY, duration: 600, ease: 'Quad.easeIn' });
     const im = sc.add.image(p.x, p.y - 340, PHAP_TUONG.palm).setOrigin(fl ? 1 - PHAP_TUONG.cx : PHAP_TUONG.cx, PHAP_TUONG.cy).setDepth(23)
-      .setScale(PS * 0.8).setFlipX(fl).setAlpha(0).setAngle(fl ? 6 : -6);
+      .setScale(PS * 0.8).setFlipX(fl).setAlpha(0).setAngle(fl ? 6 : -6).setBlendMode(Phaser.BlendModes.ADD);   // năng lượng thuần: cộng sáng
     k.glow(p.x, p.y - 360, 0xffc850, 180, 420, { alpha: 0.6 });
     sc.tweens.add({ targets: im, alpha: 1, duration: 160 });
     sc.tweens.add({
