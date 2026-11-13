@@ -1304,22 +1304,21 @@ const DRAGON_PAL = {
   normal: { edge: 0x8ac8ff, hot: 0xe0f2ff, glow: 0x4a8cff },
   awaken: { edge: 0xc890ff, hot: 0xf0e0ff, glow: 0x9a40ff },
 };
-export const DRAGON_TEX = { head: 'vx_dragon_ink_head', body0: 'vx_dragon_ink_body0', body1: 'vx_dragon_ink_body1', body2: 'vx_dragon_ink_body2' } as const;
+export const DRAGON_TEX = { rope: 'vx_dragon_rope' } as const;
 function dragonFx(s: Stage, aw: boolean): void {
   const k = s.kit, sc = k.scene;
   const P = aw ? DRAGON_PAL.awaken : DRAGON_PAL.normal;
   const life = aw ? 5200 : 4200;
   const RANGE = aw ? 190 : 170;
-  const SEG = 34, SP = 6;                                               // số đốt, khoảng cách đốt (px quãng đường)
-  const sfx = aw ? '_aw' : '';
+  const SEG = 46, SP = 6.5;                                             // số đốt, khoảng cách đốt (px quãng đường)
   const shadow = sc.add.graphics().setDepth(2);
-  // nét cọ thân: 3 mẫu khác nhau xếp theo thứ tự cố định (không lặp đều) → thân như nét mực tự nhiên
-  const BODY_KEYS = [DRAGON_TEX.body0, DRAGON_TEX.body1, DRAGON_TEX.body2];
-  const ORDER = [1, 0, 2, 1, 2, 0, 0, 2, 1, 2, 1, 0, 2, 0, 1, 1, 0, 2];
-  const inkImgs = Array.from({ length: SEG }, (_, i) => sc.add.image(0, 0, BODY_KEYS[ORDER[i % ORDER.length]] + sfx).setDepth(16 + (SEG - i) * 0.001).setAlpha(0));
-  const headImg = sc.add.image(0, 0, DRAGON_TEX.head + sfx).setDepth(16.2).setScale(0.55).setAlpha(0);
   const glow = sc.add.image(0, 0, VT.SOFT).setTint(P.glow).setBlendMode(Phaser.BlendModes.ADD).setDepth(15.8).setScale(1.1).setAlpha(0);
   const h0 = H(s);
+  // rồng nguyên khối: Rope kéo ảnh dọc theo chuỗi đốt; ROPE_S = tỉ lệ thu (ảnh 1024px → thân dài ≈ SEG*SP px)
+  const ROPE_S = (SEG * SP) / 1024;
+  const ropePts = Array.from({ length: SEG }, () => new Phaser.Math.Vector2(h0.x / ROPE_S, h0.y / ROPE_S));
+  const rope = sc.add.rope(0, 0, DRAGON_TEX.rope + (aw ? '_aw' : ''), undefined, ropePts, true).setScale(ROPE_S).setDepth(16).setAlpha(0);
+  rope.setColors(0xffffff);
   const head = { x: h0.x, y: h0.y, z: 6, a: -Math.PI / 2 };
   const trail: { x: number; y: number; z: number }[] = [{ x: h0.x, y: h0.y, z: 6 }];
   /** vị trí các đốt: đi ngược đường đầu rồng đã bay, mỗi đốt cách nhau SP px quãng đường (thân liền mạch) */
@@ -1393,25 +1392,25 @@ function dragonFx(s: Stage, aw: boolean): void {
         if (Math.hypot(p.x - o.x, (p.y - (o.y - 6)) / 0.8) < 22) { s.hit(o, P.edge); hitCd.set(o, el + 450); break; }
       }
     }
-    // vẽ rồng THUỶ MẶC (tools/art/dragon_ink.py, theo ảnh mẫu GIF): thân = các nét cọ mực lấy từ chính thân rồng mẫu,
-    // đóng dấu chồng lên nhau dọc theo các đốt (xoay theo chiều thân, to ở cổ thon về đuôi, rung nhẹ);
-    // đầu tách từ khung mẫu, phần cổ của đầu MỜ DẦN và nằm đè lên 3 dấu cọ đầu tiên → không có vết nối.
+    // vẽ rồng THUỶ MẶC NGUYÊN KHỐI (tools/art/dragon_rope.py): cả con rồng lấy từ ảnh mẫu rồng nhìn ngang (đầu + thân là
+    // một bức vẽ liền) kéo dọc theo chuỗi đốt bằng Phaser Rope → thân uốn theo đường bay, KHÔNG có chỗ nối đầu/thân.
     const fade = phase === 'done' ? 0 : Math.min(1, el / 200) * (aw ? 1 : Math.min(1, (life - el) / 400 + 0.0001));
     shadow.clear();
-    for (let i = SEG - 1; i >= 0; i--) {
-      const p = body[i], q = body[Math.min(SEG - 1, i + 1)], pp = body[Math.max(0, i - 1)];
-      const f = 1 - i / SEG;
-      const thick = 0.18 + 0.82 * Math.pow(f, 0.75);
-      const rot = Math.atan2((pp.y - pp.z) - (q.y - q.z), pp.x - q.x);
-      shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 10, 30 * thick, 10 * thick);
-      inkImgs[i].setPosition(p.x, p.y - p.z).setRotation(rot + Math.sin(el / 180 + i) * 0.08)
-        .setScale(0.62, 0.66 * thick * (0.92 + 0.08 * Math.sin(el / 150 + i * 1.3))).setFlipY(ORDER[(i + 5) % ORDER.length] === 2).setAlpha(fade * (0.6 + 0.3 * f) * (i % 2 ? 0.75 : 1));
+    for (let i = 0; i < SEG; i += 3) {
+      const p = body[i], f = 1 - i / SEG;
+      shadow.fillStyle(0x000000, 0.1 * fade * f).fillEllipse(p.x, p.y + 10, 40 * f + 8, 12 * f + 3);
     }
+    // điểm rope: đuôi → đầu (texture: đuôi bên trái, đầu bên phải); toạ độ chia cho tỉ lệ vì rope bị scale
+    for (let i = 0; i < SEG; i++) {
+      const p = body[SEG - 1 - i];
+      ropePts[i].x = p.x / ROPE_S;
+      ropePts[i].y = (p.y - p.z) / ROPE_S;
+    }
+    rope.setPoints(ropePts);
     const hp = body[0], hq = body[3];
     const hrot = Math.atan2(hp.y - hp.z - (hq.y - hq.z), hp.x - hq.x) || head.a;
-    const flip = Math.cos(hrot) < 0;
-    headImg.setPosition(hp.x, hp.y - hp.z).setRotation(hrot).setFlipY(flip).setOrigin(0.006, flip ? 1 - 0.727 : 0.727).setAlpha(fade);
-    glow.setPosition(hp.x + Math.cos(hrot) * 30, hp.y - hp.z + Math.sin(hrot) * 30).setAlpha(0.3 * fade);
+    rope.setFlipY(Math.cos(hrot) < 0).setAlpha(fade);
+    glow.setPosition(hp.x - Math.cos(hrot) * 20, hp.y - hp.z - Math.sin(hrot) * 20).setAlpha(0.3 * fade);
     if (fade > 0 && Math.random() < 0.5) {                                   // mực văng / tia sét nhỏ tách khỏi thân
       const d = body[2 + Math.floor(Math.random() * (SEG - 4))];
       const sp = sc.add.image(d.x + (Math.random() - 0.5) * 26, d.y - d.z + (Math.random() - 0.5) * 20, VT.DOT).setTint(P.edge).setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setScale(0.1 + Math.random() * 0.12).setAlpha(0.9);
@@ -1419,8 +1418,7 @@ function dragonFx(s: Stage, aw: boolean): void {
     }
     if (phase === 'done' && (aw || el > life + 400)) {
       sc.events.off('update', step);
-      shadow.destroy(); headImg.destroy(); glow.destroy();
-      for (const o of inkImgs) o.destroy();
+      shadow.destroy(); glow.destroy(); rope.destroy();
     }
   };
   // xuất chiêu: lóe sáng ở nhân vật rồi rồng bay ra
