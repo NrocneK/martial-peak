@@ -1175,7 +1175,11 @@ const phapTuong: Fx = (s, aw) => {
     const legX = (PT_LEG_X[f] - 0.5) * PHAP_TUONG.avW * av_s() - (HERO_LEG_X[f] - 0.5) * 52;
     const diag = f % 2 === 1;                                              // SW, NW, NE, SE
     const FOOT = 23 - 8;                                                   // chân nhân vật (y + 23) − chỗ neo (+8)
-    if (back < -0.1) return { x: hero.x - legX, y: diag ? hero.y + FOOT : hero.y - 10 * KY, front: false, cover: 1 };
+    if (back < -0.1) {
+      // SW / SE: nhích pháp tướng thêm theo hướng nhìn để khe giữa 2 chân (không phải bàn chân trước) trùng nhân vật
+      const nud = diag ? 7 : 0;
+      return { x: hero.x - legX + Math.cos(a) * nud, y: (diag ? hero.y + FOOT : hero.y - 10 * KY) + Math.sin(a) * nud * KY, front: false, cover: 1 };
+    }
     const c = Math.max(0, back);                                           // E/W 0 · NE/NW 0.71 · N 1
     return { x: hero.x - legX, y: diag ? hero.y + FOOT : hero.y + 3, front: true, cover: 0.72 + 0.13 * c };
   };
