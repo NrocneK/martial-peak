@@ -950,8 +950,8 @@ const nguyenAnh: Fx = (s, aw) => {
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
 export const QI_AURA = 'vx_qi_aura';
-const QI_ARM_PIVOT: [number, number] = [0.631, 0.75];                      // cổ tay (điểm xoay khi chém)
-const QI_ARM_REACH = 450;                                                  // cổ tay → mũi luồng kiếm khí (px ảnh)
+const QI_ARM_PIVOT: [number, number] = [0.522, 0.959];                    // khuỷu tay (điểm xoay khi chém)
+const QI_ARM_REACH = 609;                                                  // khuỷu → mũi lưỡi kiếm khí (px ảnh)
 
 /**
  * THẦN THỨC TRẢM — thần thức hoá thành TAY KHÍ, nắm tay bọc LUỒNG KIẾM KHÍ vuốt nhọn thành lưỡi: hiện ra trên đầu
@@ -961,7 +961,7 @@ const QI_ARM_REACH = 450;                                                  // c�
 const thanThuc: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene, hero = s.hero;
   const N = aw ? 6 : 2;
-  const SC = aw ? 0.17 : 0.16;                                             // tay+kiếm cao ≈ 110px
+  const SC = aw ? 0.15 : 0.145;                                            // tay+kiếm cao ≈ 110px
   const SWORD = QI_ARM_REACH * SC;                                         // cổ tay → mũi luồng kiếm khí (px)
   // chỗ tay hiện ra quanh đầu nhân vật: [dx, dy, nghiêng]
   const SLOTS: [number, number, number][] = aw
