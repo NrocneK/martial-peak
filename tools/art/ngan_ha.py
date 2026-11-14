@@ -6,6 +6,7 @@ NGÂN HÀ HÀN LƯU — luồng sáng băng lấy từ video mẫu tools/art/ref
     màu: trắng ở chỗ gốc trắng chói, còn lại lam băng
   · che thanh máu xanh của giao diện gần điểm đầu
   → public/vfx/ngan_ha_beam.png (bảng khung, game kéo dài theo khoảng cách và chạy lặp), cộng sáng
+  → public/vfx/ngan_ha_core.png (trung vị theo thời gian: thân tia ổn định, vẽ cố định bên dưới)
   python3 -I tools/art/ngan_ha.py  (cần ffmpeg)
 """
 import os
@@ -61,6 +62,26 @@ def main():
             img = img.resize((int((BACK + AHEAD) * SC), int(2 * HALF * SC)), Image.LANCZOS)
             frames.append(np.array(img).astype(float))
     fh, fw = frames[0].shape[:2]
+    # LÕI ỔN ĐỊNH: thân tia chính có mặt ở phần lớn các khung (bách phân vị 70 theo thời gian) — giữ vân khí của video,
+    # làm mượt dọc chiều tia để lấp chỗ vật thể đi ngang che tia; vẽ cố định bên dưới lớp động → luồng khí rõ, không chập chờn
+    st = np.stack(frames)
+    pa = np.percentile(st[..., 3], 70, 0) / 255
+    pw = np.percentile(np.stack([f[..., 0] for f in frames]), 70, 0)        # kênh đỏ cao = chỗ trắng
+    x0 = int(BACK * SC)
+    x1 = x0 + int(np.hypot(EX - SX, EY - SY) * SC)
+    band = np.zeros_like(pa); band[int(HALF * SC) - 22:int(HALF * SC) + 22, :] = 1      # chỉ thân tia chính, bỏ dòng khí lạc
+    band = ndimage.gaussian_filter(band, 3)
+    xs = np.arange(fw)
+    taper = np.clip((xs - x0 + 4) / 8, 0, 1) * np.clip((x1 + 14 - xs) / 16, 0, 1)
+    ca = ndimage.gaussian_filter(pa * band, (0.7, 4)) * taper[None, :]
+    ca = np.clip(ca * 1.5, 0, 1) ** 0.8
+    wv = ndimage.gaussian_filter(pw * band, (0.7, 4))
+    wh = np.clip((wv - 140) / 80, 0, 1)[..., None] * np.clip(ca * 1.2, 0, 1)[..., None]
+    ccol = np.array([90, 190, 255.]) * (1 - wh) + np.array([245, 252, 255.]) * wh
+    Image.fromarray(np.dstack([ccol, ca * 255]).astype(np.uint8), 'RGBA').save(os.path.join(VFX, 'ngan_ha_core.png'))
+    # lớp động: đậm hơn (độ đục ^0.65)
+    for fr in frames:
+        fr[..., 3] = 255 * (fr[..., 3] / 255) ** 0.65
     COLS = 5
     rows = (len(frames) + COLS - 1) // COLS
     sheet = np.zeros((rows * fh, COLS * fw, 4))
