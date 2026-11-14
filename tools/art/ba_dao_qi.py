@@ -45,11 +45,15 @@ def main():
     # chắn tay, gai, rãnh) thành vân mờ hơn trên lõi → giữ đúng chi tiết hình dáng
     gm = ndimage.gaussian_gradient_magnitude(ndimage.gaussian_filter(L, 2.0), 2.5)
     lines = ndimage.gaussian_filter(np.clip((gm - 0.018) / 0.04, 0, 1), 1.5)   # chỉ nét chính, mềm
-    core = np.clip((din - 1.0) / 1.6, 0, 1) * (1 - 0.45 * lines)
+    # CHUYỂN MÀU TỪ TÂM RA RÌA: u = 0 ở mép … 1 ở trục giữa thân (chuẩn theo độ dày thân tại chỗ đó)
+    half = ndimage.maximum_filter(din, size=int(14 * SS))                 # nửa bề dày thân quanh điểm đang xét
+    u = np.clip(din / np.maximum(half, 1e-3), 0, 1) * inside
+    # lõi trắng DỊU HƠN và chỉ ở giữa thân, tắt dần ra rìa (dải tím ở rìa dày hơn)
+    core = 0.62 * np.clip((u - 0.3) / 0.55, 0, 1) ** 1.3 * (1 - 0.4 * lines)
     core = np.clip(core + ndimage.gaussian_filter(P, 2) * 0.5 * inside, 0, 1)
     # QUẦNG: sát viền đậm, toả mềm ra ngoài
     rim = np.exp(-dout / 2.0) * 0.9 + np.exp(-dout / 7) * 0.38 + np.exp(-dout / 16) * 0.15
-    rim = np.where(inside, np.clip(1 - din / 5, 0.3, 1) * (0.7 + 0.3 * lines), rim)
+    rim = np.where(inside, (0.35 + 0.65 * np.clip(1 - u / 0.75, 0, 1) ** 0.8) * (0.8 + 0.2 * lines), rim)   # tím đậm ở rìa → nhạt dần vào tâm
     # SỢI KHÍ cong lượn dọc thân + BỤI SÁNG
     # thu về kích thước thật rồi mới thêm sợi khí + bụi
     def down(a):
@@ -74,6 +78,7 @@ def main():
             continue
         dust += np.exp(-((xx - px) ** 2 + (yy - py) ** 2) / (2 * rng.uniform(0.5, 1.0) ** 2)) * rng.uniform(0.5, 1)
     win = np.clip(np.minimum.reduce([xx, W - 1 - xx, yy, H - 1 - yy]) / 6, 0, 1)
+    wisp = wisp * np.where(inside, 0.25, 1.0)                              # sợi khí đè lên thân thì mờ đi
     rim = np.clip((rim + wisp + dust) * win, 0, 1)
 
     def save(alpha, name):
