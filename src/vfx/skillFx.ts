@@ -1344,40 +1344,64 @@ const vanKiem: Fx = (s, aw) => {
   }
 };
 
+/** Sét (tools/art/lightning.py, từ ảnh mẫu): tia giáng 5 khung 147×389 (chạm đất ở gx, gy) · tia lan 5 kiểu 320×64 (ngang,
+ *  đầu trái) · vụ nổ kiếp lôi 512×512 (chạm đất 0.5, 0.842). Thức tỉnh dùng bản tím (_aw). */
+export const THUNDER = { strike: 'vx_thunder_strike', arc: 'vx_thunder_arc', blast: 'vx_thunder_blast', sw: 147, sh: 389, gx: 0.573, gy: 0.961, aw: 320, ah: 64 } as const;
+
 const thanLoi: Fx = (s, aw) => {
-  const k = s.kit;
+  const k = s.kit, sc = k.scene;
+  const sf = aw ? '_aw' : '';
+  const COL = aw ? 0xc890ff : 0x70b8ff;
+  const ak = 'vx_thunder_strike_anim' + sf;
+  if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(THUNDER.strike + sf, { start: 0, end: 4 }), frameRate: 14, repeat: 0 });
+  // tia sét giáng xuống mục tiêu (hoạt ảnh 5 khung của mẫu)
+  const strike = (t: Pt, big = 1) => {
+    const im = sc.add.sprite(t.x + Phaser.Math.Between(-6, 6), t.y + 4, THUNDER.strike + sf, 0).setOrigin(THUNDER.gx, THUNDER.gy)
+      .setScale(0.62 * big).setFlipX(Math.random() < 0.5).setDepth(22).setBlendMode(Phaser.BlendModes.ADD);
+    im.play(ak);
+    im.once('animationcomplete', () => im.destroy());
+    k.glow(t.x, t.y, COL, 70 * big, 300);
+  };
+  // tia sét lan giữa 2 mục tiêu (hình tia của mẫu, kéo dài theo khoảng cách, chớp tắt)
+  const arc = (a: Pt, b: Pt) => {
+    const L = dist(a, b);
+    const im = sc.add.image(a.x, a.y - 14, THUNDER.arc + sf, Phaser.Math.Between(0, 4)).setOrigin(8 / THUNDER.aw, 0.5)
+      .setRotation(Math.atan2(b.y - a.y, b.x - a.x)).setScale(L / (THUNDER.aw - 16), (Math.random() < 0.5 ? -1 : 1) * 0.55)
+      .setDepth(22).setBlendMode(Phaser.BlendModes.ADD);
+    sc.tweens.add({ targets: im, alpha: { from: 1, to: 0 }, duration: 260, ease: 'Stepped', easeParams: [4], onComplete: () => im.destroy() });
+  };
   const ts = s.targets();
-  const n = aw ? 6 : 3;
+  const n = aw ? 9 : 3;
   for (let i = 0; i < n; i++)
-    k.later(i * 120, () => {
+    k.later(i * (aw ? 90 : 140), () => {
       const t = ts[Math.floor(Math.random() * ts.length)];
       if (!t) return;
-      k.lightning(t.x + 30, t.y - 340, t.x, t.y, aw ? 0xc890ff : 0xb090ff, 3.2, 300, { branches: 3 });
-      k.glow(t.x, t.y, 0xb090ff, 80, 300);
-      k.ring(t.x, t.y, 0xd0c0ff, 6, 50, 260);
-      s.hit(t, 0xb090ff);
+      strike(t);
+      s.hit(t, COL);
       let cur = t;
       const done = [t];
       for (let j = 0; j < 3; j++) {
-        const nx = s.targets().filter((o) => !done.includes(o)).sort((a, b) => dist(a, cur) - dist(b, cur))[0];
+        const nx = s.targets().filter((o) => !done.includes(o)).sort((p1, p2) => dist(p1, cur) - dist(p2, cur))[0];
         if (!nx || dist(nx, cur) > 200) break;
         const from = cur;
-        k.later(60 * (j + 1), () => { k.lightning(from.x, from.y, nx.x, nx.y, 0xd0c0ff, 1.8, 220, { branches: 0, rough: 0.3 }); s.hit(nx, 0xd0c0ff); });
+        k.later(110 + 70 * j, () => { arc(from, nx); s.hit(nx, COL); k.glow(nx.x, nx.y - 10, COL, 40, 200); });
         done.push(nx);
         cur = nx;
       }
     });
-  k.flash(0x8a70ff, 120, 0.15);
+  k.flash(aw ? 0x9a60ff : 0x5a90ff, 120, 0.15);
   if (aw)
-    k.later(800, () => {
+    k.later(1000, () => {
+      // KIẾP LÔI: vụ nổ sét lớn (ảnh mẫu cầu sét + nứt đất), bản tím
       const t = ts[Math.floor(ts.length / 2)];
       if (!t) return;
       k.flash(0xc0a0ff, 200, 0.35);
-      k.lightning(t.x, t.y - 420, t.x, t.y, 0xe0c0ff, 9, 500, { branches: 5 });
-      k.glow(t.x, t.y, 0xc0a0ff, 260, 500);
-      k.ring(t.x, t.y, 0xffffff, 20, 160, 500, true);
+      strike(t, 1.8);
+      const bl = sc.add.image(t.x, t.y + 6, THUNDER.blast + sf).setOrigin(0.5, 0.842).setScale(0.2).setDepth(21);
+      sc.tweens.add({ targets: bl, scale: 0.62, duration: 220, ease: 'Back.easeOut' });
+      sc.tweens.add({ targets: bl, alpha: 0, scale: 0.7, delay: 650, duration: 400, onComplete: () => bl.destroy() });
       k.shake(300, 0.012);
-      for (const o of near(s, t, 140)) s.hit(o, 0xc0a0ff);
+      for (const o of near(s, t, 140)) s.hit(o, COL);
     });
 };
 

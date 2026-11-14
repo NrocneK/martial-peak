@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { SKILLS, skillIcon, type SkillDef } from '../config/skills';
 import { makeVfxTextures, VT } from '../vfx/textures';
 import { VfxKit, type Pt } from '../vfx/VfxKit';
-import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, DRAGON_TEX, QI_ARM, QI_AURA, FIRE_SLASH, BLACK_HOLE, BH_BLAST, PHAP_TUONG, QI_BLADE, SWORD_ARRAY, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
+import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, DRAGON_TEX, QI_ARM, QI_AURA, FIRE_SLASH, BLACK_HOLE, BH_BLAST, PHAP_TUONG, QI_BLADE, SWORD_ARRAY, THUNDER, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
 
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
@@ -48,6 +48,11 @@ class LabScene extends Phaser.Scene {
     for (const [k, f] of Object.entries(QI_BLADE)) this.load.image(f, `/vfx/qi_blade_${k}.png?v=3`);
     this.load.image(SWORD_ARRAY.n, '/vfx/sword_array.png?v=2');
     this.load.image(SWORD_ARRAY.aw, '/vfx/sword_array_aw.png?v=2');
+    for (const sf of ['', '_aw']) {
+      this.load.spritesheet(THUNDER.strike + sf, `/vfx/thunder_strike${sf}.png?v=1`, { frameWidth: THUNDER.sw, frameHeight: THUNDER.sh });
+      this.load.spritesheet(THUNDER.arc + sf, `/vfx/thunder_arc${sf}.png?v=1`, { frameWidth: THUNDER.aw, frameHeight: THUNDER.ah });
+      this.load.image(THUNDER.blast + sf, `/vfx/thunder_blast${sf}.png?v=1`);
+    }
     this.load.image(FIRE_SLASH.key, '/vfx/fire_slash.png?v=5');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
     for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
