@@ -1421,24 +1421,36 @@ const lienHoa: Fx = (s, aw) => {
   const R = aw ? 150 : 120;
   const S = (R * 2.2) / (LOTUS.size * LOTUS.fill);                         // fill: bán kính hoa / nửa khung ảnh
   // cánh sen bán trong suốt (ảnh mẫu) bay tỏa trên mặt đất, mũi theo hướng bay; ĐUÔI cánh kéo vệt sáng hồng + bụi sáng
+  // cánh sen bán trong suốt (ảnh mẫu) bay ra theo ĐƯỜNG XOẮN ỐC trên mặt đất, mũi theo hướng bay;
+  // ĐUÔI cánh kéo vệt sáng hồng + bụi sáng
   const petalFly = (ang: number) => {
-    const to = pt(c.x + Math.cos(ang) * 260, c.y + Math.sin(ang) * 260 * LOTUS.ky);
-    const dx = to.x - c.x, dy = to.y - c.y, L0 = Math.hypot(dx, dy), ux = dx / L0, uy = dy / L0;
-    const PS = 0.36, tail = 64 * PS;                                         // nửa dài cánh → điểm đuôi
-    const im = sc.add.image(c.x, c.y, LOTUS.petal).setScale(PS).setRotation(Math.atan2(dy, dx)).setDepth(20);
-    const glowTrail = sc.add.particles(0, 0, VT.SOFT, {
-      follow: im, followOffset: { x: -ux * tail, y: -uy * tail }, lifespan: 320, speed: 0, scale: { start: 0.2, end: 0.03 },
-      alpha: { start: 0.28, end: 0 }, tint: 0xff9ccc, blendMode: Phaser.BlendModes.ADD, frequency: 18,
+    const PS = 0.36, tail = 64 * PS, RMAX = 260, TURN = Math.PI * 1.3, DUR = 950;
+    const im = sc.add.image(c.x, c.y, LOTUS.petal).setScale(PS).setDepth(20);
+    const glowTrail = sc.add.particles(c.x, c.y, VT.SOFT, {
+      lifespan: 320, speed: 0, scale: { start: 0.2, end: 0.03 },
+      alpha: { start: 0.28, end: 0 }, tint: 0xff9ccc, blendMode: Phaser.BlendModes.ADD, frequency: 16,
     }).setDepth(19);
-    const dust = sc.add.particles(0, 0, VT.DOT, {
-      follow: im, followOffset: { x: -ux * tail, y: -uy * tail }, lifespan: { min: 300, max: 600 }, speed: { min: 8, max: 30 },
+    const dust = sc.add.particles(c.x, c.y, VT.DOT, {
+      lifespan: { min: 300, max: 600 }, speed: { min: 8, max: 30 },
       angle: { min: 0, max: 360 }, scale: { start: 0.35, end: 0 }, alpha: { start: 0.8, end: 0 },
       tint: [0xffd0e6, 0xffffff, 0xff8cc0], blendMode: Phaser.BlendModes.ADD, frequency: 22,
     }).setDepth(19);
-    sc.tweens.add({ targets: im, x: to.x, y: to.y, duration: 560, ease: 'Cubic.easeOut' });
-    sc.tweens.add({ targets: im, alpha: 0, delay: 380, duration: 180, onComplete: () => {
-      im.destroy(); glowTrail.stop(); dust.stop(); k.later(650, () => { glowTrail.destroy(); dust.destroy(); });
-    } });
+    const at = (t: number) => {
+      const r = RMAX * Math.pow(t, 0.85), th = ang + TURN * t;
+      return pt(c.x + Math.cos(th) * r, c.y + Math.sin(th) * r * LOTUS.ky);
+    };
+    sc.tweens.addCounter({
+      from: 0, to: 1, duration: DUR, ease: 'Sine.easeOut',
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const p = at(t), q = at(Math.min(1, t + 0.02));
+        const dir = Math.atan2(q.y - p.y, q.x - p.x);
+        im.setPosition(p.x, p.y).setRotation(dir).setAlpha(t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3);
+        const tx = p.x - Math.cos(dir) * tail, ty = p.y - Math.sin(dir) * tail;
+        glowTrail.setPosition(tx, ty); dust.setPosition(tx, ty);
+      },
+      onComplete: () => { im.destroy(); glowTrail.stop(); dust.stop(); k.later(650, () => { glowTrail.destroy(); dust.destroy(); }); },
+    });
   };
   const layer = (depth: number) => {
     const im = sc.add.image(0, 0, LOTUS.tex);
@@ -1471,17 +1483,43 @@ const lienHoa: Fx = (s, aw) => {
   for (const o of near(s, c, R)) k.later(350, () => s.hit(o, aw ? 0xffe0a0 : 0xd8b0ff));
   k.later(2400, () => {
     motes.stop();
-    // khép cánh: thu hẹp ngang về nhuỵ trước, rồi co cả hoa lại thành điểm sáng
-    sc.tweens.add({ targets: st, fx: 0.25, fy: 0.7, duration: 380, ease: 'Cubic.easeIn' });
-    sc.tweens.add({ targets: st, fx: 0, fy: 0, delay: 380, duration: 200, ease: 'Cubic.easeIn' });
-    sc.tweens.add({ targets: [lo, fr], alpha: 0, delay: 380, duration: 200, ease: 'Cubic.easeIn', onComplete: () => {
-      sc.events.off('update', apply); sc.tweens.killTweensOf(st); lo.destroy(); fr.destroy();
-    } });
-    k.tw(glow, { alpha: 0, scale: 0.3 }, 580);
-    k.later(560, () => {
-      k.glow(c.x, c.y - 8, aw ? 0xffe6b0 : 0xe0c8ff, 60, 260);
-      if (aw) for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2);
+    // TAN BIẾN TỪ NGOÀI VÀO TRONG: mặt nạ tròn mềm (nằm trên mặt đất) co dần về lõi, mép tan rắc bụi sáng
+    const MK = 'vx_radial_mask';
+    if (!sc.textures.exists(MK)) {
+      const cv = sc.textures.createCanvas(MK, 256, 256)!;
+      const g2 = cv.context.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g2.addColorStop(0, 'rgba(255,255,255,1)'); g2.addColorStop(0.78, 'rgba(255,255,255,1)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+      cv.context.fillStyle = g2; cv.context.fillRect(0, 0, 256, 256); cv.refresh();
+    }
+    const mimg = sc.make.image({ x: c.x, y: c.y, key: MK }, false);
+    const mask = mimg.createBitmapMask();
+    lo.setMask(mask); fr.setMask(mask);
+    const flowerR = 256 * LOTUS.fill * S * st.fx;                            // bán kính hoa trên màn hình (trục ngang)
+    const ms = { m: (flowerR * 1.06) / (128 * 0.78) };
+    const DISS = 1000;
+    const edge = sc.add.particles(0, 0, VT.DOT, {
+      lifespan: { min: 350, max: 700 }, speedY: { min: -40, max: -10 }, speedX: { min: -12, max: 12 }, scale: { start: 0.45, end: 0 },
+      alpha: { start: 0.9, end: 0 }, tint: aw ? [0xffe6a0, 0xe0c8ff, 0xffffff] : [0xd8b8ff, 0xff9ccc, 0xffffff],
+      blendMode: Phaser.BlendModes.ADD, emitting: false,
+    }).setDepth(19);
+    sc.tweens.add({
+      targets: ms, m: 0, duration: DISS, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        mimg.setScale(ms.m, ms.m * LOTUS.ky);
+        const er = ms.m * 128 * 0.88;                                       // giữa dải mép đang tan
+        for (let i = 0; i < 3; i++) {
+          const a2 = Math.random() * Math.PI * 2;
+          edge.emitParticleAt(c.x + Math.cos(a2) * er, c.y + Math.sin(a2) * er * LOTUS.ky, 1);
+        }
+      },
+      onComplete: () => {
+        sc.events.off('update', apply); sc.tweens.killTweensOf(st);
+        lo.clearMask(); fr.clearMask(); mask.destroy(); mimg.destroy(); lo.destroy(); fr.destroy();
+        k.later(800, () => edge.destroy());
+      },
     });
+    k.tw(glow, { alpha: 0, scale: 0.3 }, DISS);
+    if (aw) k.later(150, () => { for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2); });
     k.later(1400, () => motes.destroy());
   });
 };
