@@ -7,7 +7,7 @@ NGÂN HÀ HÀN LƯU — VẼ MỚI (không cắt ghép), theo ảnh mẫu tools/
   · ngan_ha_strand.png 256×64  3 sợi khí xoắn (lặp ngang liền mạch, game cuộn → sợi chảy dọc tia)
   · ngan_ha_ring.png   256×256 cổng phát, tâm ảnh = điểm phát tia
   · ngan_ha_hit.png    128×128 điểm chạm, tâm ảnh = điểm chạm
-  · ngan_ha_ice.png    160×176  khối băng đóng băng mục tiêu: tinh thể cắt mặt theo mẫu tools/art/ref/ngan_ha_ice_ref.jpg, gốc = đáy giữa (chân quái)
+  · khối băng đóng băng: tách từ ảnh mẫu → tools/art/ngan_ha_ice.py
   python3 -I tools/art/ngan_ha_draw.py
 """
 import os
@@ -116,89 +116,6 @@ def hit():
     save(rgba([(flare * 1.3, WHITE), (glow * 0.7, CYAN), (sparks, CYAN)], (N, N)), 'ngan_ha_hit.png')
 
 
-def ice():
-    """khối băng kiểu tinh thể cắt mặt (theo ảnh mẫu tools/art/ref/ngan_ha_ice_ref.jpg, mẫu D/E):
-    1 khối chính cao nhọn lệch + các mảnh tinh thể dựng quanh chân + vụn băng toả ra đất.
-    Mỗi mảnh chia 2 mặt dọc sống (mặt trái sáng – mặt phải tối, nguồn sáng trên-trái), vệt sáng chéo, viền sáng."""
-    from PIL import ImageDraw, ImageFilter
-    S = 4
-    W, H = 160, 176
-    BASE = 168
-    col_img = Image.new('RGB', (W * S, H * S), (0, 0, 0))
-    a_img = Image.new('L', (W * S, H * S), 0)
-    hl = Image.new('L', (W * S, H * S), 0)
-    dc, da, dh = ImageDraw.Draw(col_img), ImageDraw.Draw(a_img), ImageDraw.Draw(hl)
-    DARK = (38, 96, 214)
-    MID = (58, 150, 238)
-    LIGHT = (110, 214, 246)
-    PALE = (176, 238, 252)
-
-    def P(pts):
-        return [(x * S, y * S) for x, y in pts]
-
-    def mix(c1, c2, t):
-        return tuple(int(c1[i] * (1 - t) + c2[i] * t) for i in range(3))
-
-    def shard(cx, w, h, tilt, shoulder=0.7, lean=0.0, tone=0.5, alpha=225, by=BASE):
-        """1 mảnh tinh thể: đáy rộng w, cao h, nghiêng tilt (rad); 2 mặt chia theo sống"""
-        ux, uy = np.sin(tilt), -np.cos(tilt)
-        px, py = np.cos(tilt), np.sin(tilt)
-        hw = w / 2
-        bl, br = (cx - px * hw, by - py * hw), (cx + px * hw, by + py * hw)
-        sl = (cx + ux * h * shoulder - px * hw * 0.9, by + uy * h * shoulder - py * hw * 0.9)
-        sr = (cx + ux * h * shoulder * 0.86 + px * hw * 0.85, by + uy * h * shoulder * 0.86 + py * hw * 0.85)
-        tip = (cx + ux * h + px * hw * lean, by + uy * h + py * hw * lean)
-        spine_b = (cx + px * hw * 0.15, by + py * hw * 0.15)
-        left = [bl, sl, tip, spine_b]
-        right = [spine_b, tip, sr, br]
-        dc.polygon(P(left), fill=mix(MID, PALE, tone))
-        dc.polygon(P(right), fill=mix(DARK, MID, tone))
-        da.polygon(P([bl, sl, tip, sr, br]), fill=alpha)
-        # mặt vát nhỏ sáng ở đỉnh trái
-        cap = [sl, tip, (sl[0] * 0.45 + tip[0] * 0.55 + px * hw * 0.25, sl[1] * 0.45 + tip[1] * 0.55 + py * hw * 0.25)]
-        dc.polygon(P(cap), fill=mix(LIGHT, PALE, 0.6 + tone * 0.4))
-        # viền sáng + sống
-        dh.line(P([bl, sl, tip]), fill=200, width=S)
-        dh.line(P([tip, sr, br]), fill=90, width=S)
-        dh.line(P([spine_b, tip]), fill=150, width=S)
-        return (bl, sl, tip, sr, br)
-
-    rng = np.random.default_rng(11)
-    # khối phía sau (tối hơn)
-    shard(104, 44, 92, 0.22, tone=0.15)
-    shard(52, 40, 80, -0.25, tone=0.25)
-    # KHỐI CHÍNH cao nhọn
-    shard(82, 96, 156, 0.06, shoulder=0.62, lean=-0.35, tone=0.4, alpha=230)
-    shard(70, 56, 118, -0.12, shoulder=0.7, lean=0.2, tone=0.65, alpha=230)       # khối phụ phía trước tạo mặt cắt
-    # vệt sáng chéo trên khối chính (kiểu nét cọ ở mẫu D)
-    for (x0, y0, x1, y1, w) in ((60, 132, 84, 36, 7), (94, 140, 104, 86, 4), (52, 156, 66, 112, 4), (104, 76, 96, 44, 3)):
-        n = np.array([y1 - y0, x0 - x1], float); n /= np.hypot(*n)          # vệt thuôn 2 đầu (nét cọ)
-        mx, my = (x0 * 0.4 + x1 * 0.6), (y0 * 0.4 + y1 * 0.6)
-        q = [(x0, y0), (mx + n[0] * w / 2, my + n[1] * w / 2), (x1, y1), (mx - n[0] * w / 2, my - n[1] * w / 2)]
-        dc.polygon(P(q), fill=mix(LIGHT, PALE, 0.5))
-        dh.polygon(P(q), fill=60)
-    # mảnh nhỏ phía trước quanh chân
-    for cx, w, h, tilt, tone in ((40, 22, 50, -0.5, 0.6), (122, 20, 56, 0.45, 0.55), (62, 18, 36, -0.15, 0.8),
-                                 (100, 18, 40, 0.2, 0.75), (24, 12, 26, -0.85, 0.7), (138, 12, 30, 0.8, 0.65)):
-        shard(cx, w, h, tilt, shoulder=0.75, tone=tone, alpha=235)
-    # vụn băng dưới đất toả ra (kiểu mẫu B)
-    for cx, ln, tilt in ((10, 18, -1.25), (150, 20, 1.2), (30, 12, -1.0), (132, 13, 1.05), (9, 8, -1.4)):
-        shard(cx, 5, ln, tilt, shoulder=0.85, tone=0.9, alpha=240)
-    up = lambda im: im.resize((W, H), Image.LANCZOS)
-    col = np.array(up(col_img)).astype(float)
-    A = np.array(up(a_img)).astype(float) / 255
-    e = np.array(up(hl)).astype(float) / 255
-    g = np.array(up(hl).filter(ImageFilter.GaussianBlur(2))).astype(float) / 255
-    # nền màu đã nhân alpha khi thu nhỏ → chia lại để tránh viền đen
-    cov = np.array(up(Image.fromarray((np.array(a_img) > 0).astype(np.uint8) * 255))).astype(float) / 255
-    col = col / np.maximum(cov[..., None], 1e-3)
-    col = col * (1 - e[..., None] * 0.8) + np.array([235, 250, 255.]) * e[..., None] * 0.8
-    # hơi mờ dần xuống chân + chút sáng lan quanh viền
-    yy = np.arange(H)[:, None] / H
-    A = np.clip(A * (0.92 + 0.08 * yy) + g * 0.15, 0, 1)
-    Image.fromarray(np.dstack([np.clip(col, 0, 255), A * 255]).astype(np.uint8), 'RGBA').save(os.path.join(VFX, 'ngan_ha_ice.png'))
-
-
 def preview():
     bg = (26, 24, 40)
     pv = Image.new('RGB', (760, 380), bg)
@@ -218,10 +135,9 @@ def preview():
     put('ngan_ha_strand.png', 128, 118, tile=2)
     put('ngan_ha_ring.png', 0, 22)
     put('ngan_ha_hit.png', 576, 86)
-    put('ngan_ha_ice.png', 590, 196)
     pv.save(os.path.join(OUT, 'ngan_ha_draw_preview.png'))
 
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    core(); strand(); ring(); hit(); ice(); preview()
+    core(); strand(); ring(); hit(); preview()

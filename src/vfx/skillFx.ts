@@ -1529,7 +1529,7 @@ const lienHoa: Fx = (s, aw) => {
 /** Ngân Hà Hàn Lưu — VẼ MỚI theo ảnh mẫu (tools/art/ngan_ha_draw.py): tia nằm ngang, game xoay theo hướng bắn.
  *  core/strand 256×64 lặp ngang liền mạch → TileSprite (dài theo khoảng cách, KHÔNG kéo giãn); ring = cổng phát (tâm = điểm phát);
  *  hit = điểm chạm (tâm) */
-export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', ring: 'vx_ngan_ha_ring', hit: 'vx_ngan_ha_hit', ice: 'vx_ngan_ha_ice', th: 64, front: 46 } as const;
+export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', ring: 'vx_ngan_ha_ring', hit: 'vx_ngan_ha_hit', ice: ['a', 'b', 'c', 'd', 'e'].map((v) => `vx_ngan_ha_ice_${v}`), th: 64, front: 46 } as const;
 /** THƯỜNG: khoá mục tiêu XA NHẤT trong tầm (có boss thì ưu tiên boss), bắn tới khi mục tiêu chết hoặc hết giờ;
  *  quái khác nằm trên tia cũng trúng; trúng → làm chậm (sương băng dưới chân), trúng 5 lần → ĐÓNG BĂNG (boss chỉ chậm).
  *  THỨC TỈNH: tia to + mạnh hơn, định kỳ bắn thêm 3 TIA TRUY KÍCH vào quái khác. (Ghi chú: docs/skill-redesign-pending.md) */
@@ -1576,8 +1576,8 @@ const nganHa: Fx = (s, aw) => {
     count.set(o, c);
     if (c === 5 && !boss && !frozen.has(o)) {                            // ĐÓNG BĂNG
       frozen.add(o);
-      const ice = sc.add.image(o.x, o.y + 21, NGAN_HA.ice).setOrigin(0.5, 0.96).setDepth(12).setScale(0.5, 0.05).setAlpha(0.88);
-      sc.tweens.add({ targets: ice, scaleY: 0.5, duration: 180, ease: 'Back.easeOut' });
+      const ice = sc.add.image(o.x, o.y + 21, Phaser.Utils.Array.GetRandom(NGAN_HA.ice)).setOrigin(0.5, 0.97).setDepth(12).setScale(0.48, 0.05).setFlipX(Math.random() < 0.5);   // 5 mẫu băng (ảnh mẫu của bạn), chọn ngẫu nhiên
+      sc.tweens.add({ targets: ice, scaleY: 0.48, duration: 180, ease: 'Back.easeOut' });
       k.burst(o.x, o.y - 18, 0xe8fbff, 8, { tex: VT.SHARD, speed: [40, 120], scale: [0.5, 0.2], rotate: true, life: 400 });
       k.later(1600, () => {
         k.burst(o.x, o.y - 18, 0xe8fbff, 10, { tex: VT.SHARD, speed: [80, 200], scale: [0.55, 0.2], rotate: true, life: 450 });
