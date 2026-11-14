@@ -22,12 +22,12 @@ const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => h('img', { src: itemI
 
 /**
  * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình), lấy nguyên từ ảnh mẫu
- * (tools/art/sect_from_ref.py). Tâm + bán kính Truyền Tống Trận tính theo pixel ảnh — PHẢI khớp số script đó in ra.
+ * (tools/art/bg_from_ai.py). Tâm + bán kính Truyền Tống Trận tính theo pixel ảnh — PHẢI khớp số script đó in ra.
  * `posY` khớp background-position-y trong styles.css (.sect).
  */
 const SECT = {
-  tall: { w: 791, h: 1345, x: 325, y: 1065, r: 72, posY: 1 },
-  wide: { w: 2391, h: 1345, x: 1125, y: 1065, r: 72, posY: 0.7 },
+  tall: { w: 632, h: 1124, x: 316, y: 878, r: 95, posY: 1 },
+  wide: { w: 2000, h: 1124, x: 1005, y: 878, r: 95, posY: 0.7 },
 };
 const TALL_MQ = '(max-aspect-ratio: 1/1)';
 
