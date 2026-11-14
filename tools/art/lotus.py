@@ -6,6 +6,9 @@ TIÊN NGUYÊN LIÊN HOA — hoa sen lấy NGUYÊN từ ảnh mẫu tools/art/ref
   · 2 bóng người + cây giáo ở giữa nhuỵ → xoá, lấp bằng màu nhuỵ xung quanh
   · màu giữ nguyên ảnh gốc
   → public/vfx/lotus.png
+  · bản NHÌN TỪ TRÊN XUỐNG (để nằm trên mặt đất, xoay tròn được): tools/art/ref/lotus_top_ref.jpg
+      mặt nạ rembg birefnet (tools/art/ref/lotus_top_mask_birefnet-general.png), cắt vuông quanh tâm hoa
+  → public/vfx/lotus_top.png
   python3 -I tools/art/lotus.py
 """
 import os
@@ -73,5 +76,25 @@ def main():
     g.save(os.path.join(OUT, 'lotus_preview.png'))
 
 
+def top():
+    a = np.array(Image.open(os.path.join(REF, 'lotus_top_ref.jpg')).convert('RGB')).astype(float)
+    m = load('lotus_top_mask_birefnet-general.png')
+    A = np.clip((m - 0.05) / 0.85, 0, 1)
+    ys, xs = np.nonzero(A > 0.5)
+    w = ndimage.gaussian_filter(a.min(2), 6)                             # tâm xoay = lõi sáng giữa hoa
+    cy, cx = np.unravel_index(w.argmax(), w.shape)
+    ys, xs = np.nonzero(A > 0.2)
+    r = np.hypot(xs - cx, ys - cy).max() + 12                            # lấy trọn mọi mũi cánh (không cắt tròn)
+    img = Image.fromarray(np.dstack([a, A * 255]).astype(np.uint8), 'RGBA')
+    img = img.crop((int(cx - r), int(cy - r), int(cx + r), int(cy + r))).resize((512, 512), Image.LANCZOS)
+    img.save(os.path.join(VFX, 'lotus_top.png'))
+    print('lotus_top center', cx, cy, 'r', r)
+    pv = Image.new('RGBA', (1024, 512), (26, 24, 40, 255))
+    pv.alpha_composite(img)
+    pv.alpha_composite(img.resize((512, 282)), (512, 115))
+    pv.convert('RGB').save(os.path.join(OUT, 'lotus_top_preview.png'))
+
+
 if __name__ == '__main__':
     main()
+    top()

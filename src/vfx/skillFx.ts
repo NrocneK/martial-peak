@@ -1411,33 +1411,32 @@ const thanLoi: Fx = (s, aw) => {
     });
 };
 
-export const LOTUS = { tex: 'vx_lotus', w: 640, h: 427, ox: 0.45, oy: 0.3, px: 0.453, py: 0.445, front: 0.45, ky: 0.45, sway: 0.21 } as const;
+export const LOTUS = { tex: 'vx_lotus_top', size: 512, fill: 0.8, front: 0.4, ky: 0.58, spin: 9000 } as const;
 const lienHoa: Fx = (s, aw) => {
-  // hoa sen lấy nguyên từ ảnh mẫu: nở từ nụ dưới chân, nhân vật đứng giữa nhuỵ; tàn = khép cánh về nhuỵ
-  // xoay chậm trên MẶT ĐẤT (ảnh xoay bên trong container nén dọc), quanh tâm nhuỵ, qua lại ±12°
-  // (ảnh mẫu chỉ có 1 góc nhìn nghiêng → xoay quá ~15° hoa bị méo, nên xoay qua lại thay vì xoay tròn)
+  // hoa sen NHÌN TỪ TRÊN XUỐNG lấy nguyên từ ảnh mẫu (tools/art/lotus.py → lotus_top.png), nằm trên mặt đất dưới chân,
+  // nhân vật đứng ngay lõi sáng giữa hoa; ảnh xoay bên trong container nén dọc = hoa xoay tròn chậm trên mặt đất.
+  // nở từ một điểm, tàn = khép lại về lõi
   const k = s.kit, sc = k.scene, h0 = H(s);
-  const c = pt(h0.x, h0.y + 4);
+  const c = pt(h0.x, h0.y + 20);
   const R = aw ? 150 : 120;
-  const S = (R * 2.1) / LOTUS.w;
-  const piv = pt(c.x + (LOTUS.px - LOTUS.ox) * LOTUS.w * S, c.y + (LOTUS.py - LOTUS.oy) * LOTUS.h * S);
+  const S = (R * 2.2) / (LOTUS.size * LOTUS.fill);                         // fill: bán kính hoa / nửa khung ảnh
   const layer = (depth: number) => {
-    const im = sc.add.image(0, 0, LOTUS.tex).setOrigin(LOTUS.px, LOTUS.py).setScale(1, 1 / LOTUS.ky);
-    const ct = sc.add.container(piv.x, piv.y, [im]).setDepth(depth);
+    const im = sc.add.image(0, 0, LOTUS.tex);
+    const ct = sc.add.container(c.x, c.y, [im]).setDepth(depth);
     return { im, ct };
   };
-  // lớp hoa thứ 2 phủ mờ lên nhân vật → nhân vật như được cánh sen trong suốt bao bọc
+  // lớp hoa thứ 2 phủ mờ lên nhân vật → nhân vật như được hoa sen bao bọc
   const L = [layer(3), layer(11)];
   const lo = L[0].ct, fr = L[1].ct;
   lo.setAlpha(0.2); fr.setAlpha(0);
-  const st = { fx: 0.08, fy: 0.04, rot: -LOTUS.sway };
+  const st = { fx: 0.05, fy: 0.05, rot: -0.6 };
   const apply = () => {
     for (const l of L) { l.ct.setScale(S * st.fx, S * st.fy * LOTUS.ky); l.im.setRotation(st.rot); }
   };
   apply();
   sc.events.on('update', apply);
   sc.tweens.add({ targets: st, fx: 1, fy: 1, duration: 650, ease: 'Back.easeOut' });
-  sc.tweens.add({ targets: st, rot: LOTUS.sway, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  sc.tweens.add({ targets: st, rot: -0.6 + Math.PI * 2, duration: LOTUS.spin, repeat: -1 });
   sc.tweens.add({ targets: lo, alpha: 1, duration: 650 });
   sc.tweens.add({ targets: fr, alpha: LOTUS.front, duration: 650 });
   const glow = k.img(VT.SOFT, c.x, c.y, { tint: aw ? 0xffe0a0 : 0xc8a0ff, scale: 0.2, alpha: 0, depth: 2 });
