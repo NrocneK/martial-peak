@@ -1612,21 +1612,24 @@ const nganHa: Fx = (s, aw) => {
     for (let i = rings.length - 1; i >= 0; i--) {
       const r = rings[i];
       r.age += 16;
-      const u = r.age / 760;
+      const u = r.age / 620;
       if (u >= 1) { r.im.destroy(); rings.splice(i, 1); continue; }
-      const d = Math.min((24 + 170 * (1 - (1 - u) ** 1.6)) * BIG, len - 16);   // không trôi quá đầu tia
+      const d = len * 0.3 * (1 - (1 - u) ** 1.4);                          // từ cổng phát → ~30% tia chính thì tan
       r.im.setPosition(st0.x + Math.cos(rot) * d, st0.y + Math.sin(rot) * d).setRotation(rot)
-        .setScale(0.5 * BIG * (0.85 + 0.35 * u)).setAlpha(fade * Math.min(1, u * 6) * (1 - u) ** 1.3 * 0.9);
+        .setScale(0.5 * BIG * (0.9 + 0.2 * u)).setAlpha(fade * Math.min(1, u * 8) * (1 - u) * 0.9);
     }
   };
   let tgt = pickMain();
   let lastTick = -TICK;
   const hitT = new Map<Pt, number>();
-  // THỨC TỈNH: tên lửa băng truy kích (homing) — bắn ra 3 hướng lệch 120°, bay vòng rồi lượn bám theo mục tiêu
-  type Missile = { head: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image; trail: Phaser.GameObjects.Particles.ParticleEmitter; x: number; y: number; vx: number; vy: number; t: Pt | null; age: number };
+  // THỨC TỈNH: tên lửa băng truy kích (homing) — toả trong quạt phía trước, lượn cong bám mục tiêu, không vòng ngược
+  type Missile = { head: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image; trail: Phaser.GameObjects.Particles.ParticleEmitter; x: number; y: number; vx: number; vy: number; t: Pt | null; age: number; ax: number; o: Pt };
   const missiles: Missile[] = [];
-  const nearest = (x: number, y: number, ex?: Pt) => s.targets().filter((o) => o !== ex).sort((p1, p2) => Math.hypot(p1.x - x, p1.y - y) - Math.hypot(p2.x - x, p2.y - y))[0] ?? null;
-  const launch = (from: Pt, ang: number, target: Pt | null) => {
+  const wrap = (a: number) => Phaser.Math.Angle.Wrap(a);
+  const CONE = Math.PI / 4;                                              // quạt 90° quanh trục tia chính
+  const inCone = (o: Pt, from: Pt, ax: number) => Math.abs(wrap(Math.atan2(o.y - from.y, o.x - from.x) - ax)) <= CONE;
+  const nearest = (x: number, y: number, from: Pt, ax: number) => s.targets().filter((o) => inCone(o, from, ax)).sort((p1, p2) => Math.hypot(p1.x - x, p1.y - y) - Math.hypot(p2.x - x, p2.y - y))[0] ?? null;
+  const launch = (from: Pt, ang: number, target: Pt | null, ax: number) => {
     const sp = 260;
     const glow = sc.add.image(from.x, from.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(COL).setDepth(21).setScale(0.14 * BIG).setAlpha(0.6);
     const head = sc.add.image(from.x, from.y, NGAN_HA.missile).setOrigin(0.78, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(22).setScale(0.4 * BIG);
@@ -1635,7 +1638,7 @@ const nganHa: Fx = (s, aw) => {
       tint: [0x9fe8ff, 0x5aa8ff], blendMode: Phaser.BlendModes.ADD, frequency: 8,
     }).setDepth(20);
     k.glow(from.x, from.y, COL, 18, 160, { alpha: 0.6 });
-    missiles.push({ head, glow, trail, x: from.x, y: from.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, t: target, age: 0 });
+    missiles.push({ head, glow, trail, x: from.x, y: from.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, t: target, age: 0, ax, o: from });
   };
   const killMissile = (m: Missile, boom: boolean) => {
     if (boom) {
@@ -1649,7 +1652,7 @@ const nganHa: Fx = (s, aw) => {
     for (let i = missiles.length - 1; i >= 0; i--) {
       const m = missiles[i];
       m.age += dt;
-      if (!m.t || !s.targets().includes(m.t)) m.t = nearest(m.x, m.y);          // mục tiêu chết → bám quái gần nhất
+      if (m.t && !s.targets().includes(m.t)) m.t = nearest(m.x, m.y, m.o, m.ax);   // mục tiêu chết → bám quái gần nhất trong quạt
       const sp = Math.min(620, 260 + m.age * 0.55);                             // tăng tốc dần
       if (m.t) {
         const ex = m.t.x, ey = m.t.y - 14;
@@ -1657,10 +1660,11 @@ const nganHa: Fx = (s, aw) => {
         let d = want - cur;
         while (d > Math.PI) d -= Math.PI * 2;
         while (d < -Math.PI) d += Math.PI * 2;
-        const turn = (m.age < 120 ? 2 : 5 + m.age * 0.012) * dt / 1000;          // càng bay lâu bẻ lái càng gắt
-        const a = cur + Math.max(-turn, Math.min(turn, d));
+        const turn = (6 + m.age * 0.01) * dt / 1000;                            // lượn cong mềm về mục tiêu
+        const lim = Math.PI * 0.4;                                              // hướng bay luôn trong ±72° quanh trục → không bao giờ vòng ngược
+        const a = m.ax + Phaser.Math.Clamp(wrap(cur + Math.max(-turn, Math.min(turn, d)) - m.ax), -lim, lim);
         m.vx = Math.cos(a) * sp; m.vy = Math.sin(a) * sp;
-        if (Math.hypot(ex - m.x, ey - m.y) < 16) { damage(m.t); killMissile(m, true); missiles.splice(i, 1); continue; }
+        if (Math.hypot(ex - m.x, ey - m.y) < 22) { damage(m.t); killMissile(m, true); missiles.splice(i, 1); continue; }
       }
       m.x += m.vx * dt / 1000; m.y += m.vy * dt / 1000;
       const rot = Math.atan2(m.vy, m.vx);
@@ -1698,11 +1702,14 @@ const nganHa: Fx = (s, aw) => {
             if (along > 0 && along < L && off < 16 * BIG && t - (hitT.get(o) ?? -999) >= TICK) { hitT.set(o, t); damage(o); }
           }
         }
-        // THỨC TỈNH: định kỳ phóng 3 tên lửa băng truy kích từ cổng phát — chỉ nhắm quái PHÍA TRƯỚC mặt (±75° quanh hướng tia)
+        // THỨC TỈNH: định kỳ phóng 3 tên lửa băng truy kích từ cổng phát — chỉ nhắm quái trong quạt 90° phía trước (trục = tia chính)
         if (aw && t > 300 && t < DUR - 400 && t % 704 < 16) {
-          const front = (o: Pt) => { let d = Math.atan2(o.y - h.y, o.x - h.x) - rot; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return Math.abs(d) < 1.3; };
-          const pool = s.targets().filter((o) => o !== tgt && front(o) && dist(o, h) < RANGE * 1.4).sort(() => Math.random() - 0.5);
-          for (let n = 0; n < 3; n++) launch(st0, rot + (n - 1) * 0.6, pool[n % Math.max(1, pool.length)] ?? tgt);   // toả 3 hướng về phía trước
+          const pool = s.targets().filter((o) => o !== tgt && inCone(o, st0, rot) && dist(o, h) < RANGE * 1.4).sort(() => Math.random() - 0.5);
+          for (let n = 0; n < 3; n++) {
+            const o = pool[n % Math.max(1, pool.length)] ?? tgt;
+            const toO = o ? wrap(Math.atan2(o.y - 14 - st0.y, o.x - st0.x) - rot) : 0;
+            launch(st0, rot + Phaser.Math.Clamp(toO + (n - 1) * 0.35, -CONE, CONE), o, rot);   // toả trong quạt phía trước, hơi lệch để lượn
+          }
         }
       }
       stepMissiles(16);
