@@ -202,7 +202,7 @@ new Phaser.Game({
 /** kỹ năng đã quyết định BỎ (chưa gỡ khỏi game — gỡ khi đưa toàn bộ kỹ năng mới vào game một lượt):
  *  kim_dan — muốn đột phá Nguyên Anh phải phá đan, nên từ Nguyên Anh trở đi không còn Kim Đan để dùng;
  *  nguyen_anh — Nguyên Anh là sinh mạng thứ hai, không ai đem ra tấn công thay bản thân. */
-const REMOVED = new Set(['kim_dan', 'nguyen_anh']);
+const REMOVED = new Set(['kim_dan', 'nguyen_anh', 'kim_than']);
 /** kỹ năng mới đang thiết kế, CHƯA có trong dữ liệu game (thêm khi tích hợp) — chèn vào chỗ kỹ năng bị bỏ */
 const EXTRA: Record<string, SkillDef> = {
   nguyen_anh: {

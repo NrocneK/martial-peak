@@ -7,6 +7,8 @@ Chỉ đưa vào game **một lượt** sau khi đã duyệt hết toàn bộ k�
 
 ### Bỏ kỹ năng
 - Bỏ **Kim Đan Hộ Luân** và **Nguyên Anh Xuất Khiếu**.
+- Bỏ **Bất Diệt Kim Thân** (đã có quá nhiều kỹ năng gây sát thương liên tục trong phạm vi).
+  Khi tích hợp: gỡ khỏi `src/config/skills.ts`, khỏi danh sách thức tỉnh của bị động **Huyền Vũ Giáp** (`p_huyen_vu.awakens`), và hiệu ứng `kimThan`.
 
 ### Thần Thức Trảm
 - Phía trên nhân vật xuất hiện tay khí, lưỡi kiếm khí bọc bàn tay, chém vào kẻ địch gần đó.
