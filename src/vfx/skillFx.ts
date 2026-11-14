@@ -1969,7 +1969,7 @@ const daiDao: Fx = (s, aw) => {
   const R = aw ? 400 : 330;                                            // bán kính trận trên mặt đất
   const COL = aw ? 0xffe7a0 : 0xe8e0ff;
   const BLOOM = 2000, HOLD = 250, GATHER = 450;
-  const c0 = pt(s.hero.x, s.hero.y + 20);
+  const c0 = pt(s.hero.x, s.hero.y + 20);                              // tâm trận: cập nhật theo chân nhân vật mỗi khung
   // ngưng đọng: phủ tối nền (dưới nhân vật/quái), trận nằm trên lớp phủ
   const veil = sc.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 4, cam.height * 4, aw ? 0x1a1206 : 0x0c0a1c, 0).setDepth(1);
   sc.tweens.add({ targets: veil, fillAlpha: 0.6, duration: 300 });
@@ -1990,6 +1990,8 @@ const daiDao: Fx = (s, aw) => {
   const ev = sc.time.addEvent({
     delay: 16, loop: true, callback: () => {
       t += 16;
+      c0.x = s.hero.x; c0.y = s.hero.y + 20;                           // trận đi theo nhân vật
+      arr.setPosition(c0.x, c0.y); core.setPosition(c0.x, c0.y); em?.setPosition(c0.x, c0.y);
       // thêm vòng: lớp i đang hiện, lớp i+1 hoà mờ vào trong 60% cuối của nhịp
       const u = Math.min(1, t / BLOOM) * (DAI_DAO.n - 1);
       const i = Math.min(DAI_DAO.n - 1, Math.floor(u));
