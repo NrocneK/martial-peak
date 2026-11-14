@@ -1284,7 +1284,7 @@ export const SWORD_ARRAY = { n: 'vx_sword_array', aw: 'vx_sword_array_aw',
 const QI_BLADE_COLORS = [0xff3232, 0xff961e, 0xffeb28, 0x3ce650, 0x3c8cff, 0x463ce6, 0xaa46ff, 0x000000, 0xffffff];
 
 const vanKiem: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
+  const k = s.kit;
   const R = aw ? 220 : 180;
   const drop = (p: Pt, big = 1, track?: () => Pt, stay = 0, color?: number) => {
     // kiếm khí NGỰ KIẾM (tools/art/qi_blade.py tách từ qi_sword_light.png): lõi trắng giữ nguyên (cộng sáng) + quầng đổi
@@ -1317,11 +1317,12 @@ const vanKiem: Fx = (s, aw) => {
   const LIFE = aw ? 3000 : 2700;
   const arr = k.scene.add.image(0, 0, aw ? SWORD_ARRAY.aw : SWORD_ARRAY.n).setBlendMode(Phaser.BlendModes.ADD);
   const ground = k.scene.add.container(s.hero.x, s.hero.y + 20, [arr]).setDepth(2).setAlpha(0);
-  const AR = ((R + 30) * 2) / 512;
+  const ARR_R = (R + 30) * 1.35;                                           // bán kính trận (to hơn 35%)
+  const AR = (ARR_R * 2) / 512;
   ground.setScale(AR * 0.4, AR * 0.4 * 0.58);
   k.scene.tweens.add({ targets: ground, alpha: 0.85, scaleX: AR, scaleY: AR * 0.58, duration: 380, ease: 'Back.easeOut' });
   k.scene.tweens.add({ targets: arr, rotation: aw ? 1.2 : 0.8, duration: LIFE + 400 });
-  k.glow(s.hero.x, s.hero.y + 20, aw ? 0xffd870 : 0xffffff, R * 1.2, 500, { alpha: 0.5 });
+  k.glow(s.hero.x, s.hero.y + 20, aw ? 0xffd870 : 0xffffff, ARR_R * 1.1, 500, { alpha: 0.5 });
   k.later(LIFE, () => k.scene.tweens.add({ targets: ground, alpha: 0, duration: 400, onComplete: () => ground.destroy() }));
   if (aw) {
     // 4 cự kiếm cắm đúng tâm 4 vòng tròn Phong · Lâm · Hoả · Sơn của trận đồ (toạ độ trong ảnh 512, so với tâm),
@@ -1337,8 +1338,9 @@ const vanKiem: Fx = (s, aw) => {
   }
   const n = aw ? 26 : 16;
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * 6.28, d = Math.sqrt(Math.random()) * R;
-    k.later(200 + i * (2000 / n), () => drop(polar(h, a, d)));
+    // rơi TRONG trận pháp: elip mặt đất cùng tâm + cùng độ nén với trận (bán kính ngang ≈ 85% bán kính trận)
+    const a = Math.random() * 6.28, d = Math.sqrt(Math.random()) * ARR_R * 0.85;
+    k.later(200 + i * (2000 / n), () => drop({ x: ground.x + Math.cos(a) * d, y: ground.y + Math.sin(a) * d * 0.58 }));
   }
 };
 
