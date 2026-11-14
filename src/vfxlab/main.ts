@@ -49,8 +49,7 @@ class LabScene extends Phaser.Scene {
     this.load.image(HOANG_CHUNG.array, '/vfx/hoang_chung_array.png?v=1');
     this.load.image(HOANG_CHUNG.ground, '/vfx/hoang_chung_ground.png?v=1');
     for (const key of ['gold', 'red', 'ring'] as const) this.load.image(LINH_VUC[key], `/vfx/linh_vuc_${key}.png?v=1`);
-    this.load.spritesheet(DAI_DAO.bloom, '/vfx/dai_dao_bloom.png?v=1', { frameWidth: DAI_DAO.cell, frameHeight: DAI_DAO.cell });
-    this.load.image(DAI_DAO.full, '/vfx/dai_dao_full.png?v=1');
+    this.load.spritesheet(DAI_DAO.layers, '/vfx/dai_dao_layers.png?v=1', { frameWidth: DAI_DAO.cell, frameHeight: DAI_DAO.cell });
     for (const key of ['core', 'strand', 'ring', 'hit'] as const) this.load.image(NGAN_HA[key], `/vfx/ngan_ha_${key}.png?v=5`);
     for (const [key, f] of [[NGAN_HA.ringS, 'ring_s'], [NGAN_HA.missile, 'missile'], [NGAN_HA.snow, 'snow']]) this.load.image(key, `/vfx/ngan_ha_${f}.png?v=2`);
     for (const key of NGAN_HA.ice) this.load.image(key, `/vfx/${key.slice(3)}.png?v=1`);

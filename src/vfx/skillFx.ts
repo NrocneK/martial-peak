@@ -1884,11 +1884,12 @@ const deAn: Fx = (s, aw) => {
   });
 };
 
-export const DAI_DAO = { bloom: 'vx_dd_bloom', full: 'vx_dd_full', cell: 384, n: 24, ky: 0.5 } as const;
+export const DAI_DAO = { layers: 'vx_dd_layers', cell: 512, n: 13, ky: 0.5 } as const;
 
 const daiDao: Fx = (s, aw) => {
   // TRẬN ÂM DƯƠNG BÁT QUÁI lấy nguyên từ video mẫu (tools/art/dai_dao.py), nằm trên MẶT ĐẤT dưới chân, rất to:
-  // 1) ngưng đọng thời gian: nền tối lại, trận nở từng lớp như video (24 khung trong ~2s)
+  // 1) ngưng đọng thời gian: nền tối lại, trận thêm dần TỪNG VÒNG (13 lớp tách từ video, đã căn cỡ trùng khít;
+  //    lớp mới hoà mờ dần đè lên lớp trước → chỉ thấy vòng mới mọc thêm ra ngoài, không giật, không to nhỏ bất thường)
   // 2) quy nhất: trận xoay nhanh dần rồi thu về 1 điểm sáng ở tâm âm dương
   // 3) nổ toàn màn hình. Thức tỉnh: trận vàng kim, to hơn, linh khí hút về tâm, nổ mạnh hơn
   const k = s.kit, sc = k.scene;
@@ -1902,8 +1903,10 @@ const daiDao: Fx = (s, aw) => {
   const veil = sc.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 4, cam.height * 4, aw ? 0x1a1206 : 0x0c0a1c, 0).setDepth(1);
   sc.tweens.add({ targets: veil, fillAlpha: 0.6, duration: 300 });
   const arr = sc.add.container(c0.x, c0.y).setDepth(2).setScale(1, DAI_DAO.ky);
-  const im = sc.add.image(0, 0, DAI_DAO.bloom, 0).setBlendMode(ADD).setTint(COL).setScale((R * 2) / DAI_DAO.cell);
-  arr.add(im);
+  const SCL = (R * 2) / (DAI_DAO.cell * 0.96);                         // mép ngoài lớp cuối = 0,96 nửa ô
+  const im = sc.add.image(0, 0, DAI_DAO.layers, 0).setBlendMode(ADD).setTint(COL).setScale(SCL);
+  const nx = sc.add.image(0, 0, DAI_DAO.layers, 1).setBlendMode(ADD).setTint(COL).setScale(SCL).setAlpha(0);
+  arr.add([im, nx]);
   const core = sc.add.image(c0.x, c0.y, VT.SOFT).setBlendMode(ADD).setTint(COL).setDepth(3).setScale(0).setAlpha(0.9);
   let em: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   if (aw) {
@@ -1916,11 +1919,16 @@ const daiDao: Fx = (s, aw) => {
   const ev = sc.time.addEvent({
     delay: 16, loop: true, callback: () => {
       t += 16;
-      if (t < BLOOM) im.setFrame(Math.min(DAI_DAO.n - 1, Math.floor((t / BLOOM) * DAI_DAO.n)));
-      else if (im.texture.key !== DAI_DAO.full) im.setTexture(DAI_DAO.full).setScale((R * 2) / 768 * 0.92);
+      // thêm vòng: lớp i đang hiện, lớp i+1 hoà mờ vào trong 60% cuối của nhịp
+      const u = Math.min(1, t / BLOOM) * (DAI_DAO.n - 1);
+      const i = Math.min(DAI_DAO.n - 1, Math.floor(u));
+      if (+im.frame.name !== i) im.setFrame(i);
+      if (i < DAI_DAO.n - 1) nx.setFrame(i + 1).setAlpha(Phaser.Math.Clamp((u - i - 0.4) / 0.6, 0, 1));
+      else nx.setAlpha(0);
       if (t > BLOOM + HOLD) spd = Math.min(0.5, spd * 1.12 + 0.004);        // quy nhất: xoay nhanh dần
       spin += spd;
       im.setRotation(spin);
+      nx.setRotation(spin);
     },
   });
   // quy nhất: thu về 1 điểm, lõi sáng phình lên
