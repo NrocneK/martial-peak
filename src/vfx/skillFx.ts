@@ -163,11 +163,13 @@ const BA_DAO_ALPHA = 0.72;
 /** phối cảnh mặt đất ảnh đao khí bay dựng sẵn (tools/art/ba_dao_wave.py: K) */
 const BA_DAO_WAVE_K = 0.7;
 
-export const BA_DAO_SPIN = 'vx_badao_spin';
+/** đao khí (tools/art/ba_dao_qi.py: giữ dáng thanh đao mẫu) + vết đao quét (tools/art/ba_dao_trail.py) */
+export const BA_DAO_QI = { core: 'vx_badao_qi_core', rim: 'vx_badao_qi_rim', trail: 'vx_badao_trail', w: 564, hilt: 26, tip: 538 } as const;
 
 /** BÁ ĐAO TRẢM — đại trùng tu: XOAY ĐAO (ghi chú: docs/skill-redesign-pending.md)
- *  Nhân vật vung đao xoay tròn liên tục ~3s, VỪA XOAY VỪA DI CHUYỂN; vòng đao khí xoáy (tools/art/ba_dao_spin.py) nằm trên
- *  mặt đất quanh thân; mỗi vòng xoay chém mọi quái trong bán kính, quái GẦN NHẤT nhận thêm sát thương; quái trúng 6 lần
+ *  Nhân vật vung đao xoay tròn liên tục ~3s, VỪA XOAY VỪA DI CHUYỂN; ĐAO KHÍ bay tròn quanh thân trên mặt đất (chuôi gần
+ *  người, mũi hướng ra ngoài), VẾT ĐAO quét thành vòng tròn khép kín — càng gần thanh đao càng đậm;
+ *  mỗi vòng xoay chém mọi quái trong bán kính, quái GẦN NHẤT nhận thêm sát thương; quái trúng 6 lần
  *  bị PHÁ GIÁP. Thức tỉnh: vòng to hơn, cứ 3 vòng xoay văng 1 đao khí bay xuyên về phía quái gần nhất. */
 const baDao: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
@@ -177,12 +179,22 @@ const baDao: Fx = (s, aw) => {
   const SPIN = 300;                                                    // ms mỗi vòng xoay
   const KY = 0.55;
   const foot = () => pt(s.hero.x, s.hero.y + 14);
-  const SCL = (R / 0.9) / 256;                                         // mép ngoài vệt chém ở 0,9 nửa ảnh
-  const ct = sc.add.container(0, 0).setDepth(9).setScale(SCL * 0.5, SCL * 0.5 * KY).setAlpha(0);
-  const im = sc.add.image(0, 0, BA_DAO_SPIN).setBlendMode(ADD);
-  const ghost = sc.add.image(0, 0, BA_DAO_SPIN).setBlendMode(ADD).setAlpha(0.35);   // bóng nhoè trễ nửa nhịp → cảm giác quay rất nhanh
-  ct.add([ghost, im]);
-  sc.tweens.add({ targets: ct, scaleX: SCL, scaleY: SCL * KY, alpha: BA_DAO_ALPHA + 0.2, duration: 160, ease: 'Back.easeOut' });
+  const COL = 0xb070ff;
+  // 2 lớp mặt đất (container ép dẹt KY, đơn vị = px mặt đất): vết đao luôn dưới nhân vật; thanh đao đổi lớp theo vị trí
+  // (nửa phía sau → sau lưng nhân vật, nửa phía trước → đè lên nhân vật)
+  const ctT = sc.add.container(0, 0).setDepth(9).setScale(0.5, 0.5 * KY).setAlpha(0);
+  const ctB = sc.add.container(0, 0).setDepth(11).setScale(0.5, 0.5 * KY).setAlpha(0);
+  const trail = sc.add.image(0, 0, BA_DAO_QI.trail).setBlendMode(ADD).setTint(COL).setScale(R / (0.92 * 256));
+  ctT.add(trail);
+  const R0 = R * 0.12;                                                 // chuôi đao cách tâm
+  const sb = (R - R0) / (BA_DAO_QI.tip - BA_DAO_QI.hilt);
+  const bl = [
+    sc.add.image(0, 0, BA_DAO_QI.rim).setBlendMode(ADD).setTint(COL),
+    sc.add.image(0, 0, BA_DAO_QI.core).setBlendMode(ADD),
+  ];
+  for (const b of bl) b.setOrigin(BA_DAO_QI.hilt / BA_DAO_QI.w, 0.5).setScale(sb, sb * 2.2);   // thân đao dày hơn cho rõ dáng
+  ctB.add(bl);
+  sc.tweens.add({ targets: [ctT, ctB], scaleX: 1, scaleY: KY, alpha: 1, duration: 160, ease: 'Back.easeOut' });
   const a0 = (() => { const t = s.targets()[0]; const h = H(s); return t ? ang(h, t) : 0; })();
   const hits = new Map<Pt, number>();
   const broken = new Set<Pt>();
@@ -236,16 +248,17 @@ const baDao: Fx = (s, aw) => {
     delay: 16, loop: true, callback: () => {
       t += 16;
       const f = foot();
-      ct.setPosition(f.x, f.y);
-      const rot = (t / SPIN) * Math.PI * 2;                             // xoay THEO chiều kim đồng hồ trên màn hình (đầu vệt + lưỡi đao đi trước)
-      im.setRotation(rot);
-      ghost.setRotation(rot - 0.5);
-      s.pose?.('ba_dao', 0, a0 + rot);                                  // nhân vật xoay theo vòng đao (đổi hướng nhìn liên tục)
+      ctT.setPosition(f.x, f.y); ctB.setPosition(f.x, f.y);
+      const phi = a0 + (t / SPIN) * Math.PI * 2;                        // xoay THEO chiều kim đồng hồ trên màn hình
+      trail.setRotation(phi);                                           // vết đao: đậm nhất ngay sau lưỡi
+      for (const b of bl) b.setPosition(Math.cos(phi) * R0, Math.sin(phi) * R0).setRotation(phi);
+      ctB.setDepth(Math.sin(phi) < 0 ? 9.5 : 11);                       // phía sau / phía trước nhân vật
+      s.pose?.('ba_dao', 0, phi);                                       // nhân vật xoay theo thanh đao
       if (Math.floor(t / SPIN) > spins) { spins++; slash(); }
       if (t >= DUR) {
         ev.remove();
         s.pose?.('ba_dao', 0, a0);
-        sc.tweens.add({ targets: ct, alpha: 0, scaleX: SCL * 1.15, scaleY: SCL * 1.15 * KY, duration: 220, onComplete: () => ct.destroy(true) });
+        for (const c of [ctT, ctB]) sc.tweens.add({ targets: c, alpha: 0, scaleX: 1.15, scaleY: 1.15 * KY, duration: 220, onComplete: () => c.destroy(true) });
       }
     },
   });

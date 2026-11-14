@@ -37,7 +37,7 @@ Chỉ đưa vào game **một lượt** sau khi đã duyệt hết toàn bộ k�
 
 ### Bá Đao Trảm — đại trùng tu: XOAY ĐAO (lấy cảm hứng cơ chế xoay kiếm)
 **Thường**
-- Vung đao **xoay tròn liên tục ~3 giây**, **vừa xoay vừa di chuyển** được; vòng đao khí xoáy nằm trên mặt đất quanh thân.
+- Vung đao **xoay tròn liên tục ~3 giây**, **vừa xoay vừa di chuyển** được; **đao khí** (dáng thanh đao mẫu) bay tròn quanh thân trên mặt đất, **vết đao** quét thành vòng tròn khép kín — càng gần thanh đao càng đậm.
 - Mỗi vòng xoay (~0,3s) chém mọi quái trong bán kính; **quái gần nhất nhận thêm sát thương**.
 - Quái trúng **6 lần** bị **phá giáp** (giảm giáp/phòng thủ).
 - Tăng cấp: tăng sát thương, thời gian xoay (số vòng) và bán kính.
