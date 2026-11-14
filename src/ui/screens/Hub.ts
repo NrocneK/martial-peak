@@ -26,8 +26,8 @@ const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => h('img', { src: itemI
  * `posY` khớp background-position-y trong styles.css (.sect).
  */
 const SECT = {
-  tall: { w: 632, h: 1124, x: 316, y: 878, r: 95, posY: 1 },
-  wide: { w: 2000, h: 1124, x: 1005, y: 878, r: 95, posY: 0.7 },
+  tall: { w: 632, h: 1124, x: 316, y: 872, r: 95, posY: 1 },
+  wide: { w: 2000, h: 1124, x: 1005, y: 872, r: 95, posY: 0.7 },
 };
 const TALL_MQ = '(max-aspect-ratio: 1/1)';
 
@@ -69,7 +69,7 @@ export class Hub {
   private modal: { close: () => void; refresh?: () => void } | null = null;
   private readonly sect = h('div', { class: 'sect' });
   private readonly portalBtn = h('button', { class: 'portal-hit', 'aria-label': 'Truyền Tống Trận: vào Lịch Luyện chọn màn' },
-    h('i', { class: 'portal-ring' }), h('span', { class: 'portal-tag' }, h('b', { text: 'Truyền Tống Trận' }), h('small', { text: 'Lịch Luyện' })));
+    h('span', { class: 'portal-swirl' }, h('i'), h('i')), h('i', { class: 'portal-ring' }), h('span', { class: 'portal-tag' }, h('b', { text: 'Truyền Tống Trận' }), h('small', { text: 'Lịch Luyện' })));
   private readonly top = h('header', { class: 'lb-top' });
   private readonly body = h('main', { class: 'lb-body' });
   private readonly nav = h('nav', { class: 'lb-nav' });

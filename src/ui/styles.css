@@ -159,6 +159,16 @@
 .lb-home .lb-side { pointer-events: auto; }
 /* Truyền Tống Trận: vùng bấm phủ đúng cổng xoáy trên ảnh nền (vị trí do Hub.placePortal tính) */
 .portal-hit { position: absolute; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; z-index: 1; }
+/* vòng xoáy Truyền Tống Trận (ảnh mẫu, tools/art/portal_swirl.py): 2 lớp xoay khác tốc độ, hòa sáng lên cổng trong ảnh nền */
+.portal-swirl { position: absolute; left: 50%; top: 50%; width: 82%; height: 82%; transform: translate(-50%, -50%); pointer-events: none;
+  -webkit-mask: radial-gradient(circle, #000 55%, transparent 71%); mask: radial-gradient(circle, #000 55%, transparent 71%); }
+.portal-swirl i { position: absolute; inset: 0; background: url('/ui/portal_swirl.png?v=1') center / contain no-repeat; mix-blend-mode: screen; filter: saturate(1.5) brightness(1.15); animation: portal-spin 6s linear infinite; }
+.portal-swirl i + i { inset: 14%; opacity: 0.6; animation-duration: 3.6s; filter: saturate(1.5) brightness(1.4); }
+@keyframes portal-spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+.portal-swirl::after { content: ''; position: absolute; inset: 30%; border-radius: 50%; background: radial-gradient(circle, rgba(235, 252, 255, 0.85), rgba(150, 230, 255, 0) 70%);
+  mix-blend-mode: screen; animation: portal-core 2.2s ease-in-out infinite; }
+@keyframes portal-core { 50% { transform: scale(1.25); opacity: 0.7; } }
+@media (prefers-reduced-motion: reduce) { .portal-swirl i, .portal-swirl::after { animation: none; } }
 .portal-ring { position: absolute; inset: -6%; border-radius: 50%; box-shadow: 0 0 0 2px rgba(214, 248, 255, 0.0), 0 0 24px 6px rgba(148, 232, 251, 0.45); animation: portal-pulse 2.2s ease-in-out infinite; }
 @keyframes portal-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
 .portal-tag { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 14px); display: flex; flex-direction: column; align-items: center; white-space: nowrap; pointer-events: none;
