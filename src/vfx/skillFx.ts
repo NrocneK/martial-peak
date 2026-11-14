@@ -1801,29 +1801,48 @@ const kimThan: Fx = (s, aw) => {
   k.later(2400, () => { ev.remove(); hero.clearTint(); rise.stop(); k.tw(aura, { alpha: 0 }, 300); k.tw(rr, { alpha: 0 }, 300); k.later(900, () => rise.destroy()); });
 };
 
+export const LINH_VUC = { gold: 'vx_lv_gold', red: 'vx_lv_red', ring: 'vx_lv_ring', ky: 0.5 } as const;
+
 const linhVuc: Fx = (s, aw) => {
-  const k = s.kit;
+  // trận đồ dưới chân (ảnh mẫu, tools/art/linh_vuc.py): thường = trận đồ VÀNG; thức tỉnh = trận đồ ĐỎ
+  // + vòng gai đỏ bao ngoài, 2 lớp xoay NGƯỢC chiều nhau. Ảnh xoay trong container nén dọc = xoay trên mặt đất.
+  const k = s.kit, sc = k.scene;
+  const ADD = Phaser.BlendModes.ADD;
   const R = aw ? 240 : 170;
-  const base = k.img(VT.SOFT, 0, 0, { tint: aw ? 0xff1a3a : 0xc8203a, scale: (R / 64) * 1.15, alpha: 0, depth: 2 });
-  const r1 = k.img(VT.RUNES, 0, 0, { tint: 0xff4a5a, scale: R / 124, alpha: 0, depth: 3 });
-  const r2 = k.img(VT.RUNES, 0, 0, { tint: 0xff8a6a, scale: (R * 0.62) / 124, alpha: 0, depth: 3 });
-  k.scene.tweens.add({ targets: base, alpha: 0.32, duration: 400 });
-  k.scene.tweens.add({ targets: [r1, r2], alpha: 0.7, duration: 400 });
-  const mist = k.scene.add.particles(0, 0, VT.SMOKE, { lifespan: 1400, speed: { min: 5, max: 20 }, scale: { start: 0.6, end: 1.4 }, alpha: { start: 0.35, end: 0 }, tint: [0x8a0a1a, 0xc8203a], frequency: 70, emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, R) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(2);
+  const foot = () => pt(s.hero.x, s.hero.y + 20);
+  const layers: { c: Phaser.GameObjects.Container; im: Phaser.GameObjects.Image; spin: number }[] = [];
+  const layer = (tex: string, half: number, spin: number, depth: number) => {
+    const c = sc.add.container(0, 0).setDepth(depth).setScale(0.2, 0.2 * LINH_VUC.ky).setAlpha(0);
+    const im = sc.add.image(0, 0, tex).setBlendMode(ADD).setScale(half / 256);
+    c.add(im);
+    sc.tweens.add({ targets: c, scaleX: 1, scaleY: LINH_VUC.ky, alpha: 1, duration: 450, ease: 'Back.easeOut' });
+    layers.push({ c, im, spin });
+  };
+  if (aw) {
+    layer(LINH_VUC.red, (R * 0.7) / 0.76, 1, 3);                         // trận đồ đỏ (vòng ngoài của trận đồ ≈ 0.76 nửa ảnh)
+    layer(LINH_VUC.ring, R / 0.8, -1, 2);                                // vòng gai đỏ bao ngoài, xoay ngược
+  } else layer(LINH_VUC.gold, R / 0.76, 1, 3);
+  const mist = sc.add.particles(0, 0, VT.DOT, {
+    lifespan: 1200, speedY: { min: -40, max: -15 }, speedX: { min: -8, max: 8 }, scale: { start: 0.4, end: 0 }, alpha: { start: 0.8, end: 0 },
+    tint: aw ? [0xff3a3a, 0xff8a6a] : [0xffe060, 0xfff0a0], blendMode: ADD, frequency: 40,
+    emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 2, R * 2 * LINH_VUC.ky) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
+  }).setDepth(4);
   let t = 0;
   const ev = k.scene.time.addEvent({
     delay: 16, repeat: 2400 / 16, callback: () => {
       t += 16;
-      const h = H(s);
-      base.setPosition(h.x, h.y);
-      r1.setPosition(h.x, h.y).setRotation(t / 1500);
-      r2.setPosition(h.x, h.y).setRotation(-t / 1000);
-      mist.setPosition(h.x, h.y);
-      if (t % 600 < 16) for (const o of near(s, h, R)) s.hit(o, 0xff4a5a);
+      const h = H(s), f = foot();
+      for (const L of layers) { L.c.setPosition(f.x, f.y); L.im.setRotation((L.spin * t) / 2600); }
+      mist.setPosition(f.x, f.y);
+      if (t % 600 < 16) for (const o of near(s, h, R)) s.hit(o, aw ? 0xff4a5a : 0xffd040);
     },
   });
   if (aw) k.later(1200, () => { const tg = s.targets()[s.targets().length - 1]; if (tg) { const h = H(s); k.fly(VT.SWORD, h, tg, { dur: 260, tint: 0xff3a4a, scale: 1.1, trail: 0xff3a4a, trailScale: 0.8, onArrive: () => { s.hit(tg, 0xff3a4a); k.glow(tg.x, tg.y, 0xff3a4a, 120, 300); k.burst(tg.x, tg.y, 0xff5a5a, 16, { tex: VT.SPARK, scale: [0.4, 0] }); } }); } });
-  k.later(2400, () => { ev.remove(); mist.stop(); k.tw(base, { alpha: 0 }, 400); k.tw(r1, { alpha: 0 }, 400); k.tw(r2, { alpha: 0 }, 400); k.later(1500, () => mist.destroy()); });
+  k.later(2400, () => {
+    ev.remove(); mist.stop();
+    for (const L of layers) sc.tweens.add({ targets: L.c, alpha: 0, scaleX: 0.3, scaleY: 0.3 * LINH_VUC.ky, duration: 400, ease: 'Back.easeIn', onComplete: () => L.c.destroy(true) });
+    k.later(1300, () => mist.destroy());
+  });
 };
 
 const deAn: Fx = (s, aw) => {
