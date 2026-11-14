@@ -45,7 +45,8 @@ class LabScene extends Phaser.Scene {
     this.load.spritesheet(BLACK_HOLE.key, '/vfx/black_hole.png?v=1', { frameWidth: BLACK_HOLE.fw, frameHeight: BLACK_HOLE.fh });
     this.load.spritesheet(PHAP_TUONG.avatar, '/vfx/phap_tuong_avatar.png?v=2', { frameWidth: PHAP_TUONG.avW, frameHeight: PHAP_TUONG.avH });
     this.load.image(LOTUS.tex, '/vfx/lotus_top.png?v=2');
-    for (const key of ['core', 'strand', 'ring', 'hit'] as const) this.load.image(NGAN_HA[key], `/vfx/ngan_ha_${key}.png?v=4`);
+    for (const key of ['core', 'strand', 'ring', 'hit'] as const) this.load.image(NGAN_HA[key], `/vfx/ngan_ha_${key}.png?v=5`);
+    for (const [key, f] of [[NGAN_HA.ringS, 'ring_s'], [NGAN_HA.missile, 'missile'], [NGAN_HA.snow, 'snow']]) this.load.image(key, `/vfx/ngan_ha_${f}.png?v=2`);
     for (const key of NGAN_HA.ice) this.load.image(key, `/vfx/${key.slice(3)}.png?v=1`);
     this.load.image(LOTUS.petal, '/vfx/lotus_petal.png?v=1');
     this.load.image(PHAP_TUONG.palm, '/vfx/phap_tuong_palm.png?v=5');
