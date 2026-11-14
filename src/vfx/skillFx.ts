@@ -160,7 +160,8 @@ export const baDaoKey = (d: string): string => `vx_badao_${d}`;
 export const baDaoWaveKey = (d: string): string => `vx_badao_wave_${d}`;
 /** độ đục tối đa của vòng đao khí + đao khí bay (làm mờ bớt để không che quái / nhân vật) */
 const BA_DAO_ALPHA = 0.72;
-const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+/** phối cảnh mặt đất ảnh đao khí bay dựng sẵn (tools/art/ba_dao_wave.py: K) */
+const BA_DAO_WAVE_K = 0.7;
 
 export const BA_DAO_SPIN = 'vx_badao_spin';
 
@@ -204,16 +205,31 @@ const baDao: Fx = (s, aw) => {
       k.glow(nearest.x, nearest.y - 12, 0xf0a0ff, 34, 200);
       k.burst(nearest.x, nearest.y - 12, [0xffffff, 0xf08aff], 6, { tex: VT.SPARK, speed: [80, 200], scale: [0.35, 0], life: 240 });
     }
-    // THỨC TỈNH: cứ 3 vòng văng 1 đao khí bay xuyên về phía quái gần nhất
+    // THỨC TỈNH: cứ 3 vòng văng 1 đao khí — cung lưỡi liềm ĐỒNG TÂM với vòng đao xoáy: tâm ảnh đặt đúng tâm vòng,
+    // bắt đầu ở đúng mép vòng rồi NỞ RỘNG ra (không trượt lệch tâm). Ảnh dựng sẵn 8 hướng (ba_dao_wave.py: mép trước bán
+    // kính 300 đơn vị mặt đất, khung ±380 → 151,6px/ảnh 384; phối cảnh K=0,7) → ép thêm dọc để khớp KY của vòng xoáy.
     if (aw && spins % 3 === 0) {
       const tg = s.targets().slice().sort((p1, p2) => dist(p1, h) - dist(p2, h))[0];
-      const a = tg ? ang(h, tg) : a0;
-      const end = polar(h, a, 300);
-      const w = sc.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0).setScale(0.6);
-      sc.tweens.add({ targets: w, alpha: BA_DAO_ALPHA, scale: 0.8, duration: 90, ease: 'Quad.easeOut' });
-      sc.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
+      const f = foot();
+      // so trên MẶT ĐẤT (bỏ ép dẹt): hướng tới quái ↔ hướng mặt đất của từng ảnh (ảnh dựng theo góc màn hình với K=0,7)
+      const want = tg ? Math.atan2((tg.y - f.y) / KY, tg.x - f.x) : a0;
+      const gA = (i: number) => Math.atan2(Math.sin((i * Math.PI) / 4) / BA_DAO_WAVE_K, Math.cos((i * Math.PI) / 4));
+      let bi = 0;
+      for (let i = 1; i < 8; i++) if (Math.abs(Phaser.Math.Angle.Wrap(gA(i) - want)) < Math.abs(Phaser.Math.Angle.Wrap(gA(bi) - want))) bi = i;
+      const d8 = BA_DAO_DIRS[bi], a = gA(bi);
+      const R_IMG = 157, FLY = 320;                     // 157: bán kính mép trước đo thật trên ảnh (tools/art/ba_dao_wave.py)
+      const w = sc.add.image(f.x, f.y, baDaoWaveKey(d8)).setDepth(9).setAlpha(0);
+      const sz = { r: R };
+      const put = () => w.setScale(sz.r / R_IMG, (sz.r / R_IMG) * (KY / BA_DAO_WAVE_K));
+      put();
+      sc.tweens.add({ targets: w, alpha: BA_DAO_ALPHA, duration: 80 });
+      sc.tweens.add({ targets: sz, r: FLY, duration: 460, ease: 'Sine.easeIn', onUpdate: put });
       sc.tweens.add({ targets: w, alpha: 0, delay: 320, duration: 160, onComplete: () => w.destroy() });
-      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25 && dist(h, o) < 300) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
+      for (const o of s.targets()) {
+        const od = Math.hypot(o.x - f.x, (o.y - f.y) / KY);
+        if (od > R && od < FLY && Math.abs(Phaser.Math.Angle.Wrap(Math.atan2((o.y - f.y) / KY, o.x - f.x) - a)) < 0.45)
+          k.later(((od - R) / (FLY - R)) * 400, () => s.hit(o, 0xf0a0ff));
+      }
     }
   };
   const ev = sc.time.addEvent({
@@ -221,9 +237,9 @@ const baDao: Fx = (s, aw) => {
       t += 16;
       const f = foot();
       ct.setPosition(f.x, f.y);
-      const rot = -(t / SPIN) * Math.PI * 2;                            // xoay ngược chiều kim đồng hồ trên màn hình
+      const rot = (t / SPIN) * Math.PI * 2;                             // xoay THEO chiều kim đồng hồ trên màn hình (đầu vệt + lưỡi đao đi trước)
       im.setRotation(rot);
-      ghost.setRotation(rot + 0.5);
+      ghost.setRotation(rot - 0.5);
       s.pose?.('ba_dao', 0, a0 + rot);                                  // nhân vật xoay theo vòng đao (đổi hướng nhìn liên tục)
       if (Math.floor(t / SPIN) > spins) { spins++; slash(); }
       if (t >= DUR) {
