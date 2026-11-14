@@ -34,3 +34,14 @@ Chỉ đưa vào game **một lượt** sau khi đã duyệt hết toàn bộ k�
 - **Duy trì vĩnh viễn** quanh nhân vật (không có thời gian tồn tại, không hồi chiêu).
 - Thường: trận đồ **vàng** dưới chân. Thức tỉnh: trận đồ **đỏ** + vòng gai đỏ bao ngoài, 2 lớp xoay ngược chiều nhau.
 - **Bỏ huyết kiếm** ở bản thức tỉnh (trùng với Vạn Kiếm Quy Tông) — sửa lại mô tả thức tỉnh "Sát Lục Đế Vực" trong `src/config/skills.ts`.
+
+### Bá Đao Trảm — đại trùng tu: XOAY ĐAO (lấy cảm hứng cơ chế xoay kiếm)
+**Thường**
+- Vung đao **xoay tròn liên tục ~3 giây**, **vừa xoay vừa di chuyển** được; vòng đao khí xoáy nằm trên mặt đất quanh thân.
+- Mỗi vòng xoay (~0,3s) chém mọi quái trong bán kính; **quái gần nhất nhận thêm sát thương**.
+- Quái trúng **6 lần** bị **phá giáp** (giảm giáp/phòng thủ).
+- Tăng cấp: tăng sát thương, thời gian xoay (số vòng) và bán kính.
+
+**Thức tỉnh**
+- Vòng đao to hơn, xoay lâu hơn; cứ **3 vòng xoay văng 1 đao khí bay xuyên** về phía quái gần nhất.
+- Thay mô tả cũ (chém bán nguyệt, đẩy lùi) trong `src/config/skills.ts`.

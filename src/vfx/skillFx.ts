@@ -162,46 +162,78 @@ export const baDaoWaveKey = (d: string): string => `vx_badao_wave_${d}`;
 const BA_DAO_ALPHA = 0.72;
 const baDaoDir = (a: number): string => BA_DAO_DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
 
-/** hiện vết chém vòng theo hướng `aa`, vòng rộng ~2r quanh nhân vật: bung nhanh → giữ → loãng dần */
-function baDaoRing(k: Stage['kit'], h: Pt, aa: number, r: number, dur = 380): void {
-  const key = baDaoKey(baDaoDir(aa));
-  if (!k.scene.textures.exists(key)) return;
-  const im = k.scene.add.image(h.x, h.y + 4, key).setDepth(9).setAlpha(0);
-  // ảnh cắt khung cố định quanh tâm vòng: bề ngang vòng ≈ 69% bề ngang ảnh (phần còn lại là chỗ cho quầng sáng)
-  const w = (r * 2.2) / (im.width * 0.69);
-  im.setScale(w * 0.72);
-  k.scene.tweens.add({ targets: im, scale: w, alpha: BA_DAO_ALPHA, duration: 90, ease: 'Quad.easeOut' });
-  k.scene.tweens.add({ targets: im, scale: w * 1.08, alpha: 0, delay: 90 + dur * 0.35, duration: dur * 0.65, ease: 'Quad.easeIn', onComplete: () => im.destroy() });
-}
+export const BA_DAO_SPIN = 'vx_badao_spin';
 
+/** BÁ ĐAO TRẢM — đại trùng tu: XOAY ĐAO (ghi chú: docs/skill-redesign-pending.md)
+ *  Nhân vật vung đao xoay tròn liên tục ~3s, VỪA XOAY VỪA DI CHUYỂN; vòng đao khí xoáy (tools/art/ba_dao_spin.py) nằm trên
+ *  mặt đất quanh thân; mỗi vòng xoay chém mọi quái trong bán kính, quái GẦN NHẤT nhận thêm sát thương; quái trúng 6 lần
+ *  bị PHÁ GIÁP. Thức tỉnh: vòng to hơn, cứ 3 vòng xoay văng 1 đao khí bay xuyên về phía quái gần nhất. */
 const baDao: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
-  const t = s.targets()[0] ?? pt(h.x + 100, h.y);
-  const a = ang(h, t);
-  const cut = (aa: number, r: number) => {
-    baDaoRing(k, h, aa, r);
-    k.burst(h.x + Math.cos(aa) * r * 0.8, h.y + Math.sin(aa) * r * 0.55, [0xf08aff, 0xb040ff, 0xffffff], 14, { speed: [60, 260], life: 420, scale: [0.5, 0] });
-    for (const o of s.targets()) if (dist(h, o) < r + 10 && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - aa)) < 1.2) s.hit(o, 0xe080ff);
-  };
-  if (aw) {
-    // Tu La Bá Đao: xoay một vòng 8 hướng thật nhanh (chém 360°) rồi phóng đao khí thẳng phía trước
-    for (let i = 0; i < 8; i++) k.later(i * 35, () => cut(a + (i * Math.PI) / 4, 120));
-    k.later(120, () => {
+  const k = s.kit, sc = k.scene;
+  const ADD = Phaser.BlendModes.ADD;
+  const DUR = aw ? 3600 : 3000;
+  const R = aw ? 120 : 95;                                             // bán kính chém
+  const SPIN = 300;                                                    // ms mỗi vòng xoay
+  const KY = 0.55;
+  const foot = () => pt(s.hero.x, s.hero.y + 14);
+  const SCL = (R / 0.9) / 256;                                         // mép ngoài vệt chém ở 0,9 nửa ảnh
+  const ct = sc.add.container(0, 0).setDepth(9).setScale(SCL * 0.5, SCL * 0.5 * KY).setAlpha(0);
+  const im = sc.add.image(0, 0, BA_DAO_SPIN).setBlendMode(ADD);
+  const ghost = sc.add.image(0, 0, BA_DAO_SPIN).setBlendMode(ADD).setAlpha(0.35);   // bóng nhoè trễ nửa nhịp → cảm giác quay rất nhanh
+  ct.add([ghost, im]);
+  sc.tweens.add({ targets: ct, scaleX: SCL, scaleY: SCL * KY, alpha: BA_DAO_ALPHA + 0.2, duration: 160, ease: 'Back.easeOut' });
+  const a0 = (() => { const t = s.targets()[0]; const h = H(s); return t ? ang(h, t) : 0; })();
+  const hits = new Map<Pt, number>();
+  const broken = new Set<Pt>();
+  let t = 0, spins = 0;
+  const slash = () => {
+    const h = H(s);
+    const inR = s.targets().filter((o) => Math.hypot(o.x - h.x, (o.y - h.y) / KY) < R + 8);
+    const nearest = inR.slice().sort((p1, p2) => dist(p1, h) - dist(p2, h))[0];
+    for (const o of inR) {
+      s.hit(o, o === nearest ? 0xffffff : 0xe080ff);
+      const n = (hits.get(o) ?? 0) + 1;
+      hits.set(o, n);
+      if (n === 6 && !broken.has(o)) {                                 // PHÁ GIÁP: vụn giáp vỡ + vòng tím dưới chân
+        broken.add(o);
+        k.burst(o.x, o.y - 14, [0xb040ff, 0xffffff, 0xf08aff], 12, { tex: VT.SHARD, speed: [60, 180], scale: [0.5, 0.15], rotate: true, life: 420 });
+        k.ring(o.x, o.y + 2, 0xb040ff, 8, 40, 420, true, { ky: KY });
+      }
+    }
+    if (nearest) {                                                     // quái gần nhất: nhát chém đậm hơn
+      k.glow(nearest.x, nearest.y - 12, 0xf0a0ff, 34, 200);
+      k.burst(nearest.x, nearest.y - 12, [0xffffff, 0xf08aff], 6, { tex: VT.SPARK, speed: [80, 200], scale: [0.35, 0], life: 240 });
+    }
+    // THỨC TỈNH: cứ 3 vòng văng 1 đao khí bay xuyên về phía quái gần nhất
+    if (aw && spins % 3 === 0) {
+      const tg = s.targets().slice().sort((p1, p2) => dist(p1, h) - dist(p2, h))[0];
+      const a = tg ? ang(h, tg) : a0;
       const end = polar(h, a, 300);
-      // lưỡi liềm đao khí (ảnh đúng hướng, không xoay) bung ra trước mặt rồi trượt thẳng 300px theo hướng bay
-      const w = k.scene.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0);
-      const sc = 0.8;
-      w.setScale(sc * 0.75);
-      k.scene.tweens.add({ targets: w, alpha: BA_DAO_ALPHA, scale: sc, duration: 90, ease: 'Quad.easeOut' });
-      k.scene.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
-      k.scene.tweens.add({ targets: w, alpha: 0, delay: 320, duration: 160, onComplete: () => w.destroy() });
-      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
-    });
-    k.shake(160, 0.005);
-  } else {
-    cut(a, 105);
-    k.later(220, () => cut(a + Math.PI, 105));
-  }
+      const w = sc.add.image(h.x, h.y, baDaoWaveKey(baDaoDir(a))).setDepth(9).setAlpha(0).setScale(0.6);
+      sc.tweens.add({ targets: w, alpha: BA_DAO_ALPHA, scale: 0.8, duration: 90, ease: 'Quad.easeOut' });
+      sc.tweens.add({ targets: w, x: end.x, y: end.y, duration: 480, ease: 'Sine.easeIn' });
+      sc.tweens.add({ targets: w, alpha: 0, delay: 320, duration: 160, onComplete: () => w.destroy() });
+      for (const o of s.targets()) if (Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.25 && dist(h, o) < 300) k.later((dist(h, o) / 300) * 420, () => s.hit(o, 0xf0a0ff));
+    }
+  };
+  const ev = sc.time.addEvent({
+    delay: 16, loop: true, callback: () => {
+      t += 16;
+      const f = foot();
+      ct.setPosition(f.x, f.y);
+      const rot = -(t / SPIN) * Math.PI * 2;                            // xoay ngược chiều kim đồng hồ trên màn hình
+      im.setRotation(rot);
+      ghost.setRotation(rot + 0.5);
+      s.pose?.('ba_dao', 0, a0 + rot);                                  // nhân vật xoay theo vòng đao (đổi hướng nhìn liên tục)
+      if (Math.floor(t / SPIN) > spins) { spins++; slash(); }
+      if (t >= DUR) {
+        ev.remove();
+        s.pose?.('ba_dao', 0, a0);
+        sc.tweens.add({ targets: ct, alpha: 0, scaleX: SCL * 1.15, scaleY: SCL * 1.15 * KY, duration: 220, onComplete: () => ct.destroy(true) });
+      }
+    },
+  });
+  slash();
 };
 
 /** Phá Trận Thương — ảnh hiệu ứng đòn đâm (tools/art/spear_fx.py, dựng theo đòn đâm đầu trong video mẫu) */
