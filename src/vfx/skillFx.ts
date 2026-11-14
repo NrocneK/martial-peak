@@ -1884,33 +1884,61 @@ const deAn: Fx = (s, aw) => {
   });
 };
 
+export const DAI_DAO = { bloom: 'vx_dd_bloom', full: 'vx_dd_full', cell: 384, n: 24, ky: 0.5 } as const;
+
 const daiDao: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
-  const cam = k.scene.cameras.main;
-  // ngưng đọng thời gian: phủ màu tím xám + vòng đồng hồ
-  const veil = k.scene.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 2, cam.height * 2, aw ? 0x2a1a08 : 0x14102a, 0).setDepth(80);
-  k.scene.tweens.add({ targets: veil, fillAlpha: 0.55, duration: 300 });
-  const clock = k.img(VT.RUNES, h.x, h.y, { tint: aw ? 0xffd860 : 0xe8e0ff, scale: 0.3, alpha: 0, depth: 81 });
-  k.scene.tweens.add({ targets: clock, scale: 2.4, alpha: 0.9, rotation: -2, duration: 1600, ease: 'Sine.easeInOut' });
-  const tj = k.img(VT.TAIJI, h.x, h.y - 10, { add: false, scale: 0.1, alpha: 0, depth: 82 });
-  k.scene.tweens.add({ targets: tj, scale: aw ? 1.6 : 0.9, alpha: 0.95, rotation: 6, duration: 1600, ease: 'Sine.easeIn' });
+  // TRẬN ÂM DƯƠNG BÁT QUÁI lấy nguyên từ video mẫu (tools/art/dai_dao.py), nằm trên MẶT ĐẤT dưới chân, rất to:
+  // 1) ngưng đọng thời gian: nền tối lại, trận nở từng lớp như video (24 khung trong ~2s)
+  // 2) quy nhất: trận xoay nhanh dần rồi thu về 1 điểm sáng ở tâm âm dương
+  // 3) nổ toàn màn hình. Thức tỉnh: trận vàng kim, to hơn, linh khí hút về tâm, nổ mạnh hơn
+  const k = s.kit, sc = k.scene;
+  const ADD = Phaser.BlendModes.ADD;
+  const cam = sc.cameras.main;
+  const R = aw ? 400 : 330;                                            // bán kính trận trên mặt đất
+  const COL = aw ? 0xffe7a0 : 0xe8e0ff;
+  const BLOOM = 2000, HOLD = 250, GATHER = 450;
+  const c0 = pt(s.hero.x, s.hero.y + 20);
+  // ngưng đọng: phủ tối nền (dưới nhân vật/quái), trận nằm trên lớp phủ
+  const veil = sc.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 4, cam.height * 4, aw ? 0x1a1206 : 0x0c0a1c, 0).setDepth(1);
+  sc.tweens.add({ targets: veil, fillAlpha: 0.6, duration: 300 });
+  const arr = sc.add.container(c0.x, c0.y).setDepth(2).setScale(1, DAI_DAO.ky);
+  const im = sc.add.image(0, 0, DAI_DAO.bloom, 0).setBlendMode(ADD).setTint(COL).setScale((R * 2) / DAI_DAO.cell);
+  arr.add(im);
+  const core = sc.add.image(c0.x, c0.y, VT.SOFT).setBlendMode(ADD).setTint(COL).setDepth(3).setScale(0).setAlpha(0.9);
+  let em: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   if (aw) {
-    const em = k.scene.add.particles(h.x, h.y, VT.DOT, {
-      lifespan: 700, speed: 0, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd860, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 6,
-      emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const a = Math.random() * 6.28, r = 300; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r; p.velocityX = -p.x * 1.4; p.velocityY = -p.y * 1.4; },
-    }).setDepth(83);
-    k.later(1600, () => em.stop());
-    k.later(2400, () => em.destroy());
+    em = sc.add.particles(c0.x, c0.y, VT.DOT, {
+      lifespan: 700, speed: 0, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd860, 0xffffff], blendMode: ADD, frequency: 8,
+      emitCallback: (p: Phaser.GameObjects.Particles.Particle) => { const a = Math.random() * 6.28, r = R; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r * DAI_DAO.ky; p.velocityX = -p.x * 1.4; p.velocityY = -p.y * 1.4; },
+    }).setDepth(4);
   }
-  k.later(1700, () => {
-    k.tw(veil, { alpha: 0 }, 400);
-    k.tw(clock, { alpha: 0, scale: 3 }, 300);
-    k.tw(tj, { alpha: 0, scale: 0.1 }, 160);
-    k.flash(0xffffff, 300, 0.85);
-    k.glow(h.x, h.y, aw ? 0xffd860 : 0xe8e0ff, 700, 700, { depth: 84 });
-    for (let i = 0; i < 3; i++) k.later(i * 90, () => k.ring(h.x, h.y, aw ? 0xffd860 : 0xffffff, 30, 520, 600, true, { depth: 84 }));
-    k.burst(h.x, h.y, [0xffffff, aw ? 0xffd860 : 0xc8b8ff], 60, { tex: VT.SPARK, speed: [200, 600], scale: [0.6, 0], life: 700, depth: 84 });
-    k.shake(400, 0.016);
+  let t = 0, spin = 0, spd = 0.02;
+  const ev = sc.time.addEvent({
+    delay: 16, loop: true, callback: () => {
+      t += 16;
+      if (t < BLOOM) im.setFrame(Math.min(DAI_DAO.n - 1, Math.floor((t / BLOOM) * DAI_DAO.n)));
+      else if (im.texture.key !== DAI_DAO.full) im.setTexture(DAI_DAO.full).setScale((R * 2) / 768 * 0.92);
+      if (t > BLOOM + HOLD) spd = Math.min(0.5, spd * 1.12 + 0.004);        // quy nhất: xoay nhanh dần
+      spin += spd;
+      im.setRotation(spin);
+    },
+  });
+  // quy nhất: thu về 1 điểm, lõi sáng phình lên
+  k.later(BLOOM + HOLD, () => {
+    sc.tweens.add({ targets: arr, scaleX: 0.02, scaleY: 0.02 * DAI_DAO.ky, duration: GATHER, ease: 'Cubic.easeIn' });
+    sc.tweens.add({ targets: core, scale: aw ? 2.2 : 1.6, duration: GATHER, ease: 'Cubic.easeIn' });
+    em?.stop();
+  });
+  // nổ toàn màn hình
+  k.later(BLOOM + HOLD + GATHER, () => {
+    ev.remove(); arr.destroy(true); em?.destroy();
+    sc.tweens.add({ targets: core, scale: aw ? 9 : 7, alpha: 0, duration: 500, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+    sc.tweens.add({ targets: veil, fillAlpha: 0, duration: 500, onComplete: () => veil.destroy() });
+    k.flash(0xffffff, 300, aw ? 0.95 : 0.85);
+    k.glow(c0.x, c0.y, COL, aw ? 800 : 650, 700, { depth: 84 });
+    for (let i = 0; i < (aw ? 4 : 3); i++) k.later(i * 90, () => k.ring(c0.x, c0.y, i % 2 ? COL : 0xffffff, 30, aw ? 640 : 520, 600, true, { depth: 84 }));
+    k.burst(c0.x, c0.y, [0xffffff, aw ? 0xffd860 : 0xc8b8ff], aw ? 80 : 60, { tex: VT.SPARK, speed: [200, 600], scale: [0.6, 0], life: 700, depth: 84 });
+    k.shake(aw ? 500 : 400, aw ? 0.02 : 0.016);
     for (const o of s.targets()) s.hit(o, 0xffffff);
   });
 };
