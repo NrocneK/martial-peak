@@ -1942,11 +1942,14 @@ const daiDao: Fx = (s, aw) => {
     ev.remove(); arr.destroy(true); em?.destroy();
     sc.tweens.add({ targets: core, scale: aw ? 9 : 7, alpha: 0, duration: 500, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
     sc.tweens.add({ targets: veil, fillAlpha: 0, duration: 500, onComplete: () => veil.destroy() });
-    k.flash(0xffffff, 300, aw ? 0.95 : 0.85);
-    k.glow(c0.x, c0.y, COL, aw ? 800 : 650, 700, { depth: 84 });
-    for (let i = 0; i < (aw ? 4 : 3); i++) k.later(i * 90, () => k.ring(c0.x, c0.y, i % 2 ? COL : 0xffffff, 30, aw ? 640 : 520, 600, true, { depth: 84 }));
-    k.burst(c0.x, c0.y, [0xffffff, aw ? 0xffd860 : 0xc8b8ff], aw ? 80 : 60, { tex: VT.SPARK, speed: [200, 600], scale: [0.6, 0], life: 700, depth: 84 });
-    k.shake(aw ? 500 : 400, aw ? 0.02 : 0.016);
+    k.flash(0xffffff, 260, aw ? 0.8 : 0.7);
+    // quầng sáng + sóng nổ nằm trên MẶT ĐẤT (cùng góc nhìn với trận đồ)
+    const gl = sc.add.image(c0.x, c0.y, VT.SOFT).setBlendMode(ADD).setTint(COL).setDepth(3).setScale(0.5, 0.5 * DAI_DAO.ky);
+    const gs = (aw ? 800 : 650) / 64;
+    sc.tweens.add({ targets: gl, scaleX: gs, scaleY: gs * DAI_DAO.ky, alpha: 0, duration: 700, ease: 'Cubic.easeOut', onComplete: () => gl.destroy() });
+    for (let i = 0; i < (aw ? 4 : 3); i++) k.later(i * 90, () => k.ring(c0.x, c0.y, i % 2 ? COL : 0xffffff, 30, aw ? 640 : 520, 600, true, { depth: 3, ky: DAI_DAO.ky }));
+    k.burst(c0.x, c0.y - 20, [0xffffff, aw ? 0xffd860 : 0xc8b8ff], aw ? 50 : 36, { tex: VT.SPARK, speed: [160, 460], scale: [0.5, 0], life: 600, depth: 84 });
+    k.shake(aw ? 260 : 200, aw ? 0.007 : 0.005);                       // rung nhẹ
     for (const o of s.targets()) s.hit(o, 0xffffff);
   });
 };

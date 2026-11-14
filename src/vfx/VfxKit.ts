@@ -48,13 +48,14 @@ export class VfxKit {
     this.tw(im, { scale: (size / 64) * (o.grow ?? 1.2), alpha: 0 }, dur);
   }
 
-  /** Vòng sóng nở ra */
-  ring(x: number, y: number, color: number, r0: number, r1: number, dur = 400, thick = false, o: { alpha?: number; depth?: number; ease?: string } = {}): void {
-    const im = this.img(thick ? VT.RING_THICK : VT.RING, x, y, { tint: color, scale: r0 / 124, alpha: o.alpha ?? 1, depth: o.depth });
-    this.tw(im, { scale: r1 / 124, alpha: 0 }, dur, o.ease ?? 'Cubic.easeOut');
+  /** Vòng sóng nở ra. `ky` < 1: vòng nằm trên MẶT ĐẤT (ép dẹt theo góc nhìn) */
+  ring(x: number, y: number, color: number, r0: number, r1: number, dur = 400, thick = false, o: { alpha?: number; depth?: number; ease?: string; ky?: number } = {}): void {
+    const ky = o.ky ?? 1;
+    const im = this.img(thick ? VT.RING_THICK : VT.RING, x, y, { tint: color, scale: r0 / 124, alpha: o.alpha ?? 1, depth: o.depth }).setScale(r0 / 124, (r0 / 124) * ky);
+    this.tw(im, { scaleX: r1 / 124, scaleY: (r1 / 124) * ky, alpha: 0 }, dur, o.ease ?? 'Cubic.easeOut');
     // viền sáng trắng bên trong vòng
-    const core = this.img(VT.RING, x, y, { tint: 0xffffff, scale: r0 / 124, alpha: (o.alpha ?? 1) * (thick ? 0.9 : 0.6), depth: o.depth });
-    this.tw(core, { scale: (r1 / 124) * 0.98, alpha: 0 }, dur * 0.85, o.ease ?? 'Cubic.easeOut');
+    const core = this.img(VT.RING, x, y, { tint: 0xffffff, scale: r0 / 124, alpha: (o.alpha ?? 1) * (thick ? 0.9 : 0.6), depth: o.depth }).setScale(r0 / 124, (r0 / 124) * ky);
+    this.tw(core, { scaleX: (r1 / 124) * 0.98, scaleY: (r1 / 124) * 0.98 * ky, alpha: 0 }, dur * 0.85, o.ease ?? 'Cubic.easeOut');
   }
 
   /** Hạt bắn tung (một lần) */
