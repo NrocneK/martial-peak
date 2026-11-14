@@ -1722,31 +1722,61 @@ const nganHa: Fx = (s, aw) => {
   });
 };
 
+export const HOANG_CHUNG = { bell: 'vx_hc_energy', array: 'vx_hc_array', ground: 'vx_hc_ground', ky: 0.5, bellH: 135 } as const;
+
 const hoangChung: Fx = (s, aw) => {
-  const k = s.kit;
-  const bell = k.img(VT.BELL, 0, 0, { add: false, scale: 0.2, alpha: 0, depth: 24, origin: [0.5, 0.9] });
-  const dome = k.img(VT.SOFT, 0, 0, { tint: 0xf0c040, scale: 1.2, alpha: 0, depth: 21 });
-  const rim = k.img(VT.RING, 0, 0, { tint: 0xffe080, scale: 0.42, alpha: 0, depth: 21 });
-  k.scene.tweens.add({ targets: bell, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
-  k.scene.tweens.add({ targets: [dome, rim], alpha: 0.5, duration: 300 });
-  const ring = () => {
-    const h = H(s);
-    k.ring(h.x, h.y, 0xf0c040, 30, 170, 500, true);
-    k.ring(h.x, h.y, 0xfff0c0, 20, 130, 420);
-    k.scene.tweens.add({ targets: bell, angle: { from: -12, to: 12 }, duration: 90, yoyo: true, repeat: 2 });
-    k.shake(140, 0.005);
-    for (const o of near(s, h, 170)) s.hit(o, 0xf0c040);
-  };
+  // chuông năng lượng vàng trong suốt úp lên nhân vật (tools/art/hoang_chung.py → hoang_chung_energy.png),
+  // trận đồ (ảnh mẫu, tools/art/hoang_chung_array.py) nằm trên mặt đất dưới chân, xoay chậm;
+  // mỗi lần chuông rung: chuông nảy, trận đồ loé, sóng vàng lan trên mặt đất gây sát thương
+  const k = s.kit, sc = k.scene;
+  const ADD = Phaser.BlendModes.ADD;
+  const DUR = 2400;
+  const R = aw ? 190 : 160;                                            // bán kính sóng chuông
+  const foot = () => pt(s.hero.x, s.hero.y + 20);
+  const BS = HOANG_CHUNG.bellH / 300;
+  // trận đồ: ảnh xoay trong container nén dọc = xoay trên mặt đất
+  const AR = aw ? 120 : 100;
+  const arr = sc.add.container(0, 0).setDepth(3).setScale(0.2, 0.2 * HOANG_CHUNG.ky).setAlpha(0);
+  const arrIm = sc.add.image(0, 0, HOANG_CHUNG.array).setBlendMode(ADD).setScale((AR * 2) / 512);
+  arr.add(arrIm);
+  sc.tweens.add({ targets: arr, scaleX: 1, scaleY: HOANG_CHUNG.ky, alpha: 1, duration: 420, ease: 'Back.easeOut' });
+  sc.tweens.add({ targets: arrIm, angle: 360, duration: 12000, repeat: -1 });
+  // chuông: rơi từ trên xuống úp lên người
+  const bell = sc.add.image(0, 0, HOANG_CHUNG.bell).setOrigin(0.5, 0.93).setBlendMode(ADD).setDepth(11).setScale(BS * 0.8).setAlpha(0);
+  let drop = 70;
+  sc.tweens.add({ targets: bell, alpha: 0.95, scale: BS, duration: 260, ease: 'Quad.easeIn' });
+  sc.tweens.add({ targets: { v: 70 }, v: 0, duration: 260, ease: 'Quad.easeIn', onUpdate: (tw) => { drop = tw.getValue() ?? 0; } });
   let t = 0;
-  const ev = k.scene.time.addEvent({ delay: 16, repeat: 2400 / 16, callback: () => { t += 16; const h = H(s); bell.setPosition(h.x, h.y - 30); dome.setPosition(h.x, h.y); rim.setPosition(h.x, h.y); } });
-  if (aw) { k.later(500, ring); k.later(1200, ring); k.later(1900, ring); }
-  k.later(2300, () => {
-    ring();
-    k.burst(H(s).x, H(s).y - 30, 0xffe080, 20, { tex: VT.SPARK, speed: [100, 300], scale: [0.4, 0] });
+  const ev = sc.time.addEvent({
+    delay: 16, loop: true, callback: () => {
+      t += 16;
+      const f = foot();
+      arr.setPosition(f.x, f.y);
+      bell.setPosition(f.x, f.y + 2 - drop);
+      if (t > 300) bell.setAlpha(0.82 + Math.sin(t / 70) * 0.06 + Math.sin(t / 23) * 0.04);   // lửa chập chờn
+    },
+  });
+  const toll = (big: boolean) => {
+    const f = foot();
+    sc.tweens.add({ targets: bell, scaleX: BS * 1.08, scaleY: BS * 0.94, duration: 70, yoyo: true, ease: 'Quad.easeOut' });
+    sc.tweens.add({ targets: arrIm, alpha: { from: 1, to: 0.6 }, duration: 260, yoyo: true });
+    // sóng vàng lan trên mặt đất (ảnh vòng sáng elip)
+    for (const [d, s0] of [[0, 0.35], [90, 0.25]] as const) {
+      const g = sc.add.image(f.x, f.y, HOANG_CHUNG.ground).setBlendMode(ADD).setDepth(4).setScale(s0, s0 * 1.5).setAlpha(0.95);
+      const sx = R / 115;                                                // vòng sáng trong ảnh: bán kính ngang 115px, dọc = 1/3
+      sc.tweens.add({ targets: g, scaleX: sx, scaleY: sx * 1.5, alpha: 0, duration: 520, delay: d, ease: 'Cubic.easeOut', onComplete: () => g.destroy() });
+    }
+    k.glow(f.x, f.y - HOANG_CHUNG.bellH * 0.45, 0xffd060, 70, 260, { alpha: big ? 0.9 : 0.7 });
+    k.burst(f.x, f.y - HOANG_CHUNG.bellH * 0.5, [0xffe080, 0xffb030, 0xffffff], big ? 22 : 12, { tex: VT.DOT, speed: [60, 220], scale: [0.5, 0], life: 520 });
+    k.shake(big ? 180 : 120, big ? 0.007 : 0.004);
+    for (const o of near(s, f, R)) s.hit(o, 0xf0c040);
+  };
+  if (aw) { k.later(560, () => toll(false)); k.later(1180, () => toll(false)); k.later(1800, () => toll(false)); }
+  k.later(DUR - 300, () => toll(true));
+  k.later(DUR, () => {
     ev.remove();
-    k.tw(bell, { alpha: 0, scale: 1.3 }, 300);
-    k.tw(dome, { alpha: 0 }, 300);
-    k.tw(rim, { alpha: 0 }, 300);
+    sc.tweens.add({ targets: bell, alpha: 0, scale: BS * 1.15, duration: 320, onComplete: () => bell.destroy() });
+    sc.tweens.add({ targets: arr, alpha: 0, scaleX: 0.3, scaleY: 0.3 * HOANG_CHUNG.ky, duration: 380, ease: 'Back.easeIn', onComplete: () => arr.destroy(true) });
   });
 };
 
