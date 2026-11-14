@@ -69,7 +69,10 @@
         pointer-events: none;
       }
       #boot .wrap {
-        position: relative;
+        position: absolute;
+        top: 9vh;
+        left: 50%;
+        transform: translateX(-50%);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -87,7 +90,10 @@
         text-shadow: 0 3px 0 #14224f, 0 0 18px rgba(255, 217, 106, 0.45);
       }
       /* Cố Trường Ca đi bộ tại chỗ: dải 6 khung 52x68 (hướng xuống, cắt từ hero_b_walk.png), phóng 3 lần */
+      /* chân nhân vật (hàng 64/68 của khung) đặt đúng điểm (left, top) do script tính */
       #boot .walker {
+        position: absolute;
+        transform: translate(-50%, -94%);
         width: 156px;
         height: 204px;
         background: url('/ui/hero_boot_walk.png?v=1') 0 0 / 936px 204px no-repeat;
@@ -99,6 +105,12 @@
         to {
           background-position: -936px 0;
         }
+      }
+      #boot .bar {
+        position: absolute;
+        transform: translateX(-50%);
+        width: min(360px, 86vw);
+        text-align: center;
       }
       #boot .track {
         width: 100%;
@@ -125,6 +137,8 @@
       }
       #boot .tip {
         min-height: 2.6em;
+        margin-top: 8px;
+        text-shadow: 0 1px 2px #0a1030;
         font-size: 13px;
         line-height: 1.5;
         color: #cfdcff;
@@ -142,11 +156,34 @@
     <div id="boot" aria-live="polite">
       <div class="wrap">
         <div class="name">VẠN GIỚI<br />TẦM QUANG</div>
-        <div class="walker" role="img" aria-label="Cố Trường Ca"></div>
+      </div>
+      <div class="walker" role="img" aria-label="Cố Trường Ca"></div>
+      <div class="bar">
         <div class="track"><i></i></div>
         <div class="tip" id="boot-tip">Đang mở cổng truyền tống…</div>
       </div>
     </div>
+    <script>
+      // Nhân vật đứng đúng giữa bệ đá trung tâm của ảnh nền (ảnh phủ kín màn hình kiểu "cover", căn giữa):
+      // tâm bệ theo tỉ lệ ảnh — bản ngang 2000×1124: (0.5, 0.825); bản dọc 1124×2000: (0.507, 0.79)
+      (function () {
+        var boot = document.getElementById('boot');
+        var walker = boot.querySelector('.walker'), bar = boot.querySelector('.bar');
+        function place() {
+          var W = innerWidth, H = innerHeight, tall = W / H <= 1;
+          var iw = tall ? 1124 : 2000, ih = tall ? 2000 : 1124, px = tall ? 0.507 : 0.5, py = tall ? 0.79 : 0.825;
+          var k = Math.max(W / iw, H / ih);
+          var x = (W - iw * k) / 2 + px * iw * k, y = (H - ih * k) / 2 + py * ih * k;
+          y = Math.min(y, H - 110);                                      // chừa chỗ cho thanh nạp
+          walker.style.left = x + 'px';
+          walker.style.top = y + 'px';
+          bar.style.left = x + 'px';
+          bar.style.top = Math.max(y + 24, H - 76) + 'px';               // thanh nạp ở sát đáy màn hình, dưới bệ đá
+        }
+        place();
+        addEventListener('resize', place);
+      })();
+    </script>
     <!-- Lớp giao diện HTML (menu, HUD, thẻ kỹ năng...) nằm đè lên canvas game -->
     <div id="ui"></div>
     <script type="module" src="/src/main.ts"></script>
