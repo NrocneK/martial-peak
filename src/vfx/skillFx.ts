@@ -1420,6 +1420,26 @@ const lienHoa: Fx = (s, aw) => {
   const c = pt(h0.x, h0.y + 20);
   const R = aw ? 150 : 120;
   const S = (R * 2.2) / (LOTUS.size * LOTUS.fill);                         // fill: bán kính hoa / nửa khung ảnh
+  // cánh sen bán trong suốt (ảnh mẫu) bay tỏa trên mặt đất, mũi theo hướng bay; ĐUÔI cánh kéo vệt sáng hồng + bụi sáng
+  const petalFly = (ang: number) => {
+    const to = pt(c.x + Math.cos(ang) * 260, c.y + Math.sin(ang) * 260 * LOTUS.ky);
+    const dx = to.x - c.x, dy = to.y - c.y, L0 = Math.hypot(dx, dy), ux = dx / L0, uy = dy / L0;
+    const PS = 0.36, tail = 64 * PS;                                         // nửa dài cánh → điểm đuôi
+    const im = sc.add.image(c.x, c.y, LOTUS.petal).setScale(PS).setRotation(Math.atan2(dy, dx)).setDepth(20);
+    const glowTrail = sc.add.particles(0, 0, VT.SOFT, {
+      follow: im, followOffset: { x: -ux * tail, y: -uy * tail }, lifespan: 320, speed: 0, scale: { start: 0.2, end: 0.03 },
+      alpha: { start: 0.28, end: 0 }, tint: 0xff9ccc, blendMode: Phaser.BlendModes.ADD, frequency: 18,
+    }).setDepth(19);
+    const dust = sc.add.particles(0, 0, VT.DOT, {
+      follow: im, followOffset: { x: -ux * tail, y: -uy * tail }, lifespan: { min: 300, max: 600 }, speed: { min: 8, max: 30 },
+      angle: { min: 0, max: 360 }, scale: { start: 0.35, end: 0 }, alpha: { start: 0.8, end: 0 },
+      tint: [0xffd0e6, 0xffffff, 0xff8cc0], blendMode: Phaser.BlendModes.ADD, frequency: 22,
+    }).setDepth(19);
+    sc.tweens.add({ targets: im, x: to.x, y: to.y, duration: 560, ease: 'Cubic.easeOut' });
+    sc.tweens.add({ targets: im, alpha: 0, delay: 380, duration: 180, onComplete: () => {
+      im.destroy(); glowTrail.stop(); dust.stop(); k.later(650, () => { glowTrail.destroy(); dust.destroy(); });
+    } });
+  };
   const layer = (depth: number) => {
     const im = sc.add.image(0, 0, LOTUS.tex);
     const ct = sc.add.container(c.x, c.y, [im]).setDepth(depth);
@@ -1460,7 +1480,7 @@ const lienHoa: Fx = (s, aw) => {
     k.tw(glow, { alpha: 0, scale: 0.3 }, 580);
     k.later(560, () => {
       k.glow(c.x, c.y - 8, aw ? 0xffe6b0 : 0xe0c8ff, 60, 260);
-      if (aw) for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; k.fly(LOTUS.petal, c, pt(c.x + Math.cos(a) * 260, c.y + Math.sin(a) * 260 * LOTUS.ky), { dur: 520, add: false, scale: 0.36, trail: 0xffb0d8, trailScale: 0.45, ease: 'Cubic.easeOut' }); }   // cánh sen bán trong suốt (ảnh mẫu), mũi theo hướng bay
+      if (aw) for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2);
     });
     k.later(1400, () => motes.destroy());
   });
