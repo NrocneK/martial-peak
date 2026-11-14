@@ -55,7 +55,8 @@ export class BaDao extends WeaponSkill {
     if (this.spin > 0) this.spin -= dt;
     if ((this.cd -= dt) > 0) return;
     const c = this.c;
-    const R = c.area(this.aw ? 125 : this.L([90, 95, 100, 110, 115]));
+    // phạm vi chỉ ăn 30% chỉ số phạm vi, tối đa 140px (xoay đao là đòn cận chiến)
+    const R = Math.min(140, (this.aw ? 110 : this.L([80, 84, 88, 94, 100])) * (1 + (c.st.area * c.areaBuff - 1) * 0.3));
     if (!c.nearest(R + 140)) return void (this.cd = 0);
     const dur = this.dur();
     this.cd = Math.max(c.cdW(this.baseCd()), dur + 0.4);

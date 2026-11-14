@@ -232,7 +232,7 @@ const baDao: Fx = (s, aw) => {
       let bi = 0;
       for (let i = 1; i < 8; i++) if (Math.abs(Phaser.Math.Angle.Wrap(gA(i) - want)) < Math.abs(Phaser.Math.Angle.Wrap(gA(bi) - want))) bi = i;
       const d8 = BA_DAO_DIRS[bi], a = gA(bi);
-      const R_IMG = 157, FLY = 320;                     // 157: bán kính mép trước đo thật trên ảnh (tools/art/ba_dao_wave.py)
+      const R_IMG = 157, FLY = R + 180;                     // 157: bán kính mép trước đo thật trên ảnh (tools/art/ba_dao_wave.py)
       const w = sc.add.image(f.x, f.y, baDaoWaveKey(d8)).setDepth(9).setAlpha(0);
       const sz = { r: R };
       const put = () => w.setScale(sz.r / R_IMG, (sz.r / R_IMG) * (KY / BA_DAO_WAVE_K));
@@ -1859,20 +1859,17 @@ export const DAI_DAO = { layers: 'vx_dd_layers', cell: 512, n: 13, ky: 0.5 } as 
 
 const daiDao: Fx = (s, aw) => {
   // TRẬN ÂM DƯƠNG BÁT QUÁI lấy nguyên từ video mẫu (tools/art/dai_dao.py), nằm trên MẶT ĐẤT dưới chân, rất to:
-  // 1) ngưng đọng thời gian: nền tối lại, trận thêm dần TỪNG VÒNG (13 lớp tách từ video, đã căn cỡ trùng khít;
+  // 1) trận thêm dần TỪNG VÒNG (13 lớp tách từ video, đã căn cỡ trùng khít;
   //    lớp mới hoà mờ dần đè lên lớp trước → chỉ thấy vòng mới mọc thêm ra ngoài, không giật, không to nhỏ bất thường)
   // 2) quy nhất: trận xoay nhanh dần rồi thu về 1 điểm sáng ở tâm âm dương
   // 3) nổ toàn màn hình. Thức tỉnh: trận vàng kim, to hơn, linh khí hút về tâm, nổ mạnh hơn
   const k = s.kit, sc = k.scene;
   const ADD = Phaser.BlendModes.ADD;
-  const cam = sc.cameras.main;
   const R = aw ? 400 : 330;                                            // bán kính trận trên mặt đất
   const COL = aw ? 0xffe7a0 : 0xe8e0ff;
   const BLOOM = 2000, HOLD = 250, GATHER = 450;
   const c0 = pt(s.hero.x, s.hero.y + 20);                              // tâm trận: cập nhật theo chân nhân vật mỗi khung
-  // ngưng đọng: phủ tối nền (dưới nhân vật/quái), trận nằm trên lớp phủ
-  const veil = sc.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.width * 4, cam.height * 4, aw ? 0x1a1206 : 0x0c0a1c, 0).setDepth(1);
-  sc.tweens.add({ targets: veil, fillAlpha: 0.6, duration: 300 });
+  // trận nằm trên mặt đất
   const arr = sc.add.container(c0.x, c0.y).setDepth(2).setScale(1, DAI_DAO.ky);
   const SCL = (R * 2) / (DAI_DAO.cell * 0.96);                         // mép ngoài lớp cuối = 0,96 nửa ô
   const im = sc.add.image(0, 0, DAI_DAO.layers, 0).setBlendMode(ADD).setTint(COL).setScale(SCL);
@@ -1914,7 +1911,6 @@ const daiDao: Fx = (s, aw) => {
   k.later(BLOOM + HOLD + GATHER, () => {
     ev.remove(); arr.destroy(true); em?.destroy();
     sc.tweens.add({ targets: core, scale: aw ? 9 : 7, alpha: 0, duration: 500, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
-    sc.tweens.add({ targets: veil, fillAlpha: 0, duration: 500, onComplete: () => veil.destroy() });
     k.flash(0xffffff, 260, aw ? 0.8 : 0.7);
     // quầng sáng + sóng nổ nằm trên MẶT ĐẤT (cùng góc nhìn với trận đồ)
     const gl = sc.add.image(c0.x, c0.y, VT.SOFT).setBlendMode(ADD).setTint(COL).setDepth(3).setScale(0.5, 0.5 * DAI_DAO.ky);

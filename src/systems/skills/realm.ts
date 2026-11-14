@@ -349,9 +349,7 @@ export class DaiDao extends FxSkill {
     if ((this.cd -= dt) > 0) return;
     if (!c.nearest(500)) return void (this.cd = 0);
     this.cd = c.cdR(this.L([45, 45, 42, 42, 40]));
-    // ngưng đọng thời gian: trận âm dương bát quái nở từng vòng dưới chân → quy nhất về 1 điểm → nổ toàn màn hình
-    const STOP = 2.7;
-    c.enemies.timeStop = Math.max(c.enemies.timeStop, STOP);
+    // trận âm dương bát quái nở từng vòng dưới chân → quy nhất về 1 điểm → nổ toàn màn hình (không ngưng đọng thời gian)
     const startDealt = c.enemies.dealt;
     let first = true, stored = 0, n = 0;
     const pct = this.aw ? 45 : this.L([15, 18, 21, 24.5, 28]);
