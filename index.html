@@ -47,8 +47,7 @@
         z-index: 100;
         display: grid;
         place-items: center;
-        background: url('/ui/sect_wide.png') 50% 70% / cover no-repeat #2763d0;
-        image-rendering: pixelated;
+        background: url('/ui/sect_wide.jpg?v=2') 50% 50% / cover no-repeat #2763d0;
         color: #e9edff;
         font-family: 'Be Vietnam Pro', 'Segoe UI', Roboto, sans-serif;
         transition: opacity 0.6s ease;
@@ -57,12 +56,12 @@
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(8, 14, 44, 0.72), rgba(8, 14, 44, 0.55) 50%, rgba(8, 14, 44, 0.8));
+        background: linear-gradient(180deg, rgba(8, 14, 44, 0.45), rgba(8, 14, 44, 0.2) 45%, rgba(8, 14, 44, 0.65));
       }
       @media (max-aspect-ratio: 1/1) {
         #boot {
-          background-image: url('/ui/sect_tall.png');
-          background-position: 50% 100%;
+          background-image: url('/ui/sect_tall.jpg?v=2');
+          background-position: 50% 60%;
         }
       }
       #boot.done {
@@ -87,18 +86,18 @@
         color: #ffd96a;
         text-shadow: 0 3px 0 #14224f, 0 0 18px rgba(255, 217, 106, 0.45);
       }
-      /* Cố Trường Ca đi bộ tại chỗ: dải 4 khung 21x38, phóng 4 lần */
+      /* Cố Trường Ca đi bộ tại chỗ: dải 6 khung 52x68 (hướng xuống, cắt từ hero_b_walk.png), phóng 3 lần */
       #boot .walker {
-        width: 84px;
-        height: 152px;
-        background: url('/ui/hero_walk.png?v=0.9.5') 0 0 / 336px 152px no-repeat;
+        width: 156px;
+        height: 204px;
+        background: url('/ui/hero_boot_walk.png?v=1') 0 0 / 936px 204px no-repeat;
         image-rendering: pixelated;
-        animation: walk 0.5s steps(4) infinite;
+        animation: walk 0.6s steps(6) infinite;
         filter: drop-shadow(0 6px 0 rgba(8, 14, 44, 0.5));
       }
       @keyframes walk {
         to {
-          background-position: -336px 0;
+          background-position: -936px 0;
         }
       }
       #boot .track {

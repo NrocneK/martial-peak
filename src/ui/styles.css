@@ -44,9 +44,9 @@
 @keyframes toast-in { 0% { opacity: 0; transform: translate(-50%, -10px); } 8%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -6px); } }
 
 /* ---------- Nền tông môn dùng chung (Menu + Lobby) + nhân vật pixel ---------- */
-.sect { position: absolute; inset: 0; background: url('/ui/sect_wide.png') 50% 70% / cover no-repeat #6aa8f2; image-rendering: pixelated; }
+.sect { position: absolute; inset: 0; background: url('/ui/sect_wide.jpg?v=2') 50% 70% / cover no-repeat #6aa8f2; }
 /* màn hình dọc dùng bản 9:16 — tỉ lệ + vị trí phải khớp SECT trong Hub.ts */
-@media (max-aspect-ratio: 1/1) { .sect { background-image: url('/ui/sect_tall.png'); background-position: 50% 100%; } }
+@media (max-aspect-ratio: 1/1) { .sect { background-image: url('/ui/sect_tall.jpg?v=2'); background-position: 50% 100%; } }
 /* khung viền vàng pixel art (9 mảnh, mỗi góc 8px ảnh → 16px màn hình) */
 .fr { border: 16px solid transparent; border-image: url('/ui/frame_panel.png') 8 fill / 16px / 0 stretch; image-rendering: pixelated; }
 .hero-sprite { --s: 3; flex-shrink: 0; width: calc(58px * var(--s)); height: calc(106px * var(--s));

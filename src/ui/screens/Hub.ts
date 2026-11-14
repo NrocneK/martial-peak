@@ -21,13 +21,13 @@ const qClass = (it: ItemInst): string => (it.slot === 'bibao' ? 'q-bb' : it.tier
 const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => h('img', { src: itemIcon(it), alt: '', class: cls, draggable: 'false' });
 
 /**
- * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình). Tâm + bán kính của
- * Truyền Tống Trận tính theo pixel ảnh — PHẢI khớp tools/art/sect_bg.px.js (TALL.portal / WIDE.portal).
+ * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình), lấy nguyên từ ảnh mẫu
+ * (tools/art/sect_from_ref.py). Tâm + bán kính Truyền Tống Trận tính theo pixel ảnh — PHẢI khớp số script đó in ra.
  * `posY` khớp background-position-y trong styles.css (.sect).
  */
 const SECT = {
-  tall: { w: 288, h: 512, x: 144, y: 414, r: 33, posY: 1 },
-  wide: { w: 512, h: 288, x: 256, y: 214, r: 23, posY: 0.7 },
+  tall: { w: 791, h: 1345, x: 325, y: 1065, r: 72, posY: 1 },
+  wide: { w: 2391, h: 1345, x: 1125, y: 1065, r: 72, posY: 0.7 },
 };
 const TALL_MQ = '(max-aspect-ratio: 1/1)';
 
