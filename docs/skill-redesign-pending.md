@@ -27,3 +27,8 @@ Chỉ đưa vào game **một lượt** sau khi đã duyệt hết toàn bộ k�
 **Thức tỉnh**
 - Tăng mạnh kích thước và sát thương.
 - Thêm **3 tia truy kích** bắn định kỳ trong thời gian tia chính tồn tại.
+
+### Tiên Vương Lĩnh Vực
+- **Duy trì vĩnh viễn** quanh nhân vật (không có thời gian tồn tại, không hồi chiêu).
+- Thường: trận đồ **vàng** dưới chân. Thức tỉnh: trận đồ **đỏ** + vòng gai đỏ bao ngoài, 2 lớp xoay ngược chiều nhau.
+- **Bỏ huyết kiếm** ở bản thức tỉnh (trùng với Vạn Kiếm Quy Tông) — sửa lại mô tả thức tỉnh "Sát Lục Đế Vực" trong `src/config/skills.ts`.

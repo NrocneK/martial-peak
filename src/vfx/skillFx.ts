@@ -16,6 +16,8 @@ export interface Stage {
   hit(t: Pt, color?: number): void;
   /** Mục tiêu có phải boss không (trang demo: không có boss) */
   isBoss?(t: Pt): boolean;
+  /** Kỹ năng đang chọn (trang demo) — hiệu ứng duy trì vĩnh viễn tự tắt khi chọn kỹ năng khác */
+  current?(): string | undefined;
   /** Kéo mục tiêu tới vị trí (x, y) — dùng cho lốc xoáy kéo quái (trang demo: hình nhân bị kéo rồi tự trôi về chỗ cũ) */
   drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
@@ -1803,9 +1805,15 @@ const kimThan: Fx = (s, aw) => {
 
 export const LINH_VUC = { gold: 'vx_lv_gold', red: 'vx_lv_red', ring: 'vx_lv_ring', ky: 0.5 } as const;
 
+// lĩnh vực đang bật (duy trì VĨNH VIỄN): thi triển lại cùng loại thì giữ nguyên, đổi loại thì thay
+let lvActive: { aw: boolean; stop: () => void } | null = null;
+
 const linhVuc: Fx = (s, aw) => {
   // trận đồ dưới chân (ảnh mẫu, tools/art/linh_vuc.py): thường = trận đồ VÀNG; thức tỉnh = trận đồ ĐỎ
   // + vòng gai đỏ bao ngoài, 2 lớp xoay NGƯỢC chiều nhau. Ảnh xoay trong container nén dọc = xoay trên mặt đất.
+  // DUY TRÌ VĨNH VIỄN quanh nhân vật (không hết giờ); trang demo: tắt khi chọn kỹ năng khác
+  if (lvActive?.aw === aw) return;
+  lvActive?.stop();
   const k = s.kit, sc = k.scene;
   const ADD = Phaser.BlendModes.ADD;
   const R = aw ? 240 : 170;
@@ -1828,21 +1836,25 @@ const linhVuc: Fx = (s, aw) => {
     emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 2, R * 2 * LINH_VUC.ky) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
   }).setDepth(4);
   let t = 0;
-  const ev = k.scene.time.addEvent({
-    delay: 16, repeat: 2400 / 16, callback: () => {
+  const ev = sc.time.addEvent({
+    delay: 16, loop: true, callback: () => {
       t += 16;
+      if (s.current && s.current() !== 'linh_vuc') { stop(); return; }   // trang demo: đã chọn kỹ năng khác
       const h = H(s), f = foot();
       for (const L of layers) { L.c.setPosition(f.x, f.y); L.im.setRotation((L.spin * t) / 2600); }
       mist.setPosition(f.x, f.y);
       if (t % 600 < 16) for (const o of near(s, h, R)) s.hit(o, aw ? 0xff4a5a : 0xffd040);
     },
   });
-  if (aw) k.later(1200, () => { const tg = s.targets()[s.targets().length - 1]; if (tg) { const h = H(s); k.fly(VT.SWORD, h, tg, { dur: 260, tint: 0xff3a4a, scale: 1.1, trail: 0xff3a4a, trailScale: 0.8, onArrive: () => { s.hit(tg, 0xff3a4a); k.glow(tg.x, tg.y, 0xff3a4a, 120, 300); k.burst(tg.x, tg.y, 0xff5a5a, 16, { tex: VT.SPARK, scale: [0.4, 0] }); } }); } });
-  k.later(2400, () => {
+  const me = { aw, stop: () => {} };
+  const stop = () => {
+    if (lvActive === me) lvActive = null;
     ev.remove(); mist.stop();
     for (const L of layers) sc.tweens.add({ targets: L.c, alpha: 0, scaleX: 0.3, scaleY: 0.3 * LINH_VUC.ky, duration: 400, ease: 'Back.easeIn', onComplete: () => L.c.destroy(true) });
     k.later(1300, () => mist.destroy());
-  });
+  };
+  me.stop = stop;
+  lvActive = me;
 };
 
 const deAn: Fx = (s, aw) => {

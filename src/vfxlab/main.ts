@@ -110,6 +110,7 @@ class LabScene extends Phaser.Scene {
     this.stage = {
       kit: this.kit,
       hero: this.hero,
+      current: () => this.current?.id,
       targets: () => {
         const h = this.hero;
         const d = (t: Pt) => Math.hypot(t.x - h.x, t.y - h.y);
