@@ -1327,6 +1327,8 @@ const vanKiem: Fx = (s, aw) => {
   k.scene.tweens.add({ targets: ground, alpha: 0.85, scaleX: AR, scaleY: AR * 0.58, duration: 380, ease: 'Back.easeOut' });
   k.scene.tweens.add({ targets: arr, rotation: aw ? 1.2 : 0.8, duration: LIFE + 400 });
   k.glow(s.hero.x, s.hero.y + 20, aw ? 0xffd870 : 0xffffff, ARR_R * 1.1, 500, { alpha: 0.5 });
+  const follow = () => { if (!ground.active) { k.scene.events.off('update', follow); return; } ground.setPosition(s.hero.x, s.hero.y + 20); };   // trận đi theo nhân vật
+  k.scene.events.on('update', follow);
   k.later(LIFE, () => k.scene.tweens.add({ targets: ground, alpha: 0, duration: 400, onComplete: () => ground.destroy() }));
   if (aw) {
     // 4 cự kiếm cắm đúng tâm 4 vòng tròn Phong · Lâm · Hoả · Sơn của trận đồ (toạ độ trong ảnh 512, so với tâm),
@@ -1466,27 +1468,34 @@ const lienHoa: Fx = (s, aw) => {
   const lo = L[0].ct, fr = L[1].ct;
   lo.setAlpha(0.2); fr.setAlpha(0);
   const st = { fx: 0.05, fy: 0.05, rot: -0.6 };
+  let mimg: Phaser.GameObjects.Image | null = null;
   const apply = () => {
-    for (const l of L) { l.ct.setScale(S * st.fx, S * st.fy * LOTUS.ky); l.im.setRotation(st.rot); }
+    const h = H(s);                                                      // hoa đi theo nhân vật
+    c.x = h.x; c.y = h.y + 20;
+    for (const l of L) { l.ct.setPosition(c.x, c.y).setScale(S * st.fx, S * st.fy * LOTUS.ky); l.im.setRotation(st.rot); }
+    glow?.setPosition(c.x, c.y); motes?.setPosition(c.x, c.y); mimg?.setPosition(c.x, c.y);
   };
+  let glow: Phaser.GameObjects.Image | null = null;
+  let motes: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   apply();
   sc.events.on('update', apply);
   sc.tweens.add({ targets: st, fx: 1, fy: 1, duration: 650, ease: 'Back.easeOut' });
   sc.tweens.add({ targets: st, rot: -0.6 + Math.PI * 2, duration: LOTUS.spin, repeat: -1 });
   sc.tweens.add({ targets: lo, alpha: 1, duration: 650 });
   sc.tweens.add({ targets: fr, alpha: LOTUS.front, duration: 650 });
-  const glow = k.img(VT.SOFT, c.x, c.y, { tint: aw ? 0xffe0a0 : 0xc8a0ff, scale: 0.2, alpha: 0, depth: 2 });
+  glow = k.img(VT.SOFT, c.x, c.y, { tint: aw ? 0xffe0a0 : 0xc8a0ff, scale: 0.2, alpha: 0, depth: 2 });
   k.tw(glow, { scale: (R / 64) * 1.2, alpha: 0.35 }, 650);
-  const motes = sc.add.particles(c.x, c.y, VT.DOT, {
+  motes = sc.add.particles(c.x, c.y, VT.DOT, {
     lifespan: 1300, speedY: { min: -60, max: -20 }, speedX: { min: -10, max: 10 }, scale: { start: 0.6, end: 0 }, alpha: { start: 0.9, end: 0 },
     tint: aw ? [0xffe6a0, 0xd8b8ff, 0xffffff] : [0xc8a8ff, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 45,
     emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 1.6, R * 0.9) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
   }).setDepth(19);
   // nhịp thở nhẹ khi nở
+  const gl = glow, mo = motes;
   k.later(650, () => sc.tweens.add({ targets: st, fx: 1.03, fy: 1.03, duration: 700, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' }));
   for (const o of near(s, c, R)) k.later(350, () => s.hit(o, aw ? 0xffe0a0 : 0xd8b0ff));
   k.later(2400, () => {
-    motes.stop();
+    mo.stop();
     // TAN BIẾN TỪ NGOÀI VÀO TRONG: mặt nạ tròn mềm (nằm trên mặt đất) co dần về lõi, mép tan rắc bụi sáng
     const MK = 'vx_radial_mask';
     if (!sc.textures.exists(MK)) {
@@ -1495,8 +1504,9 @@ const lienHoa: Fx = (s, aw) => {
       g2.addColorStop(0, 'rgba(255,255,255,1)'); g2.addColorStop(0.78, 'rgba(255,255,255,1)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
       cv.context.fillStyle = g2; cv.context.fillRect(0, 0, 256, 256); cv.refresh();
     }
-    const mimg = sc.make.image({ x: c.x, y: c.y, key: MK }, false);
-    const mask = mimg.createBitmapMask();
+    const mi = sc.make.image({ x: c.x, y: c.y, key: MK }, false);
+    mimg = mi;
+    const mask = mi.createBitmapMask();
     lo.setMask(mask); fr.setMask(mask);
     const flowerR = 256 * LOTUS.fill * S * st.fx;                            // bán kính hoa trên màn hình (trục ngang)
     const ms = { m: (flowerR * 1.06) / (128 * 0.78) };
@@ -1509,7 +1519,7 @@ const lienHoa: Fx = (s, aw) => {
     sc.tweens.add({
       targets: ms, m: 0, duration: DISS, ease: 'Sine.easeIn',
       onUpdate: () => {
-        mimg.setScale(ms.m, ms.m * LOTUS.ky);
+        mi.setScale(ms.m, ms.m * LOTUS.ky);
         const er = ms.m * 128 * 0.88;                                       // giữa dải mép đang tan
         for (let i = 0; i < 3; i++) {
           const a2 = Math.random() * Math.PI * 2;
@@ -1518,13 +1528,13 @@ const lienHoa: Fx = (s, aw) => {
       },
       onComplete: () => {
         sc.events.off('update', apply); sc.tweens.killTweensOf(st);
-        lo.clearMask(); fr.clearMask(); mask.destroy(); mimg.destroy(); lo.destroy(); fr.destroy();
+        lo.clearMask(); fr.clearMask(); mask.destroy(); mi.destroy(); mimg = null; lo.destroy(); fr.destroy();
         k.later(800, () => edge.destroy());
         if (aw) for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2);   // hoa tan hết rồi cánh mới bay ra
       },
     });
-    k.tw(glow, { alpha: 0, scale: 0.3 }, DISS);
-    k.later(1400, () => motes.destroy());
+    k.tw(gl, { alpha: 0, scale: 0.3 }, DISS);
+    k.later(1400, () => mo.destroy());
   });
 };
 
@@ -2068,6 +2078,10 @@ function dragonFx(s: Stage, aw: boolean): void {
     }
     trail.unshift({ x: head.x, y: head.y, z: head.z });
     if (trail.length > 400) trail.length = 400;
+    if (portal.active) {                                                 // cổng xoáy đi theo nhân vật; khúc đuôi chưa ra hết vẫn chui từ cổng
+      portal.setPosition(hero.x, hero.y + 2);
+      if (realN < SEG) { const o = trail[trail.length - 1]; o.x = hero.x; o.y = hero.y; }
+    }
     const body = segs();
     // chạm quái trên đường bay (đầu + nửa thân trước), mỗi quái chờ 0,45s mới bị trúng lại
     for (const o of s.targets()) {
