@@ -1550,6 +1550,11 @@ const nganHa: Fx = (s, aw) => {
     rays.push({ sp, core, em, im, t: null, hitAt: 0 });
   }
   const srcGlow = k.img(VT.SOFT, 0, 0, { tint: COL, scale: 0.5, alpha: 0.8, depth: 21 });
+  // THỨC TỈNH: 3 tia chia đều 120°, xoay chậm quanh nhân vật (hướng đầu nhắm quái gần nhất), độ dài cố định,
+  // quét trúng mọi quái nằm trên tia
+  const near0 = s.targets().sort((p1, p2) => dist(p1, src()) - dist(p2, src()))[0];
+  const base0 = near0 ? Math.atan2(near0.y - 14 - src().y, near0.x - src().x) : -Math.PI / 2;
+  const hitT = new Map<Pt, number>();
   const pick = (r: Ray) => {
     const h = src();
     const used = rays.filter((o) => o !== r && o.t).map((o) => o.t);
@@ -1562,11 +1567,17 @@ const nganHa: Fx = (s, aw) => {
       const h = src();
       const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
       srcGlow.setPosition(h.x, h.y).setAlpha(0.35 * fade).setScale(0.3 + Math.sin(t / 60) * 0.04);
-      for (const r of rays) {
-        if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
-        if (!r.t) { r.sp.setAlpha(0); r.core.setAlpha(0); r.em.setAlpha(0); r.im.setAlpha(0); continue; }
-        const e = pt(r.t.x, r.t.y - 14);
-        const rot = Math.atan2(e.y - h.y, e.x - h.x);
+      rays.forEach((r, ri) => {
+        let rot: number, e: Pt;
+        if (aw) {
+          rot = base0 + (ri * Math.PI * 2) / 3 + (t / DUR) * 1.2;
+          e = pt(h.x + Math.cos(rot) * RANGE, h.y + Math.sin(rot) * RANGE);
+        } else {
+          if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
+          if (!r.t) { r.sp.setAlpha(0); r.core.setAlpha(0); r.em.setAlpha(0); r.im.setAlpha(0); return; }
+          e = pt(r.t.x, r.t.y - 14);
+          rot = Math.atan2(e.y - h.y, e.x - h.x);
+        }
         const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front, h.y + Math.sin(rot) * NGAN_HA.front);   // cổng phát trước mặt
         const L = Math.max(10, dist(st0, e));
         const sx = L / NGAN_HA.len, sy = Phaser.Math.Clamp(sx, 1.0, 1.3);
@@ -1574,13 +1585,23 @@ const nganHa: Fx = (s, aw) => {
         r.core.setPosition(st0.x, st0.y).setRotation(rot).setScale(sx, sy * (0.95 + Math.sin(t / 45) * 0.05)).setAlpha(fade);
         r.em.setPosition(st0.x, st0.y).setRotation(rot - NGAN_HA.refAng).setScale(0.3 * (1 + Math.sin(t / 90) * 0.04)).setAlpha(fade);
         r.im.setPosition(e.x, e.y).setRotation(rot - NGAN_HA.refAng).setScale(0.55).setAlpha(fade * (0.75 + Math.random() * 0.25));
-        if (t - r.hitAt > 300 && fade > 0.5) {
+        if (aw) {
+          if (fade > 0.5) for (const o of s.targets()) {
+            const ox = o.x - st0.x, oy = o.y - 14 - st0.y;
+            const along = ox * Math.cos(rot) + oy * Math.sin(rot), off = Math.abs(-ox * Math.sin(rot) + oy * Math.cos(rot));
+            if (along > 0 && along < L && off < 18 && t - (hitT.get(o) ?? -999) > 300) {
+              hitT.set(o, t);
+              s.hit(o, COL);
+              k.burst(o.x, o.y - 14, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
+            }
+          }
+        } else if (r.t && t - r.hitAt > 300 && fade > 0.5) {
           r.hitAt = t;
           s.hit(r.t, COL);
           k.glow(e.x, e.y, COL, 40, 200);
           k.burst(e.x, e.y, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
         }
-      }
+      });
       if (t >= DUR) { ev.remove(); for (const r of rays) { r.sp.destroy(); r.core.destroy(); r.em.destroy(); r.im.destroy(); } srcGlow.destroy(); }
     },
   });
