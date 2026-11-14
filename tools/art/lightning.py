@@ -95,6 +95,12 @@ def blast():
     out = np.dstack([a, A * 255])
     img = Image.fromarray(out.astype(np.uint8), 'RGBA').resize((512, 512), Image.LANCZOS)
     o = np.array(img).astype(float)
+    # chỉ giữ quả cầu (+ nứt đất): xoá tia sét giáng phía trên cầu bằng mặt nạ elip mềm quanh cầu (nửa dưới giữ nguyên)
+    yy, xx = np.mgrid[0:512, 0:512].astype(float)
+    CX, CY = 265.0, 345.0
+    e = np.sqrt(((xx - CX) / 280) ** 2 + ((yy - CY) / 140) ** 2)
+    keep = np.where(yy >= CY, 1.0, np.clip((1.0 - e) / 0.15, 0, 1))
+    o[..., 3] *= keep
     save(o, 'thunder_blast.png'); save(purple(o), 'thunder_blast_aw.png')
     print('blast 512 ground', 0.5, round(1010 / 1200, 3))
 
