@@ -7,6 +7,7 @@ NGÂN HÀ HÀN LƯU — VẼ MỚI (không cắt ghép), theo ảnh mẫu tools/
   · ngan_ha_strand.png 256×64  3 sợi khí xoắn (lặp ngang liền mạch, game cuộn → sợi chảy dọc tia)
   · ngan_ha_ring.png   256×256 cổng phát, tâm ảnh = điểm phát tia
   · ngan_ha_hit.png    128×128 điểm chạm, tâm ảnh = điểm chạm
+  · ngan_ha_ice.png    128×112  khối băng đóng băng mục tiêu (cụm tinh thể băng trong suốt), gốc = đáy giữa (chân quái)
   python3 -I tools/art/ngan_ha_draw.py
 """
 import os
@@ -115,6 +116,36 @@ def hit():
     save(rgba([(flare * 1.3, WHITE), (glow * 0.7, CYAN), (sparks, CYAN)], (N, N)), 'ngan_ha_hit.png')
 
 
+def ice():
+    from PIL import ImageDraw, ImageFilter
+    S = 4
+    W, H = 128, 112
+    fill = Image.new('L', (W * S, H * S), 0)
+    edge = Image.new('L', (W * S, H * S), 0)
+    df, de = ImageDraw.Draw(fill), ImageDraw.Draw(edge)
+    # (tâm x, đáy y, bề rộng, cao, nghiêng) — cụm tinh thể mọc từ chân lên
+    for cx, by, w, h, tilt in ((64, 108, 30, 92, 0), (44, 108, 20, 62, -0.35), (85, 108, 22, 70, 0.3),
+                               (30, 108, 13, 36, -0.6), (98, 108, 14, 40, 0.55)):
+        ux, uy = np.sin(tilt), -np.cos(tilt)
+        px, py = np.cos(tilt), np.sin(tilt)
+        hw = w / 2
+        tip = (cx + ux * h, by + uy * h)
+        sh = (cx + ux * (h - w * 0.8), by + uy * (h - w * 0.8))
+        poly = [(cx - px * hw, by - py * hw), (sh[0] - px * hw, sh[1] - py * hw), tip,
+                (sh[0] + px * hw, sh[1] + py * hw), (cx + px * hw, by + py * hw)]
+        poly = [(x * S, y * S) for x, y in poly]
+        df.polygon(poly, fill=150)
+        de.line(poly + [poly[0]], fill=255, width=S * 2)
+        de.line([(cx * S, by * S), (tip[0] * S, tip[1] * S)], fill=140, width=S)   # sống tinh thể
+    f = np.array(fill.resize((W, H), Image.LANCZOS)).astype(float) / 255
+    e = np.array(edge.resize((W, H), Image.LANCZOS)).astype(float) / 255
+    g = np.array(edge.resize((W, H), Image.LANCZOS).filter(ImageFilter.GaussianBlur(3))).astype(float) / 255
+    yy = np.arange(H)[:, None] / H
+    col = (CYAN * (1 - e[..., None]) + WHITE * e[..., None]) * (0.85 + 0.15 * yy[..., None])
+    A = np.clip(f * 0.55 + e * 0.9 + g * 0.35, 0, 1)
+    Image.fromarray(np.dstack([np.clip(col, 0, 255), A * 255]).astype(np.uint8), 'RGBA').save(os.path.join(VFX, 'ngan_ha_ice.png'))
+
+
 def preview():
     bg = (26, 24, 40)
     pv = Image.new('RGB', (760, 300), bg)
@@ -134,9 +165,10 @@ def preview():
     put('ngan_ha_strand.png', 128, 118, tile=2)
     put('ngan_ha_ring.png', 0, 22)
     put('ngan_ha_hit.png', 576, 86)
+    put('ngan_ha_ice.png', 650, 180)
     pv.save(os.path.join(OUT, 'ngan_ha_draw_preview.png'))
 
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    core(); strand(); ring(); hit(); preview()
+    core(); strand(); ring(); hit(); ice(); preview()

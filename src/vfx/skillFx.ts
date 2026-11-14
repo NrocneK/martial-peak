@@ -14,6 +14,8 @@ export interface Stage {
   targets(): Pt[];
   /** Báo trúng đòn (trang demo cho hình nhân chớp + rung) */
   hit(t: Pt, color?: number): void;
+  /** Mục tiêu có phải boss không (trang demo: không có boss) */
+  isBoss?(t: Pt): boolean;
   /** Kéo mục tiêu tới vị trí (x, y) — dùng cho lốc xoáy kéo quái (trang demo: hình nhân bị kéo rồi tự trôi về chỗ cũ) */
   drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
@@ -1527,79 +1529,123 @@ const lienHoa: Fx = (s, aw) => {
 /** Ngân Hà Hàn Lưu — VẼ MỚI theo ảnh mẫu (tools/art/ngan_ha_draw.py): tia nằm ngang, game xoay theo hướng bắn.
  *  core/strand 256×64 lặp ngang liền mạch → TileSprite (dài theo khoảng cách, KHÔNG kéo giãn); ring = cổng phát (tâm = điểm phát);
  *  hit = điểm chạm (tâm) */
-export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', ring: 'vx_ngan_ha_ring', hit: 'vx_ngan_ha_hit', th: 64, front: 46 } as const;
+export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', ring: 'vx_ngan_ha_ring', hit: 'vx_ngan_ha_hit', ice: 'vx_ngan_ha_ice', th: 64, front: 46 } as const;
+/** THƯỜNG: khoá mục tiêu XA NHẤT trong tầm (có boss thì ưu tiên boss), bắn tới khi mục tiêu chết hoặc hết giờ;
+ *  quái khác nằm trên tia cũng trúng; trúng → làm chậm (sương băng dưới chân), trúng 5 lần → ĐÓNG BĂNG (boss chỉ chậm).
+ *  THỨC TỈNH: tia to + mạnh hơn, định kỳ bắn thêm 3 TIA TRUY KÍCH vào quái khác. (Ghi chú: docs/skill-redesign-pending.md) */
 const nganHa: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
-  const n = aw ? 3 : 1;
-  const RANGE = aw ? 330 : 260;
-  const DUR = 2400;
+  const RANGE = aw ? 360 : 300;
+  const DUR = aw ? 3000 : 2600;
+  const BIG = aw ? 1.5 : 1;
   const COL = 0x9fe8ff;
+  const TICK = 300;
   const src = () => pt(s.hero.x, s.hero.y - 18);
-  // tia bắt đầu từ CỔNG PHÁT phía trước mặt nhân vật 1 đoạn (tâm cổng = điểm phát tia)
-  type Ray = { core: Phaser.GameObjects.TileSprite; str: Phaser.GameObjects.TileSprite; ring: Phaser.GameObjects.Image; hit: Phaser.GameObjects.Image; t: Pt | null; hitAt: number };
-  const rays: Ray[] = [];
-  for (let i = 0; i < n; i++) {
-    const core = sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.core).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
-    const str = sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.strand).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
-    const ring = sc.add.image(0, 0, NGAN_HA.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
-    const hit = sc.add.image(0, 0, NGAN_HA.hit).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
-    rays.push({ core, str, ring, hit, t: null, hitAt: 0 });
-  }
-  const pick = (r: Ray) => {
-    const h = src();
-    const used = rays.filter((o) => o !== r && o.t).map((o) => o.t);
-    r.t = s.targets().filter((o) => !used.includes(o) && dist(o, h) < RANGE).sort((p1, p2) => dist(p1, h) - dist(p2, h))[0] ?? null;
+  type Beam = { core: Phaser.GameObjects.TileSprite; str: Phaser.GameObjects.TileSprite; ring: Phaser.GameObjects.Image; hit: Phaser.GameObjects.Image };
+  const mkBeam = (big: number, ring = true): Beam => ({
+    core: sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.core).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0),
+    str: sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.strand).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0),
+    ring: sc.add.image(0, 0, NGAN_HA.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0).setVisible(ring),
+    hit: sc.add.image(0, 0, NGAN_HA.hit).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0).setScale(0.6 * big),
+  });
+  const killBeam = (b: Beam) => { b.core.destroy(); b.str.destroy(); b.ring.destroy(); b.hit.destroy(); };
+  // vẽ tia từ a (cổng) tới e, dày theo big
+  const drawBeam = (b: Beam, a: Pt, e: Pt, big: number, alpha: number, flow: number) => {
+    const rot = Math.atan2(e.y - a.y, e.x - a.x), L = Math.max(4, dist(a, e));
+    b.core.setPosition(a.x, a.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8 * big * (1 + Math.sin(flow / 50) * 0.06)).setAlpha(alpha);
+    b.core.tilePositionX -= 1.5;
+    b.str.setPosition(a.x, a.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8 * big).setAlpha(alpha);
+    b.str.tilePositionX -= 6;                                            // sợi khí xoắn chảy dọc tia
+    b.ring.setPosition(a.x, a.y).setRotation(rot).setScale(0.42 * big * (1 + Math.sin(flow / 90) * 0.04)).setAlpha(alpha);
+    b.hit.setPosition(e.x, e.y).setRotation(Math.random() * Math.PI * 2).setAlpha(alpha);
   };
-  // THỨC TỈNH: 3 tia chia đều 120°, xoay chậm (tia đầu nhắm quái gần nhất), dài cố định, quét trúng mọi quái trên tia
-  const near0 = s.targets().sort((p1, p2) => dist(p1, src()) - dist(p2, src()))[0];
-  const base0 = near0 ? Math.atan2(near0.y - 14 - src().y, near0.x - src().x) : -Math.PI / 2;
+  // làm chậm / đóng băng
+  const count = new Map<Pt, number>();
+  const frost = new Map<Pt, Phaser.GameObjects.Image>();
+  const frozen = new Set<Pt>();
+  const damage = (o: Pt) => {
+    s.hit(o, COL);
+    k.burst(o.x, o.y - 14, 0xcff4ff, 3, { tex: VT.SHARD, speed: [50, 140], scale: [0.45, 0.15], rotate: true, life: 320 });
+    const boss = s.isBoss?.(o) ?? false;
+    if (!frost.has(o)) {                                                 // làm chậm: sương băng dưới chân
+      const f = k.img(VT.SOFT, o.x, o.y + 2, { tint: COL, scale: 0.55, alpha: 0.55, depth: 2 }).setScale(0.55, 0.3);
+      frost.set(o, f);
+      if (boss) k.later(700, () => { k.tw(f, { alpha: 0 }, 250); });     // boss: chậm ngắn, chỉ chậm lại khi thi triển lại
+    }
+    const c = (count.get(o) ?? 0) + 1;
+    count.set(o, c);
+    if (c === 5 && !boss && !frozen.has(o)) {                            // ĐÓNG BĂNG
+      frozen.add(o);
+      const ice = sc.add.image(o.x, o.y + 4, NGAN_HA.ice).setOrigin(0.5, 0.96).setDepth(12).setScale(0.62, 0.05).setAlpha(0.95);
+      sc.tweens.add({ targets: ice, scaleY: 0.62, duration: 160, ease: 'Back.easeOut' });
+      k.burst(o.x, o.y - 18, 0xe8fbff, 8, { tex: VT.SHARD, speed: [40, 120], scale: [0.5, 0.2], rotate: true, life: 400 });
+      k.later(1600, () => {
+        k.burst(o.x, o.y - 18, 0xe8fbff, 10, { tex: VT.SHARD, speed: [80, 200], scale: [0.55, 0.2], rotate: true, life: 450 });
+        ice.destroy();
+        frozen.delete(o);
+      });
+    }
+  };
+  const pickMain = (): Pt | null => {
+    const h = src();
+    const inR = s.targets().filter((o) => dist(o, h) < RANGE);
+    const boss = inR.find((o) => s.isBoss?.(o));
+    if (boss) return boss;
+    return inR.sort((p1, p2) => dist(p2, h) - dist(p1, h))[0] ?? null;     // xa nhất trong tầm
+  };
+  const main = mkBeam(BIG);
+  let tgt = pickMain();
+  let lastTick = -TICK;
   const hitT = new Map<Pt, number>();
-  const hide = (r: Ray) => { r.core.setAlpha(0); r.str.setAlpha(0); r.ring.setAlpha(0); r.hit.setAlpha(0); };
+  type Chase = { b: Beam; t: Pt; born: number };
+  const chases: Chase[] = [];
   let t = 0;
   const ev = sc.time.addEvent({
     delay: 16, loop: true, callback: () => {
       t += 16;
       const h = src();
       const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
-      const grow = Math.min(1, t / 180);                                   // tia vươn ra từ cổng lúc đầu
-      rays.forEach((r, ri) => {
-        let rot: number, e: Pt;
-        if (aw) {
-          rot = base0 + (ri * Math.PI * 2) / 3 + (t / DUR) * 1.2;
-          e = pt(h.x + Math.cos(rot) * RANGE, h.y + Math.sin(rot) * RANGE);
-        } else {
-          if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
-          if (!r.t) { hide(r); return; }
-          e = pt(r.t.x, r.t.y - 14);
-          rot = Math.atan2(e.y - h.y, e.x - h.x);
-        }
-        const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front, h.y + Math.sin(rot) * NGAN_HA.front);
-        const L = Math.max(4, dist(st0, e) * grow);
-        const tip = pt(st0.x + Math.cos(rot) * L, st0.y + Math.sin(rot) * L);
-        const wob = 1 + Math.sin(t / 50 + ri) * 0.06;
-        r.core.setPosition(st0.x, st0.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8 * wob).setAlpha(fade);
-        r.core.tilePositionX -= 1.5;
-        r.str.setPosition(st0.x, st0.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8).setAlpha(fade);
-        r.str.tilePositionX -= 6;                                            // sợi khí xoắn chảy dọc tia
-        r.ring.setPosition(st0.x, st0.y).setRotation(rot).setScale(0.42 * (1 + Math.sin(t / 90) * 0.04)).setAlpha(fade);
-        r.hit.setPosition(tip.x, tip.y).setRotation(Math.random() * Math.PI * 2).setScale(0.55 + Math.random() * 0.15).setAlpha(fade * grow);
-        if (aw) {
-          if (fade > 0.5) for (const o of s.targets()) {
+      if (!tgt || !s.targets().includes(tgt) || dist(tgt, h) > RANGE * 1.25) tgt = pickMain();   // mục tiêu chết → chọn lại
+      if (!tgt) { drawBeam(main, h, h, BIG, 0, t); } else {
+        const e = pt(tgt.x, tgt.y - 14);
+        const rot = Math.atan2(e.y - h.y, e.x - h.x);
+        const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front * BIG, h.y + Math.sin(rot) * NGAN_HA.front * BIG);
+        const grow = Math.min(1, t / 180);
+        const tip = pt(st0.x + (e.x - st0.x) * grow, st0.y + (e.y - st0.y) * grow);
+        drawBeam(main, st0, tip, BIG, fade, t);
+        if (grow >= 1 && fade > 0.5 && t - lastTick >= TICK) {
+          lastTick = t;
+          damage(tgt);
+          // quái khác nằm trên tia cũng trúng
+          const L = dist(st0, e);
+          for (const o of s.targets()) {
+            if (o === tgt) continue;
             const ox = o.x - st0.x, oy = o.y - 14 - st0.y;
             const along = ox * Math.cos(rot) + oy * Math.sin(rot), off = Math.abs(-ox * Math.sin(rot) + oy * Math.cos(rot));
-            if (along > 0 && along < L && off < 18 && t - (hitT.get(o) ?? -999) > 300) {
-              hitT.set(o, t);
-              s.hit(o, COL);
-              k.burst(o.x, o.y - 14, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
-            }
+            if (along > 0 && along < L && off < 16 * BIG && t - (hitT.get(o) ?? -999) >= TICK) { hitT.set(o, t); damage(o); }
           }
-        } else if (r.t && t - r.hitAt > 300 && fade > 0.5 && grow >= 1) {
-          r.hitAt = t;
-          s.hit(r.t, COL);
-          k.burst(e.x, e.y, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
         }
-      });
-      if (t >= DUR) { ev.remove(); for (const r of rays) { r.core.destroy(); r.str.destroy(); r.ring.destroy(); r.hit.destroy(); } }
+        // THỨC TỈNH: 3 tia truy kích định kỳ từ cổng phát tới 3 quái khác
+        if (aw && t > 300 && t < DUR - 400 && t % 704 < 16) {
+          const others = s.targets().filter((o) => o !== tgt && dist(o, h) < RANGE).sort(() => Math.random() - 0.5).slice(0, 3);
+          for (const o of others) chases.push({ b: mkBeam(0.55, false), t: o, born: t });
+        }
+        for (let i = chases.length - 1; i >= 0; i--) {
+          const c = chases[i];
+          const age = t - c.born;
+          const ce = pt(c.t.x, c.t.y - 14);
+          const g2 = Math.min(1, age / 110);
+          const ctip = pt(st0.x + (ce.x - st0.x) * g2, st0.y + (ce.y - st0.y) * g2);
+          drawBeam(c.b, st0, ctip, 0.55, Math.min(1, (360 - age) / 120) * fade, t + i * 40);
+          if (age >= 110 && age < 126) damage(c.t);
+          if (age > 360) { killBeam(c.b); chases.splice(i, 1); }
+        }
+      }
+      if (t >= DUR) {
+        ev.remove(); killBeam(main); for (const c of chases) killBeam(c.b);
+        for (const f of frost.values()) k.tw(f, { alpha: 0 }, 400);
+        k.later(450, () => { for (const f of frost.values()) f.destroy(); });
+      }
     },
   });
 };
