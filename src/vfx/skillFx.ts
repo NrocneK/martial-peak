@@ -1524,43 +1524,55 @@ const lienHoa: Fx = (s, aw) => {
   });
 };
 
+/** Ngân Hà Hàn Lưu: luồng sáng băng lấy từ video mẫu (tools/art/ngan_ha.py): 30 khung 215×120, tia nằm ngang,
+ *  điểm đầu ở x = 0.0698, độ dài tia trong khung = 172 px → game kéo dài theo khoảng cách, chạy lặp, cộng sáng */
+export const NGAN_HA = { beam: 'vx_ngan_ha_beam', fw: 215, fh: 120, n: 30, ox: 0.0698, len: 172 } as const;
 const nganHa: Fx = (s, aw) => {
-  const k = s.kit;
-  const n = aw ? 4 : 2;
-  const L = aw ? 300 : 230;
-  const g = k.scene.add.graphics().setDepth(19).setBlendMode(Phaser.BlendModes.ADD);
-  const stars = k.scene.add.particles(0, 0, VT.SPARK, { lifespan: 500, speed: { min: 10, max: 40 }, scale: { start: 0.25, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xcff4ff, 0xffffff, 0x9fe8ff], blendMode: Phaser.BlendModes.ADD, frequency: -1 }).setDepth(20);
+  const k = s.kit, sc = k.scene;
+  const AK = 'vx_ngan_ha_anim';
+  if (!sc.anims.exists(AK)) sc.anims.create({ key: AK, frames: sc.anims.generateFrameNumbers(NGAN_HA.beam, { start: 0, end: NGAN_HA.n - 1 }), frameRate: 15, repeat: -1 });
+  const n = aw ? 3 : 1;
+  const RANGE = aw ? 320 : 260;
+  const DUR = 2400;
+  const COL = 0x9fe8ff;
+  const src = () => pt(s.hero.x, s.hero.y - 18);
+  type Ray = { sp: Phaser.GameObjects.Sprite; t: Pt | null; hitAt: number };
+  const rays: Ray[] = [];
+  for (let i = 0; i < n; i++) {
+    const sp = sc.add.sprite(0, 0, NGAN_HA.beam, 0).setOrigin(NGAN_HA.ox, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
+    sp.play({ key: AK, startFrame: (i * 10) % NGAN_HA.n });
+    rays.push({ sp, t: null, hitAt: 0 });
+  }
+  const srcGlow = k.img(VT.SOFT, 0, 0, { tint: COL, scale: 0.5, alpha: 0.8, depth: 21 });
+  const pick = (r: Ray) => {
+    const h = src();
+    const used = rays.filter((o) => o !== r && o.t).map((o) => o.t);
+    r.t = s.targets().filter((o) => !used.includes(o) && dist(o, h) < RANGE).sort((p1, p2) => dist(p1, h) - dist(p2, h))[0] ?? null;
+  };
   let t = 0;
-  const dur = 2400;
-  const hitT = new Map<Pt, number>();
-  const ev = k.scene.time.addEvent({
-    delay: 16, repeat: dur / 16, callback: () => {
+  const ev = sc.time.addEvent({
+    delay: 16, loop: true, callback: () => {
       t += 16;
-      const h = H(s);
-      const a0 = (t / 1000) * Math.PI;
-      g.clear();
-      const fade = Math.min(1, (dur - t) / 300, t / 200);
-      for (let i = 0; i < n; i++) {
-        const a = a0 + (i / n) * Math.PI * 2;
-        const e = polar(h, a, L);
-        for (const [w, c, al] of [[22, 0x3a8ae8, 0.25], [10, 0x9fe8ff, 0.6], [3, 0xffffff, 0.95]] as [number, number, number][]) {
-          g.lineStyle(w, c, al * fade);
-          g.lineBetween(h.x, h.y, e.x, e.y);
-        }
-        const p = polar(h, a, Math.random() * L);
-        stars.emitParticleAt(p.x, p.y, 1);
-        for (const o of s.targets()) {
-          const d = dist(h, o);
-          if (d < L && Math.abs(Phaser.Math.Angle.Wrap(ang(h, o) - a)) < 0.12 && (hitT.get(o) ?? 0) < t - 400) {
-            hitT.set(o, t);
-            s.hit(o, 0x9fe8ff);
-            k.burst(o.x, o.y, 0xcff4ff, 6, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 400 });
-          }
+      const h = src();
+      const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
+      srcGlow.setPosition(h.x, h.y).setAlpha(0.8 * fade).setScale(0.45 + Math.sin(t / 60) * 0.06);
+      for (const r of rays) {
+        if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
+        if (!r.t) { r.sp.setAlpha(0); continue; }
+        const e = pt(r.t.x, r.t.y - 14);
+        const L = dist(h, e);
+        r.sp.setPosition(h.x, h.y).setRotation(Math.atan2(e.y - h.y, e.x - h.x))
+          .setScale(L / NGAN_HA.len, Phaser.Math.Clamp(L / NGAN_HA.len, 0.75, 1.1)).setAlpha(fade);
+        if (t - r.hitAt > 300 && fade > 0.5) {
+          r.hitAt = t;
+          s.hit(r.t, COL);
+          k.glow(e.x, e.y, COL, 40, 200);
+          k.burst(e.x, e.y, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
         }
       }
+      if (t >= DUR) { ev.remove(); for (const r of rays) r.sp.destroy(); srcGlow.destroy(); }
     },
   });
-  k.later(dur + 40, () => { ev.remove(); g.destroy(); stars.destroy(); });
 };
 
 const hoangChung: Fx = (s, aw) => {
