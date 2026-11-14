@@ -1355,11 +1355,11 @@ const thanLoi: Fx = (s, aw) => {
   const ak = 'vx_thunder_strike_anim' + sf;
   if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers(THUNDER.strike + sf, { start: 0, end: 4 }), frameRate: 14, repeat: 0 });
   // tia sét giáng xuống mục tiêu (hoạt ảnh 5 khung của mẫu)
-  const strike = (t: Pt, big = 1) => {
+  const strike = (t: Pt, big = 1, onDone?: () => void) => {
     const im = sc.add.sprite(t.x + Phaser.Math.Between(-6, 6), t.y + 4, THUNDER.strike + sf, 0).setOrigin(THUNDER.gx, THUNDER.gy)
       .setScale(0.62 * big).setFlipX(Math.random() < 0.5).setDepth(22).setBlendMode(Phaser.BlendModes.ADD);
     im.play(ak);
-    im.once('animationcomplete', () => im.destroy());
+    im.once('animationcomplete', () => { im.destroy(); onDone?.(); });
     k.glow(t.x, t.y, COL, 70 * big, 300);
   };
   // tia sét lan giữa 2 mục tiêu (hình tia của mẫu, kéo dài theo khoảng cách, chớp tắt)
@@ -1395,13 +1395,16 @@ const thanLoi: Fx = (s, aw) => {
       // KIẾP LÔI: vụ nổ sét lớn (ảnh mẫu cầu sét + nứt đất), bản tím
       const t = ts[Math.floor(ts.length / 2)];
       if (!t) return;
-      k.flash(0xc0a0ff, 200, 0.35);
-      strike(t, 1.8);
-      const bl = sc.add.image(t.x, t.y + 6, THUNDER.blast + sf).setOrigin(0.5, 0.842).setScale(0.2).setDepth(21);
-      sc.tweens.add({ targets: bl, scale: 0.62, duration: 220, ease: 'Back.easeOut' });
-      sc.tweens.add({ targets: bl, alpha: 0, scale: 0.7, delay: 650, duration: 400, onComplete: () => bl.destroy() });
-      k.shake(300, 0.012);
-      for (const o of near(s, t, 140)) s.hit(o, COL);
+      // nhịp 1: tia kiếp lôi giáng xuống (chạy hết hoạt ảnh) → nhịp 2: mới nổ
+      k.flash(0xc0a0ff, 120, 0.2);
+      strike(t, 1.8, () => k.later(80, () => {
+        k.flash(0xc0a0ff, 200, 0.35);
+        const bl = sc.add.image(t.x, t.y + 6, THUNDER.blast + sf).setOrigin(0.5, 0.842).setScale(0.2).setDepth(21);
+        sc.tweens.add({ targets: bl, scale: 0.62, duration: 220, ease: 'Back.easeOut' });
+        sc.tweens.add({ targets: bl, alpha: 0, scale: 0.7, delay: 650, duration: 400, onComplete: () => bl.destroy() });
+        k.shake(300, 0.012);
+        for (const o of near(s, t, 140)) s.hit(o, COL);
+      }));
     });
 };
 
