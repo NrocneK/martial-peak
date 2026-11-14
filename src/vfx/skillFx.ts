@@ -1516,10 +1516,10 @@ const lienHoa: Fx = (s, aw) => {
         sc.events.off('update', apply); sc.tweens.killTweensOf(st);
         lo.clearMask(); fr.clearMask(); mask.destroy(); mimg.destroy(); lo.destroy(); fr.destroy();
         k.later(800, () => edge.destroy());
+        if (aw) for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2);   // hoa tan hết rồi cánh mới bay ra
       },
     });
     k.tw(glow, { alpha: 0, scale: 0.3 }, DISS);
-    if (aw) k.later(150, () => { for (let i = 0; i < 9; i++) petalFly((i / 9) * Math.PI * 2); });
     k.later(1400, () => motes.destroy());
   });
 };
