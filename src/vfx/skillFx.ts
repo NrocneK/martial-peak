@@ -1411,7 +1411,7 @@ const thanLoi: Fx = (s, aw) => {
     });
 };
 
-export const LOTUS = { tex: 'vx_lotus', w: 640, h: 427, ox: 0.47, oy: 0.42 } as const;
+export const LOTUS = { tex: 'vx_lotus', w: 640, h: 427, ox: 0.45, oy: 0.3, front: 0.45 } as const;
 const lienHoa: Fx = (s, aw) => {
   // hoa sen lấy nguyên từ ảnh mẫu: nở từ nụ dưới chân, nhân vật đứng giữa nhuỵ; tàn = khép cánh về nhuỵ
   const k = s.kit, sc = k.scene, h0 = H(s);
@@ -1419,7 +1419,12 @@ const lienHoa: Fx = (s, aw) => {
   const R = aw ? 150 : 120;
   const S = (R * 2.1) / LOTUS.w;
   const lo = sc.add.image(c.x, c.y, LOTUS.tex).setOrigin(LOTUS.ox, LOTUS.oy).setDepth(3).setScale(S * 0.08, S * 0.04).setAlpha(0.2);
-  sc.tweens.add({ targets: lo, scaleX: S, scaleY: S, alpha: 1, duration: 650, ease: 'Back.easeOut' });
+  // lớp hoa thứ 2 phủ mờ lên nhân vật → nhân vật như được cánh sen trong suốt bao bọc
+  const fr = sc.add.image(c.x, c.y, LOTUS.tex).setOrigin(LOTUS.ox, LOTUS.oy).setDepth(11).setScale(S * 0.08, S * 0.04).setAlpha(0);
+  const both = [lo, fr];
+  sc.tweens.add({ targets: both, scaleX: S, scaleY: S, duration: 650, ease: 'Back.easeOut' });
+  sc.tweens.add({ targets: lo, alpha: 1, duration: 650 });
+  sc.tweens.add({ targets: fr, alpha: LOTUS.front, duration: 650 });
   const glow = k.img(VT.SOFT, c.x, c.y, { tint: aw ? 0xffe0a0 : 0xc8a0ff, scale: 0.2, alpha: 0, depth: 2 });
   k.tw(glow, { scale: (R / 64) * 1.2, alpha: 0.35 }, 650);
   const motes = sc.add.particles(c.x, c.y, VT.DOT, {
@@ -1428,13 +1433,13 @@ const lienHoa: Fx = (s, aw) => {
     emitZone: { type: 'random', source: new Phaser.Geom.Ellipse(0, 0, R * 1.6, R * 0.9) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource },
   }).setDepth(19);
   // nhịp thở nhẹ khi nở
-  k.later(650, () => sc.tweens.add({ targets: lo, scaleX: S * 1.03, scaleY: S * 1.03, duration: 700, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' }));
+  k.later(650, () => sc.tweens.add({ targets: both, scaleX: S * 1.03, scaleY: S * 1.03, duration: 700, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' }));
   for (const o of near(s, c, R)) k.later(350, () => s.hit(o, aw ? 0xffe0a0 : 0xd8b0ff));
   k.later(2400, () => {
     motes.stop();
     // khép cánh: thu hẹp ngang về nhuỵ trước, rồi co cả hoa lại thành điểm sáng
-    sc.tweens.add({ targets: lo, scaleX: S * 0.25, scaleY: S * 0.7, duration: 380, ease: 'Cubic.easeIn' });
-    sc.tweens.add({ targets: lo, scaleX: 0, scaleY: 0, alpha: 0, delay: 380, duration: 200, ease: 'Cubic.easeIn', onComplete: () => lo.destroy() });
+    sc.tweens.add({ targets: both, scaleX: S * 0.25, scaleY: S * 0.7, duration: 380, ease: 'Cubic.easeIn' });
+    sc.tweens.add({ targets: both, scaleX: 0, scaleY: 0, alpha: 0, delay: 380, duration: 200, ease: 'Cubic.easeIn', onComplete: () => { lo.destroy(); fr.destroy(); } });
     k.tw(glow, { alpha: 0, scale: 0.3 }, 580);
     k.later(560, () => {
       k.glow(c.x, c.y - 8, aw ? 0xffe6b0 : 0xe0c8ff, 60, 260);
