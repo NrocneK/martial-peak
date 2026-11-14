@@ -1597,11 +1597,58 @@ const nganHa: Fx = (s, aw) => {
   let tgt = pickMain();
   let lastTick = -TICK;
   const hitT = new Map<Pt, number>();
-  type Chase = { b: Beam; t: Pt; born: number };
-  const chases: Chase[] = [];
+  // THỨC TỈNH: tên lửa băng truy kích (homing) — bắn ra 3 hướng lệch 120°, bay vòng rồi lượn bám theo mục tiêu
+  type Missile = { head: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image; trail: Phaser.GameObjects.Particles.ParticleEmitter; x: number; y: number; vx: number; vy: number; t: Pt | null; age: number };
+  const missiles: Missile[] = [];
+  const nearest = (x: number, y: number, ex?: Pt) => s.targets().filter((o) => o !== ex).sort((p1, p2) => Math.hypot(p1.x - x, p1.y - y) - Math.hypot(p2.x - x, p2.y - y))[0] ?? null;
+  const launch = (from: Pt, ang: number, target: Pt | null) => {
+    const sp = 260;
+    const glow = sc.add.image(from.x, from.y, VT.SOFT).setBlendMode(Phaser.BlendModes.ADD).setTint(COL).setDepth(21).setScale(0.32 * BIG);
+    const head = sc.add.image(from.x, from.y, NGAN_HA.hit).setBlendMode(Phaser.BlendModes.ADD).setDepth(22).setScale(0.32 * BIG);
+    const trail = sc.add.particles(0, 0, VT.SOFT, {
+      follow: head, lifespan: 460, speed: 4, scale: { start: 0.15 * BIG, end: 0 }, alpha: { start: 0.75, end: 0 },
+      tint: [0x9fe8ff, 0xe8fbff, 0x5aa8ff], blendMode: Phaser.BlendModes.ADD, frequency: 6,
+    }).setDepth(20);
+    k.glow(from.x, from.y, COL, 26, 180, { alpha: 0.7 });
+    missiles.push({ head, glow, trail, x: from.x, y: from.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, t: target, age: 0 });
+  };
+  const killMissile = (m: Missile, boom: boolean) => {
+    if (boom) {
+      k.glow(m.x, m.y, COL, 46 * BIG, 260, { alpha: 0.9 });
+      k.burst(m.x, m.y, [0xe8fbff, 0x9fe8ff], 10, { tex: VT.SHARD, speed: [60, 200], scale: [0.5, 0.15], rotate: true, life: 380 });
+    }
+    m.head.destroy(); m.glow.destroy();
+    m.trail.stop(); k.later(420, () => m.trail.destroy());
+  };
+  const stepMissiles = (dt: number) => {
+    for (let i = missiles.length - 1; i >= 0; i--) {
+      const m = missiles[i];
+      m.age += dt;
+      if (!m.t || !s.targets().includes(m.t)) m.t = nearest(m.x, m.y);          // mục tiêu chết → bám quái gần nhất
+      const sp = Math.min(620, 260 + m.age * 0.55);                             // tăng tốc dần
+      if (m.t) {
+        const ex = m.t.x, ey = m.t.y - 14;
+        const want = Math.atan2(ey - m.y, ex - m.x), cur = Math.atan2(m.vy, m.vx);
+        let d = want - cur;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        const turn = (m.age < 120 ? 2 : 5 + m.age * 0.012) * dt / 1000;          // càng bay lâu bẻ lái càng gắt
+        const a = cur + Math.max(-turn, Math.min(turn, d));
+        m.vx = Math.cos(a) * sp; m.vy = Math.sin(a) * sp;
+        if (Math.hypot(ex - m.x, ey - m.y) < 16) { damage(m.t); killMissile(m, true); missiles.splice(i, 1); continue; }
+      }
+      m.x += m.vx * dt / 1000; m.y += m.vy * dt / 1000;
+      const rot = Math.atan2(m.vy, m.vx);
+      m.head.setPosition(m.x, m.y).setRotation(rot + m.age / 60);
+      m.glow.setPosition(m.x, m.y).setScale(0.36 * BIG * (1 + Math.sin(m.age / 40) * 0.12));
+      if (m.age > 2200 || (!m.t && m.age > 500)) { killMissile(m, true); missiles.splice(i, 1); }
+    }
+  };
   let t = 0;
+  let ended = false;
   const ev = sc.time.addEvent({
     delay: 16, loop: true, callback: () => {
+      if (ended) { stepMissiles(16); if (!missiles.length) ev.remove(); return; }
       t += 16;
       const h = src();
       const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
@@ -1625,24 +1672,15 @@ const nganHa: Fx = (s, aw) => {
             if (along > 0 && along < L && off < 16 * BIG && t - (hitT.get(o) ?? -999) >= TICK) { hitT.set(o, t); damage(o); }
           }
         }
-        // THỨC TỈNH: 3 tia truy kích định kỳ từ cổng phát tới 3 quái khác
+        // THỨC TỈNH: định kỳ phóng 3 tên lửa băng truy kích từ cổng phát, 3 hướng cách đều 120°
         if (aw && t > 300 && t < DUR - 400 && t % 704 < 16) {
-          const others = s.targets().filter((o) => o !== tgt && dist(o, h) < RANGE).sort(() => Math.random() - 0.5).slice(0, 3);
-          for (const o of others) chases.push({ b: mkBeam(0.55, false), t: o, born: t });
-        }
-        for (let i = chases.length - 1; i >= 0; i--) {
-          const c = chases[i];
-          const age = t - c.born;
-          const ce = pt(c.t.x, c.t.y - 14);
-          const g2 = Math.min(1, age / 110);
-          const ctip = pt(st0.x + (ce.x - st0.x) * g2, st0.y + (ce.y - st0.y) * g2);
-          drawBeam(c.b, st0, ctip, 0.55, Math.min(1, (360 - age) / 120) * fade, t + i * 40);
-          if (age >= 110 && age < 126) damage(c.t);
-          if (age > 360) { killBeam(c.b); chases.splice(i, 1); }
+          const pool = s.targets().filter((o) => o !== tgt && dist(o, h) < RANGE * 1.4).sort(() => Math.random() - 0.5);
+          for (let n = 0; n < 3; n++) launch(st0, rot + Math.PI + (n - 1) * (Math.PI * 2 / 3), pool[n % Math.max(1, pool.length)] ?? tgt);
         }
       }
+      stepMissiles(16);
       if (t >= DUR) {
-        ev.remove(); killBeam(main); for (const c of chases) killBeam(c.b);
+        ended = true; killBeam(main);                                    // tên lửa đang bay vẫn bay nốt tới mục tiêu
         for (const f of frost.values()) k.tw(f, { alpha: 0 }, 400);
         k.later(450, () => { for (const f of frost.values()) f.destroy(); });
       }
