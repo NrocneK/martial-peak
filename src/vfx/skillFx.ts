@@ -1524,49 +1524,44 @@ const lienHoa: Fx = (s, aw) => {
   });
 };
 
-/** Ngân Hà Hàn Lưu: luồng sáng băng lấy từ video mẫu (tools/art/ngan_ha.py): 30 khung 215×120, tia nằm ngang,
- *  điểm đầu ở x = 0.0698, độ dài tia trong khung = 172 px → game kéo dài theo khoảng cách, chạy lặp, cộng sáng */
-export const NGAN_HA = { beam: 'vx_ngan_ha_beam', core: 'vx_ngan_ha_core', emit: 'vx_ngan_ha_emit', impact: 'vx_ngan_ha_impact', eox: 0.4409, eoy: 0.5, iox: 0.4621, ioy: 0.5923, refAng: (18.2 * Math.PI) / 180, front: 52, fw: 215, fh: 120, n: 30, ox: 0.0698, len: 172 } as const;
+/** Ngân Hà Hàn Lưu — VẼ MỚI theo ảnh mẫu (tools/art/ngan_ha_draw.py): tia nằm ngang, game xoay theo hướng bắn.
+ *  core/strand 256×64 lặp ngang liền mạch → TileSprite (dài theo khoảng cách, KHÔNG kéo giãn); ring = cổng phát (tâm = điểm phát);
+ *  hit = điểm chạm (tâm) */
+export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', ring: 'vx_ngan_ha_ring', hit: 'vx_ngan_ha_hit', th: 64, front: 46 } as const;
 const nganHa: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
-  const AK = 'vx_ngan_ha_anim';
-  if (!sc.anims.exists(AK)) sc.anims.create({ key: AK, frames: sc.anims.generateFrameNumbers(NGAN_HA.beam, { start: 0, end: NGAN_HA.n - 1 }), frameRate: 12, repeat: -1 });
   const n = aw ? 3 : 1;
-  const RANGE = aw ? 320 : 260;
+  const RANGE = aw ? 330 : 260;
   const DUR = 2400;
   const COL = 0x9fe8ff;
   const src = () => pt(s.hero.x, s.hero.y - 18);
-  // 2 lớp: LÕI ổn định (thân tia đo từ video, cố định) + lớp ĐỘNG (30 khung video, dòng khí uốn lượn) → rõ, không chập chờn
-  // tia KHÔNG bắt đầu từ nhân vật mà từ CỔNG PHÁT phía trước mặt 1 đoạn (vòng sáng + 2 vòng nhỏ, ảnh mẫu thêm),
-  // điểm chạm có tia lửa băng (ảnh mẫu thêm)
-  type Ray = { sp: Phaser.GameObjects.Sprite; core: Phaser.GameObjects.Image; em: Phaser.GameObjects.Image; im: Phaser.GameObjects.Image; t: Pt | null; hitAt: number };
+  // tia bắt đầu từ CỔNG PHÁT phía trước mặt nhân vật 1 đoạn (tâm cổng = điểm phát tia)
+  type Ray = { core: Phaser.GameObjects.TileSprite; str: Phaser.GameObjects.TileSprite; ring: Phaser.GameObjects.Image; hit: Phaser.GameObjects.Image; t: Pt | null; hitAt: number };
   const rays: Ray[] = [];
   for (let i = 0; i < n; i++) {
-    const sp = sc.add.sprite(0, 0, NGAN_HA.beam, 0).setOrigin(NGAN_HA.ox, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
-    sp.play({ key: AK, startFrame: (i * 10) % NGAN_HA.n });
-    const core = sc.add.image(0, 0, NGAN_HA.core).setOrigin(NGAN_HA.ox, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(19).setAlpha(0);
-    const em = sc.add.image(0, 0, NGAN_HA.emit).setOrigin(NGAN_HA.eox, NGAN_HA.eoy).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
-    const im = sc.add.image(0, 0, NGAN_HA.impact).setOrigin(NGAN_HA.iox, NGAN_HA.ioy).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
-    rays.push({ sp, core, em, im, t: null, hitAt: 0 });
+    const core = sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.core).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
+    const str = sc.add.tileSprite(0, 0, 10, NGAN_HA.th, NGAN_HA.strand).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
+    const ring = sc.add.image(0, 0, NGAN_HA.ring).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
+    const hit = sc.add.image(0, 0, NGAN_HA.hit).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
+    rays.push({ core, str, ring, hit, t: null, hitAt: 0 });
   }
-  const srcGlow = k.img(VT.SOFT, 0, 0, { tint: COL, scale: 0.5, alpha: 0.8, depth: 21 });
-  // THỨC TỈNH: 3 tia chia đều 120°, xoay chậm quanh nhân vật (hướng đầu nhắm quái gần nhất), độ dài cố định,
-  // quét trúng mọi quái nằm trên tia
-  const near0 = s.targets().sort((p1, p2) => dist(p1, src()) - dist(p2, src()))[0];
-  const base0 = near0 ? Math.atan2(near0.y - 14 - src().y, near0.x - src().x) : -Math.PI / 2;
-  const hitT = new Map<Pt, number>();
   const pick = (r: Ray) => {
     const h = src();
     const used = rays.filter((o) => o !== r && o.t).map((o) => o.t);
     r.t = s.targets().filter((o) => !used.includes(o) && dist(o, h) < RANGE).sort((p1, p2) => dist(p1, h) - dist(p2, h))[0] ?? null;
   };
+  // THỨC TỈNH: 3 tia chia đều 120°, xoay chậm (tia đầu nhắm quái gần nhất), dài cố định, quét trúng mọi quái trên tia
+  const near0 = s.targets().sort((p1, p2) => dist(p1, src()) - dist(p2, src()))[0];
+  const base0 = near0 ? Math.atan2(near0.y - 14 - src().y, near0.x - src().x) : -Math.PI / 2;
+  const hitT = new Map<Pt, number>();
+  const hide = (r: Ray) => { r.core.setAlpha(0); r.str.setAlpha(0); r.ring.setAlpha(0); r.hit.setAlpha(0); };
   let t = 0;
   const ev = sc.time.addEvent({
     delay: 16, loop: true, callback: () => {
       t += 16;
       const h = src();
       const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
-      srcGlow.setPosition(h.x, h.y).setAlpha(0.35 * fade).setScale(0.3 + Math.sin(t / 60) * 0.04);
+      const grow = Math.min(1, t / 180);                                   // tia vươn ra từ cổng lúc đầu
       rays.forEach((r, ri) => {
         let rot: number, e: Pt;
         if (aw) {
@@ -1574,17 +1569,20 @@ const nganHa: Fx = (s, aw) => {
           e = pt(h.x + Math.cos(rot) * RANGE, h.y + Math.sin(rot) * RANGE);
         } else {
           if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
-          if (!r.t) { r.sp.setAlpha(0); r.core.setAlpha(0); r.em.setAlpha(0); r.im.setAlpha(0); return; }
+          if (!r.t) { hide(r); return; }
           e = pt(r.t.x, r.t.y - 14);
           rot = Math.atan2(e.y - h.y, e.x - h.x);
         }
-        const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front, h.y + Math.sin(rot) * NGAN_HA.front);   // cổng phát trước mặt
-        const L = Math.max(10, dist(st0, e));
-        const sx = L / NGAN_HA.len, sy = Phaser.Math.Clamp(sx, 1.0, 1.3);
-        r.sp.setPosition(st0.x, st0.y).setRotation(rot).setScale(sx, sy).setAlpha(fade);
-        r.core.setPosition(st0.x, st0.y).setRotation(rot).setScale(sx, sy * (0.95 + Math.sin(t / 45) * 0.05)).setAlpha(fade);
-        r.em.setPosition(st0.x, st0.y).setRotation(rot - NGAN_HA.refAng).setScale(0.3 * (1 + Math.sin(t / 90) * 0.04)).setAlpha(fade);
-        r.im.setPosition(e.x, e.y).setRotation(rot - NGAN_HA.refAng).setScale(0.55).setAlpha(fade * (0.75 + Math.random() * 0.25));
+        const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front, h.y + Math.sin(rot) * NGAN_HA.front);
+        const L = Math.max(4, dist(st0, e) * grow);
+        const tip = pt(st0.x + Math.cos(rot) * L, st0.y + Math.sin(rot) * L);
+        const wob = 1 + Math.sin(t / 50 + ri) * 0.06;
+        r.core.setPosition(st0.x, st0.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8 * wob).setAlpha(fade);
+        r.core.tilePositionX -= 1.5;
+        r.str.setPosition(st0.x, st0.y).setRotation(rot).setSize(L, NGAN_HA.th).setScale(1, 0.8).setAlpha(fade);
+        r.str.tilePositionX -= 6;                                            // sợi khí xoắn chảy dọc tia
+        r.ring.setPosition(st0.x, st0.y).setRotation(rot).setScale(0.42 * (1 + Math.sin(t / 90) * 0.04)).setAlpha(fade);
+        r.hit.setPosition(tip.x, tip.y).setRotation(Math.random() * Math.PI * 2).setScale(0.55 + Math.random() * 0.15).setAlpha(fade * grow);
         if (aw) {
           if (fade > 0.5) for (const o of s.targets()) {
             const ox = o.x - st0.x, oy = o.y - 14 - st0.y;
@@ -1595,14 +1593,13 @@ const nganHa: Fx = (s, aw) => {
               k.burst(o.x, o.y - 14, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
             }
           }
-        } else if (r.t && t - r.hitAt > 300 && fade > 0.5) {
+        } else if (r.t && t - r.hitAt > 300 && fade > 0.5 && grow >= 1) {
           r.hitAt = t;
           s.hit(r.t, COL);
-          k.glow(e.x, e.y, COL, 40, 200);
           k.burst(e.x, e.y, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
         }
       });
-      if (t >= DUR) { ev.remove(); for (const r of rays) { r.sp.destroy(); r.core.destroy(); r.em.destroy(); r.im.destroy(); } srcGlow.destroy(); }
+      if (t >= DUR) { ev.remove(); for (const r of rays) { r.core.destroy(); r.str.destroy(); r.ring.destroy(); r.hit.destroy(); } }
     },
   });
 };
