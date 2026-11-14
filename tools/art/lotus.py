@@ -9,6 +9,10 @@ TIÊN NGUYÊN LIÊN HOA — hoa sen lấy NGUYÊN từ ảnh mẫu tools/art/ref
   · bản NHÌN TỪ TRÊN XUỐNG (để nằm trên mặt đất, xoay tròn được): tools/art/ref/lotus_top_ref.jpg
       mặt nạ rembg birefnet (tools/art/ref/lotus_top_mask_birefnet-general.png), cắt vuông quanh tâm hoa
   → public/vfx/lotus_top.png
+  · CÁNH SEN bay (thức tỉnh): tools/art/ref/lotus_petal_ref.jpg (nền trắng), mặt nạ rembg birefnet
+      (tools/art/ref/lotus_petal_mask.png) — bỏ bóng đổ; BÁN TRONG SUỐT: phần trắng giữa cánh mờ, gân hồng đậm hơn;
+      xoay mũi cánh sang PHẢI (game xoay theo hướng bay)
+  → public/vfx/lotus_petal.png
   python3 -I tools/art/lotus.py
 """
 import os
@@ -95,6 +99,29 @@ def top():
     pv.convert('RGB').save(os.path.join(OUT, 'lotus_top_preview.png'))
 
 
+def petal():
+    a = np.array(Image.open(os.path.join(REF, 'lotus_petal_ref.jpg')).convert('RGB')).astype(float)
+    m = load('lotus_petal_mask.png')
+    m = np.clip((m - 0.3) / 0.6, 0, 1)
+    lab, n = ndimage.label(m > 0.5)
+    big = lab == (np.argmax(ndimage.sum(m > 0.5, lab, range(1, n + 1))) + 1)
+    m *= ndimage.gaussian_filter(ndimage.binary_fill_holes(big).astype(float), 1.5)
+    pink = np.clip((a[..., 0] - a[..., 1]) / 150, 0, 1)                    # gân / viền hồng
+    A = m * (0.5 + 0.4 * pink)
+    ys, xs = np.nonzero(m > 0.1)
+    img = Image.fromarray(np.dstack([a, A * 255]).astype(np.uint8), 'RGBA').crop((xs.min() - 2, ys.min() - 2, xs.max() + 3, ys.max() + 3))
+    img = img.rotate(-90, expand=True)                                   # mũi (trên) → phải
+    img = img.resize((128, round(img.height * 128 / img.width)), Image.LANCZOS)
+    img.save(os.path.join(VFX, 'lotus_petal.png'))
+    print('petal', img.size)
+    pv = Image.new('RGBA', (img.width * 2 + 20, img.height), (26, 24, 40, 255))
+    pv.alpha_composite(img)
+    bg2 = Image.new('RGBA', img.size, (110, 70, 200, 255)); bg2.alpha_composite(img)
+    pv.alpha_composite(bg2, (img.width + 20, 0))
+    pv.resize((pv.width * 2, pv.height * 2)).convert('RGB').save(os.path.join(OUT, 'lotus_petal_preview.png'))
+
+
 if __name__ == '__main__':
     main()
     top()
+    petal()

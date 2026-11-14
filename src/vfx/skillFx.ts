@@ -1411,7 +1411,7 @@ const thanLoi: Fx = (s, aw) => {
     });
 };
 
-export const LOTUS = { tex: 'vx_lotus_top', size: 512, fill: 0.8, front: 0.4, ky: 0.58, spin: 9000 } as const;
+export const LOTUS = { tex: 'vx_lotus_top', petal: 'vx_lotus_petal', size: 512, fill: 0.8, front: 0.4, ky: 0.58, spin: 9000 } as const;
 const lienHoa: Fx = (s, aw) => {
   // hoa sen NHÌN TỪ TRÊN XUỐNG lấy nguyên từ ảnh mẫu (tools/art/lotus.py → lotus_top.png), nằm trên mặt đất dưới chân,
   // nhân vật đứng ngay lõi sáng giữa hoa; ảnh xoay bên trong container nén dọc = hoa xoay tròn chậm trên mặt đất.
@@ -1460,7 +1460,7 @@ const lienHoa: Fx = (s, aw) => {
     k.tw(glow, { alpha: 0, scale: 0.3 }, 580);
     k.later(560, () => {
       k.glow(c.x, c.y - 8, aw ? 0xffe6b0 : 0xe0c8ff, 60, 260);
-      if (aw) for (let i = 0; i < 9; i++) k.fly(VT.PETAL, c, polar(c, (i / 9) * Math.PI * 2, 260), { dur: 500, add: false, scale: 0.7, trail: 0xc8a0ff, trailScale: 0.5, spin: 0.3, faceDir: false });
+      if (aw) for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; k.fly(LOTUS.petal, c, pt(c.x + Math.cos(a) * 260, c.y + Math.sin(a) * 260 * LOTUS.ky), { dur: 520, add: false, scale: 0.36, trail: 0xffb0d8, trailScale: 0.45, ease: 'Cubic.easeOut' }); }   // cánh sen bán trong suốt (ảnh mẫu), mũi theo hướng bay
     });
     k.later(1400, () => motes.destroy());
   });
