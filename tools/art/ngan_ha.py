@@ -7,6 +7,10 @@ NGÂN HÀ HÀN LƯU — luồng sáng băng lấy từ video mẫu tools/art/ref
   · che thanh máu xanh của giao diện gần điểm đầu
   → public/vfx/ngan_ha_beam.png (bảng khung, game kéo dài theo khoảng cách và chạy lặp), cộng sáng
   → public/vfx/ngan_ha_core.png (trung vị theo thời gian: thân tia ổn định, vẽ cố định bên dưới)
+  · ẢNH MẪU THÊM tools/art/ref/ngan_ha_beam_ref.jpg (nền xám tối): lấy CỔNG PHÁT (vòng sáng lớn + điểm loé + 2 vòng nhỏ)
+    và TIA LỬA ĐIỂM CHẠM; tách cộng sáng (trừ nền xám ước lượng), bỏ 2 quả cầu xám (trong vùng cầu chỉ giữ phần lam,
+    lỗ do cầu che vòng sáng → lấp từ xung quanh)
+    → public/vfx/ngan_ha_emit.png (gốc = điểm loé), public/vfx/ngan_ha_impact.png (gốc = điểm chạm); hướng tia trong ảnh 18.2°
   python3 -I tools/art/ngan_ha.py  (cần ffmpeg)
 """
 import os
@@ -97,5 +101,43 @@ def main():
     pv.save(os.path.join(OUT, 'ngan_ha_preview.png'))
 
 
+def ref_parts():
+    a = np.array(Image.open(os.path.join(HERE, 'ref', 'ngan_ha_beam_ref.jpg')).convert('RGB')).astype(float)
+    mx = a.max(2)
+    small = mx[::4, ::4]
+    bg = ndimage.gaussian_filter(ndimage.grey_opening(small, size=(31, 31)), 4)
+    bg = np.array(Image.fromarray(bg.astype(np.float32), 'F').resize((a.shape[1], a.shape[0]), Image.BICUBIC))
+    d = np.clip(a - bg[..., None] - 4, 0, 255)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    blue = np.clip((b - np.maximum(r, g) - 10) / 60, 0, 1)
+    yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]
+    s1 = (xx - 100) ** 2 + (yy - 193) ** 2 < 31 ** 2
+    s2 = (xx - 656) ** 2 + (yy - 379) ** 2 < 36 ** 2
+    add = d.copy()
+    for sp in (s1, s2):
+        add[sp] = d[sp] * blue[sp][:, None]
+    # lấp lỗ quả cầu 1 trong vòng sáng: màu cộng từ xung quanh (mờ chuẩn hoá)
+    w = (~s1).astype(float)
+    den = np.maximum(ndimage.gaussian_filter(w, 9), 1e-3)
+    fill = np.stack([ndimage.gaussian_filter(add[..., c] * w, 9) / den for c in range(3)], 2)
+    add[s1] = np.maximum(add[s1], fill[s1])
+    A = add.max(2) / 255
+    col = add / np.maximum(A[..., None], 1e-3)
+    rgba = np.dstack([np.clip(col, 0, 255), A * 255])
+
+    def cut(x0, y0, x1, y1, name, ox, oy):
+        part = rgba[y0:y1, x0:x1].copy()
+        hh, ww = part.shape[:2]
+        fy = np.clip(np.minimum(np.arange(hh), hh - 1 - np.arange(hh)) / 22, 0, 1)
+        fx = np.clip(np.minimum(np.arange(ww), ww - 1 - np.arange(ww)) / 22, 0, 1)
+        part[..., 3] *= (fy[:, None] * fx[None, :]) ** 1.5                   # mép mềm, không lộ khung cắt
+        im = Image.fromarray(part.astype(np.uint8), 'RGBA')
+        im.save(os.path.join(VFX, name))
+        print(name, im.size, 'origin', round((ox - x0) / (x1 - x0), 4), round((oy - y0) / (y1 - y0), 4))
+    cut(36, 78, 290, 348, 'ngan_ha_emit.png', 148, 213)
+    cut(555, 295, 700, 425, 'ngan_ha_impact.png', 622, 372)
+
+
 if __name__ == '__main__':
     main()
+    ref_parts()

@@ -1526,7 +1526,7 @@ const lienHoa: Fx = (s, aw) => {
 
 /** Ngân Hà Hàn Lưu: luồng sáng băng lấy từ video mẫu (tools/art/ngan_ha.py): 30 khung 215×120, tia nằm ngang,
  *  điểm đầu ở x = 0.0698, độ dài tia trong khung = 172 px → game kéo dài theo khoảng cách, chạy lặp, cộng sáng */
-export const NGAN_HA = { beam: 'vx_ngan_ha_beam', core: 'vx_ngan_ha_core', fw: 215, fh: 120, n: 30, ox: 0.0698, len: 172 } as const;
+export const NGAN_HA = { beam: 'vx_ngan_ha_beam', core: 'vx_ngan_ha_core', emit: 'vx_ngan_ha_emit', impact: 'vx_ngan_ha_impact', eox: 0.4409, eoy: 0.5, iox: 0.4621, ioy: 0.5923, refAng: (18.2 * Math.PI) / 180, front: 52, fw: 215, fh: 120, n: 30, ox: 0.0698, len: 172 } as const;
 const nganHa: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
   const AK = 'vx_ngan_ha_anim';
@@ -1537,13 +1537,17 @@ const nganHa: Fx = (s, aw) => {
   const COL = 0x9fe8ff;
   const src = () => pt(s.hero.x, s.hero.y - 18);
   // 2 lớp: LÕI ổn định (thân tia đo từ video, cố định) + lớp ĐỘNG (30 khung video, dòng khí uốn lượn) → rõ, không chập chờn
-  type Ray = { sp: Phaser.GameObjects.Sprite; core: Phaser.GameObjects.Image; t: Pt | null; hitAt: number };
+  // tia KHÔNG bắt đầu từ nhân vật mà từ CỔNG PHÁT phía trước mặt 1 đoạn (vòng sáng + 2 vòng nhỏ, ảnh mẫu thêm),
+  // điểm chạm có tia lửa băng (ảnh mẫu thêm)
+  type Ray = { sp: Phaser.GameObjects.Sprite; core: Phaser.GameObjects.Image; em: Phaser.GameObjects.Image; im: Phaser.GameObjects.Image; t: Pt | null; hitAt: number };
   const rays: Ray[] = [];
   for (let i = 0; i < n; i++) {
     const sp = sc.add.sprite(0, 0, NGAN_HA.beam, 0).setOrigin(NGAN_HA.ox, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setAlpha(0);
     sp.play({ key: AK, startFrame: (i * 10) % NGAN_HA.n });
     const core = sc.add.image(0, 0, NGAN_HA.core).setOrigin(NGAN_HA.ox, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(19).setAlpha(0);
-    rays.push({ sp, core, t: null, hitAt: 0 });
+    const em = sc.add.image(0, 0, NGAN_HA.emit).setOrigin(NGAN_HA.eox, NGAN_HA.eoy).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
+    const im = sc.add.image(0, 0, NGAN_HA.impact).setOrigin(NGAN_HA.iox, NGAN_HA.ioy).setBlendMode(Phaser.BlendModes.ADD).setDepth(21).setAlpha(0);
+    rays.push({ sp, core, em, im, t: null, hitAt: 0 });
   }
   const srcGlow = k.img(VT.SOFT, 0, 0, { tint: COL, scale: 0.5, alpha: 0.8, depth: 21 });
   const pick = (r: Ray) => {
@@ -1557,15 +1561,19 @@ const nganHa: Fx = (s, aw) => {
       t += 16;
       const h = src();
       const fade = Math.min(1, t / 150, Math.max(0, (DUR - t) / 250));
-      srcGlow.setPosition(h.x, h.y).setAlpha(0.8 * fade).setScale(0.45 + Math.sin(t / 60) * 0.06);
+      srcGlow.setPosition(h.x, h.y).setAlpha(0.35 * fade).setScale(0.3 + Math.sin(t / 60) * 0.04);
       for (const r of rays) {
         if (!r.t || !s.targets().includes(r.t) || dist(r.t, h) > RANGE) pick(r);
-        if (!r.t) { r.sp.setAlpha(0); r.core.setAlpha(0); continue; }
+        if (!r.t) { r.sp.setAlpha(0); r.core.setAlpha(0); r.em.setAlpha(0); r.im.setAlpha(0); continue; }
         const e = pt(r.t.x, r.t.y - 14);
-        const L = dist(h, e);
-        const rot = Math.atan2(e.y - h.y, e.x - h.x), sx = L / NGAN_HA.len, sy = Phaser.Math.Clamp(sx, 1.0, 1.3);
-        r.sp.setPosition(h.x, h.y).setRotation(rot).setScale(sx, sy).setAlpha(fade);
-        r.core.setPosition(h.x, h.y).setRotation(rot).setScale(sx, sy * (0.95 + Math.sin(t / 45) * 0.05)).setAlpha(fade);
+        const rot = Math.atan2(e.y - h.y, e.x - h.x);
+        const st0 = pt(h.x + Math.cos(rot) * NGAN_HA.front, h.y + Math.sin(rot) * NGAN_HA.front);   // cổng phát trước mặt
+        const L = Math.max(10, dist(st0, e));
+        const sx = L / NGAN_HA.len, sy = Phaser.Math.Clamp(sx, 1.0, 1.3);
+        r.sp.setPosition(st0.x, st0.y).setRotation(rot).setScale(sx, sy).setAlpha(fade);
+        r.core.setPosition(st0.x, st0.y).setRotation(rot).setScale(sx, sy * (0.95 + Math.sin(t / 45) * 0.05)).setAlpha(fade);
+        r.em.setPosition(st0.x, st0.y).setRotation(rot - NGAN_HA.refAng).setScale(0.3 * (1 + Math.sin(t / 90) * 0.04)).setAlpha(fade);
+        r.im.setPosition(e.x, e.y).setRotation(rot - NGAN_HA.refAng).setScale(0.55).setAlpha(fade * (0.75 + Math.random() * 0.25));
         if (t - r.hitAt > 300 && fade > 0.5) {
           r.hitAt = t;
           s.hit(r.t, COL);
@@ -1573,7 +1581,7 @@ const nganHa: Fx = (s, aw) => {
           k.burst(e.x, e.y, 0xcff4ff, 4, { tex: VT.SHARD, speed: [60, 160], scale: [0.5, 0.2], rotate: true, life: 350 });
         }
       }
-      if (t >= DUR) { ev.remove(); for (const r of rays) { r.sp.destroy(); r.core.destroy(); } srcGlow.destroy(); }
+      if (t >= DUR) { ev.remove(); for (const r of rays) { r.sp.destroy(); r.core.destroy(); r.em.destroy(); r.im.destroy(); } srcGlow.destroy(); }
     },
   });
 };
