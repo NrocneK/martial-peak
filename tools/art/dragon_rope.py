@@ -80,6 +80,13 @@ def main():
         g[..., 3] *= 0.45
         fin = Image.fromarray(g.astype(np.uint8), 'RGBA')
         fin.alpha_composite(img)
+        # tắt mờ sát 4 mép ảnh → không lộ viền khung (quầng nhòe chạm mép)
+        fa = np.array(fin).astype(float)
+        H_, W_ = fa.shape[:2]
+        yy_, xx_ = np.mgrid[0:H_, 0:W_]
+        win = np.clip(np.minimum.reduce([xx_, W_ - 1 - xx_, yy_, H_ - 1 - yy_]) / 10, 0, 1)
+        fa[..., 3] *= win
+        fin = Image.fromarray(fa.astype(np.uint8), 'RGBA')
         fin.save(os.path.join(VFX, f'dragon_rope{suf}.png'))
         print(suf or 'normal', fin.size)
     # cầu nổ tím cho cú đâm xuống của thức tỉnh: tô lại fire_blast.png theo độ sáng → dải tím sét

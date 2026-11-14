@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BATTLE_SPLIT, BATTLE_WEAPON, battleWeaponKey, fistKey } from '../config/heroBattle';
+import { makeVfxTextures } from '../vfx/textures';
 import { PLAYER_DIRS, PLAYER_FRAME, PLAYER_SHEET_COLS, PLAYER_WALK_FRAMES, SCENES, TEX, playerWalkAnim } from '../config/assets';
 
 /**
@@ -47,6 +48,7 @@ export class BootScene extends Phaser.Scene {
       }
     });
     this.makeGroundTexture();
+    makeVfxTextures(this);                                              // ảnh hiệu ứng vẽ bằng code (src/vfx/textures.ts)
     this.makeShapeTextures();
     this.makeMiscTextures();
     // Báo cho GameFlow biết đã nạp xong → hiện menu chính (GameScene chỉ chạy khi vào màn)

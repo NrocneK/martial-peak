@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 import { SKILLS, skillIcon, type SkillDef } from '../config/skills';
 import { makeVfxTextures, VT } from '../vfx/textures';
 import { VfxKit, type Pt } from '../vfx/VfxKit';
-import { SKILL_FX, QI_SWORD, BA_DAO_DIRS, SPEAR_TEX, FIST_TEX, ARROW_HEAD, TIGER_HEAD, SHOCK_T3, SHOCK_T6, FIRE_TEX, BURN_TEX, FIRE_SWIRL, DRAGON_TEX, QI_ARM, QI_AURA, FIRE_SLASH, BLACK_HOLE, BH_BLAST, PHAP_TUONG, QI_BLADE, SWORD_ARRAY, THUNDER, LOTUS, NGAN_HA, HOANG_CHUNG, LINH_VUC, DAI_DAO, BA_DAO_QI, SPIRIT_ORB, ORB_BOLT, baDaoKey, baDaoWaveKey, type Stage } from '../vfx/skillFx';
+import { SKILL_FX, type Stage } from '../vfx/skillFx';
+import { preloadSkillVfx, ALL_SKILL_VFX } from '../vfx/preload';
 
 interface Dummy extends Pt {
   img: Phaser.GameObjects.Image;
@@ -35,53 +36,7 @@ class LabScene extends Phaser.Scene {
 
   preload(): void {
     this.load.spritesheet('hero', '/ui/hero_b_walk.png', { frameWidth: 52, frameHeight: 68 });
-    this.load.image(QI_SWORD, '/vfx/qi_sword_light.png');
-    for (const [key, f] of [[SHOCK_T3, 'shock_t3'], [SHOCK_T6, 'shock_t6']]) this.load.spritesheet(key, `/vfx/${f}.png?v=1`, { frameWidth: 256, frameHeight: 159 });
-    for (const [n, key] of Object.entries(DRAGON_TEX)) for (const sf of ['', '_aw']) this.load.image(key + sf, `/vfx/dragon_${n}${sf}.png?v=4`);
-    this.load.image(ORB_BOLT, '/vfx/orb_bolt.png?v=1');
-    this.load.image(QI_ARM, '/vfx/qi_arm.png?v=9');
-    this.load.image(QI_AURA, '/vfx/qi_aura.png?v=8');
-    for (const k of ['glow', 'dark'] as const) this.load.spritesheet(BH_BLAST[k], `/vfx/bh_blast_${k}.png?v=1`, { frameWidth: BH_BLAST.fw, frameHeight: BH_BLAST.fh });
-    this.load.spritesheet(BLACK_HOLE.key, '/vfx/black_hole.png?v=1', { frameWidth: BLACK_HOLE.fw, frameHeight: BLACK_HOLE.fh });
-    this.load.spritesheet(PHAP_TUONG.avatar, '/vfx/phap_tuong_avatar.png?v=2', { frameWidth: PHAP_TUONG.avW, frameHeight: PHAP_TUONG.avH });
-    this.load.image(LOTUS.tex, '/vfx/lotus_top.png?v=2');
-    this.load.image(HOANG_CHUNG.bell, '/vfx/hoang_chung_energy.png?v=1');
-    this.load.image(HOANG_CHUNG.array, '/vfx/hoang_chung_array.png?v=1');
-    this.load.image(HOANG_CHUNG.ground, '/vfx/hoang_chung_ground.png?v=1');
-    for (const key of ['gold', 'red', 'ring'] as const) this.load.image(LINH_VUC[key], `/vfx/linh_vuc_${key}.png?v=1`);
-    this.load.image(BA_DAO_QI.core, '/vfx/ba_dao_qi_core.png?v=2');
-    this.load.image(BA_DAO_QI.rim, '/vfx/ba_dao_qi_rim.png?v=2');
-    this.load.image(BA_DAO_QI.trail, '/vfx/ba_dao_trail.png?v=1');
-    this.load.spritesheet(DAI_DAO.layers, '/vfx/dai_dao_layers.png?v=1', { frameWidth: DAI_DAO.cell, frameHeight: DAI_DAO.cell });
-    for (const key of ['core', 'strand', 'ring', 'hit'] as const) this.load.image(NGAN_HA[key], `/vfx/ngan_ha_${key}.png?v=5`);
-    for (const [key, f] of [[NGAN_HA.ringS, 'ring_s'], [NGAN_HA.missile, 'missile'], [NGAN_HA.snow, 'snow']]) this.load.image(key, `/vfx/ngan_ha_${f}.png?v=2`);
-    for (const key of NGAN_HA.ice) this.load.image(key, `/vfx/${key.slice(3)}.png?v=1`);
-    this.load.image(LOTUS.petal, '/vfx/lotus_petal.png?v=1');
-    this.load.image(PHAP_TUONG.palm, '/vfx/phap_tuong_palm.png?v=5');
-    for (const [k, f] of Object.entries(QI_BLADE)) this.load.image(f, `/vfx/qi_blade_${k}.png?v=3`);
-    this.load.image(SWORD_ARRAY.n, '/vfx/sword_array.png?v=2');
-    this.load.image(SWORD_ARRAY.aw, '/vfx/sword_array_aw.png?v=2');
-    for (const sf of ['', '_aw']) {
-      this.load.spritesheet(THUNDER.strike + sf, `/vfx/thunder_strike${sf}.png?v=1`, { frameWidth: THUNDER.sw, frameHeight: THUNDER.sh });
-      this.load.spritesheet(THUNDER.arc + sf, `/vfx/thunder_arc${sf}.png?v=1`, { frameWidth: THUNDER.aw, frameHeight: THUNDER.ah });
-      this.load.spritesheet(THUNDER.residue + sf, `/vfx/thunder_residue${sf}.png?v=1`, { frameWidth: THUNDER.rw, frameHeight: THUNDER.rh });
-    }
-    this.load.image(FIRE_SLASH.key, '/vfx/fire_slash.png?v=5');
-    this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });
-    for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key, `/vfx/burn_${n}.png?v=2`, { frameWidth: 256, frameHeight: 201 });
-    for (const [n, key] of Object.entries(BURN_TEX)) this.load.spritesheet(key + '_blue', `/vfx/burn_${n}_blue.png?v=1`, { frameWidth: 256, frameHeight: 201 });
-    this.load.spritesheet(FIRE_TEX.blast + '_purple', '/vfx/fire_blast_purple.png?v=1', { frameWidth: 192, frameHeight: 192 });
-    this.load.spritesheet(FIRE_TEX.blast + '_blue', '/vfx/fire_blast_blue.png?v=1', { frameWidth: 192, frameHeight: 192 });
-    this.load.image(FIRE_TEX.ring + '_blue', '/vfx/fire_ring_blue.png?v=1');
-    this.load.spritesheet(FIRE_SWIRL, '/vfx/fire_swirl_blue.png?v=1', { frameWidth: 256, frameHeight: 200 });
-    this.load.image(FIRE_TEX.talisman, '/vfx/fire_talisman.png?v=1');
-    this.load.image(FIRE_TEX.ring, '/vfx/fire_ring.png?v=1');
-    this.load.spritesheet(FIRE_TEX.blast, '/vfx/fire_blast.png?v=1', { frameWidth: 192, frameHeight: 192 });
-    this.load.image(TIGER_HEAD, '/vfx/tiger_head.png?v=6');
-    this.load.image(ARROW_HEAD, '/vfx/arrow_head.png?v=1');
-    for (const [n, key] of Object.entries(FIST_TEX)) this.load.image(key, `/vfx/fist_${n}.png?v=3`);
-    for (const [n, key] of Object.entries(SPEAR_TEX)) this.load.image(key, `/vfx/spear_${n}.png?v=1`);
-    for (const d of BA_DAO_DIRS) this.load.image(baDaoKey(d), `/vfx/ba_dao_slash_${d}.png?v=2`), this.load.image(baDaoWaveKey(d), `/vfx/ba_dao_wave_${d}.png?v=2`);
+    preloadSkillVfx(this, ALL_SKILL_VFX);
     // tư thế thi triển: hàng = hướng (s,sw,w,nw,n,ne,e,se), cột = tư thế 1, 2
     this.load.spritesheet('cast_ngu_kiem', '/ui/hero_cast_ngukiem.png?v=0.15.1', { frameWidth: 52, frameHeight: 68 });
   }
@@ -205,18 +160,6 @@ new Phaser.Game({
 });
 
 // ---- bảng chọn
-/** kỹ năng đã quyết định BỎ (chưa gỡ khỏi game — gỡ khi đưa toàn bộ kỹ năng mới vào game một lượt):
- *  kim_dan — muốn đột phá Nguyên Anh phải phá đan, nên từ Nguyên Anh trở đi không còn Kim Đan để dùng;
- *  nguyen_anh — Nguyên Anh là sinh mạng thứ hai, không ai đem ra tấn công thay bản thân. */
-const REMOVED = new Set(['kim_dan', 'nguyen_anh', 'kim_than', 'de_an']);
-/** kỹ năng mới đang thiết kế, CHƯA có trong dữ liệu game (thêm khi tích hợp) — chèn vào chỗ kỹ năng bị bỏ */
-const EXTRA: Record<string, SkillDef> = {
-  nguyen_anh: {
-    ...(SKILLS.find((x) => x.id === 'nguyen_anh') as SkillDef),
-    id: 'khi_long', name: 'Khí Long (thay Nguyên Anh)', type: 'Rồng khí lượn quanh thân',
-    awaken: { name: 'Huyết Long Trấn Địa', damage: '', effect: '' },
-  },
-};
 const list = document.getElementById('list')!;
 const cap = document.getElementById('cap')!;
 const rows = new Map<string, HTMLElement>();
@@ -230,10 +173,10 @@ for (const [label, src] of [['Kỹ năng vũ khí', 'weapon'], ['Kỹ năng cả
   grp.className = 'grp';
   grp.textContent = label;
   list.append(grp);
-  for (const s of SKILLS.filter((x) => x.source === src).flatMap((x) => (REMOVED.has(x.id) ? (EXTRA[x.id] ? [EXTRA[x.id]] : []) : [x]))) {
+  for (const s of SKILLS.filter((x) => x.source === src)) {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<img src="${skillIcon(s.id === "khi_long" ? "nguyen_anh" : s.id)}" alt="" /><div><div class="nm">${s.name}</div><div class="ty">${s.type}</div></div>`;
+    row.innerHTML = `<img src="${skillIcon(s.id)}" alt="" /><div><div class="nm">${s.name}</div><div class="ty">${s.type}</div></div>`;
     const bt = document.createElement('div');
     bt.className = 'bt';
     const b1 = document.createElement('button');
@@ -268,7 +211,7 @@ for (const [label, a] of [['Tự động', null], ['↓', Math.PI / 2], ['↙', 
 (document.getElementById('walk') as HTMLInputElement).onchange = (e) => (scene.walk = (e.target as HTMLInputElement).checked);
 document.getElementById('all')!.onclick = () => {
   let i = 0;
-  const seq = SKILLS.flatMap((x) => (REMOVED.has(x.id) ? (EXTRA[x.id] ? [EXTRA[x.id]] : []) : [x])).flatMap((s) => [[s, false], [s, true]] as [SkillDef, boolean][]);
+  const seq = SKILLS.flatMap((s) => [[s, false], [s, true]] as [SkillDef, boolean][]);
   const next = () => {
     if (i >= seq.length) return;
     select(seq[i][0], seq[i][1]);

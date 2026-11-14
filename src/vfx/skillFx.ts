@@ -18,6 +18,9 @@ export interface Stage {
   isBoss?(t: Pt): boolean;
   /** Kỹ năng đang chọn (trang demo) — hiệu ứng duy trì vĩnh viễn tự tắt khi chọn kỹ năng khác */
   current?(): string | undefined;
+  /** Thông số theo cấp kỹ năng trong game (bỏ trống = giá trị mặc định của trang xem thử):
+   *  dur = thời gian tồn tại (ms), r = bán kính (px), range = tầm bắn (px) */
+  opt?: { dur?: number; r?: number; range?: number };
   /** Kéo mục tiêu tới vị trí (x, y) — dùng cho lốc xoáy kéo quái (trang demo: hình nhân bị kéo rồi tự trôi về chỗ cũ) */
   drag?(t: Pt, x: number, y: number): void;
   /** Đổi tư thế thi triển (0 = đứng gốc; 1, 2 = khung tư thế của kỹ năng) quay về hướng góc `a` */
@@ -174,8 +177,8 @@ export const BA_DAO_QI = { core: 'vx_badao_qi_core', rim: 'vx_badao_qi_rim', tra
 const baDao: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
   const ADD = Phaser.BlendModes.ADD;
-  const DUR = aw ? 3600 : 3000;
-  const R = aw ? 120 : 95;                                             // bán kính chém
+  const DUR = s.opt?.dur ?? (aw ? 3600 : 3000);
+  const R = s.opt?.r ?? (aw ? 120 : 95);                               // bán kính chém
   const SPIN = 300;                                                    // ms mỗi vòng xoay
   const KY = 0.55;
   const foot = () => pt(s.hero.x, s.hero.y + 14);
@@ -952,65 +955,6 @@ const hoaPhu: Fx = (s, aw) => {
   }
 };
 
-const kimDan: Fx = (s, aw) => {
-  const k = s.kit;
-  const rings = aw ? [{ n: 4, r: 70, d: 1 }, { n: 5, r: 120, d: -1 }] : [{ n: 3, r: 80, d: 1 }];
-  const orbs: { im: Phaser.GameObjects.Image; r: number; d: number; a0: number }[] = [];
-  for (const rg of rings) for (let i = 0; i < rg.n; i++) {
-    const im = k.img(VT.ORB, 0, 0, { tint: 0xffd040, scale: 0.9 });
-    orbs.push({ im, r: rg.r, d: rg.d, a0: (i / rg.n) * Math.PI * 2 });
-  }
-  const em = k.scene.add.particles(0, 0, VT.DOT, { lifespan: 260, speed: 0, scale: { start: 0.6, end: 0 }, alpha: { start: 0.8, end: 0 }, tint: 0xffd040, blendMode: Phaser.BlendModes.ADD, frequency: -1 }).setDepth(19);
-  let t = 0;
-  const dur = 2200;
-  const ev = k.scene.time.addEvent({
-    delay: 16, repeat: dur / 16, callback: () => {
-      t += 16;
-      const h = H(s);
-      for (const o of orbs) {
-        const a = o.a0 + (t / 1000) * 3 * o.d;
-        o.im.setPosition(h.x + Math.cos(a) * o.r, h.y + Math.sin(a) * o.r).setAlpha(Math.min(1, (dur - t) / 300));
-        em.emitParticleAt(o.im.x, o.im.y, 1);
-        for (const tg of s.targets()) if (dist(tg, o.im) < 16 && Math.random() < 0.1) { s.hit(tg, 0xffd040); k.burst(tg.x, tg.y, 0xffe080, 5, { tex: VT.SPARK, scale: [0.25, 0], life: 200 }); }
-      }
-    },
-  });
-  k.later(dur + 50, () => { ev.remove(); for (const o of orbs) o.im.destroy(); em.destroy(); });
-};
-
-const nguyenAnh: Fx = (s, aw) => {
-  const k = s.kit;
-  const n = aw ? 2 : 1;
-  const sp: Phaser.GameObjects.Image[] = [];
-  for (let i = 0; i < n; i++) {
-    const im = k.img(VT.SPIRIT, 0, 0, { tint: aw ? 0xffe6a0 : 0xffffff, scale: 1, alpha: 0, add: true });
-    k.scene.tweens.add({ targets: im, alpha: 0.95, duration: 300 });
-    sp.push(im);
-  }
-  const halo = sp.map(() => k.img(VT.RING, 0, 0, { tint: aw ? 0xffe6a0 : 0x70ffd8, scale: 0.18, alpha: 0.8 }));
-  let t = 0;
-  const dur = 2400;
-  const ev = k.scene.time.addEvent({
-    delay: 16, repeat: dur / 16, callback: () => {
-      t += 16;
-      const h = H(s);
-      sp.forEach((im, i) => {
-        const a = (t / 1000) * 1.6 + i * Math.PI;
-        im.setPosition(h.x + Math.cos(a) * 50, h.y - 40 + Math.sin(a) * 12 + Math.sin(t / 200) * 3);
-        halo[i].setPosition(im.x, im.y - 14).setRotation(t / 300);
-        if (t > dur - 300) { im.setAlpha((dur - t) / 300); halo[i].setAlpha((dur - t) / 300); }
-      });
-      if (t % 400 < 16)
-        sp.forEach((im) => {
-          const tg = s.targets()[Math.floor(Math.random() * Math.min(5, s.targets().length))];
-          if (!tg) return;
-          k.fly(VT.ORB, pt(im.x, im.y), tg, { dur: 260, tint: aw ? 0xffe6a0 : 0x70ffd8, scale: 0.6, trail: aw ? 0xffe6a0 : 0x70ffd8, trailScale: 0.5, onArrive: () => { s.hit(tg, 0x70ffd8); k.glow(tg.x, tg.y, 0x70ffd8, 40, 200); } });
-        });
-    },
-  });
-  k.later(dur + 50, () => { ev.remove(); sp.forEach((i) => i.destroy()); halo.forEach((i) => i.destroy()); });
-};
-
 /** Tay khí vàng (tools/art/qi_arm.py, từ ảnh mẫu pháp tướng nhiều tay) + luồng KIẾM KHÍ bọc nắm tay vuốt thành lưỡi
  *  (ảnh riêng cùng khung) — dựng đứng, mũi luồng khí ở trên */
 export const QI_ARM = 'vx_qi_arm';
@@ -1608,8 +1552,8 @@ export const NGAN_HA = { core: 'vx_ngan_ha_core', strand: 'vx_ngan_ha_strand', r
  *  THỨC TỈNH: tia to + mạnh hơn, định kỳ bắn thêm 3 TIA TRUY KÍCH vào quái khác. (Ghi chú: docs/skill-redesign-pending.md) */
 const nganHa: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
-  const RANGE = aw ? 360 : 300;
-  const DUR = aw ? 3000 : 2600;
+  const RANGE = s.opt?.range ?? (aw ? 360 : 300);
+  const DUR = s.opt?.dur ?? (aw ? 3000 : 2600);
   const BIG = aw ? 1.5 : 1;
   const COL = 0x9fe8ff;
   const TICK = 300;
@@ -1803,8 +1747,8 @@ const hoangChung: Fx = (s, aw) => {
   // mỗi lần chuông rung: chuông nảy, trận đồ loé, sóng vàng lan trên mặt đất gây sát thương
   const k = s.kit, sc = k.scene;
   const ADD = Phaser.BlendModes.ADD;
-  const DUR = 2400;
-  const R = aw ? 190 : 160;                                            // bán kính sóng chuông
+  const DUR = s.opt?.dur ?? 2400;
+  const R = s.opt?.r ?? (aw ? 190 : 160);                                            // bán kính sóng chuông
   const foot = () => pt(s.hero.x, s.hero.y + 20);
   const BS = HOANG_CHUNG.bellH / 300;
   // trận đồ: ảnh xoay trong container nén dọc = xoay trên mặt đất
@@ -1853,41 +1797,22 @@ const hoangChung: Fx = (s, aw) => {
   });
 };
 
-const kimThan: Fx = (s, aw) => {
-  const k = s.kit, hero = s.hero;
-  hero.setTint(0xffe080);
-  const aura = k.img(VT.SOFT, 0, 0, { tint: 0xffd860, scale: 1.6, alpha: 0.55, depth: 9 });
-  const rr = k.img(VT.RUNES, 0, 0, { tint: 0xffd860, scale: (aw ? 120 : 90) / 124, alpha: 0.6, depth: 3 });
-  const rise = k.scene.add.particles(0, 0, VT.SPARK, { lifespan: 800, speedY: { min: -120, max: -60 }, speedX: { min: -20, max: 20 }, scale: { start: 0.3, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffd860, 0xffffff], blendMode: Phaser.BlendModes.ADD, frequency: 30, emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 26) as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource } }).setDepth(21);
-  k.ring(hero.x, hero.y, 0xffd860, 10, 100, 400, true);
-  let t = 0;
-  const ev = k.scene.time.addEvent({
-    delay: 16, repeat: 2400 / 16, callback: () => {
-      t += 16;
-      const h = H(s);
-      aura.setPosition(h.x, h.y).setScale(1.5 + Math.sin(t / 120) * 0.1);
-      rr.setPosition(h.x, h.y + 8).setRotation(t / 900);
-      rise.setPosition(h.x, h.y);
-      if (t % 500 < 16) for (const o of near(s, h, aw ? 120 : 90)) s.hit(o, 0xffd860);
-    },
-  });
-  k.later(2400, () => { ev.remove(); hero.clearTint(); rise.stop(); k.tw(aura, { alpha: 0 }, 300); k.tw(rr, { alpha: 0 }, 300); k.later(900, () => rise.destroy()); });
-};
-
 export const LINH_VUC = { gold: 'vx_lv_gold', red: 'vx_lv_red', ring: 'vx_lv_ring', ky: 0.5 } as const;
 
 // lĩnh vực đang bật (duy trì VĨNH VIỄN): thi triển lại cùng loại thì giữ nguyên, đổi loại thì thay
-let lvActive: { aw: boolean; stop: () => void } | null = null;
+let lvActive: { aw: boolean; r: number; scene: Phaser.Scene; stop: () => void } | null = null;
+/** Tắt lĩnh vực đang bật (game: hết màn / bỏ kỹ năng) */
+export function stopLinhVuc(): void { lvActive?.stop(); }
 
 const linhVuc: Fx = (s, aw) => {
   // trận đồ dưới chân (ảnh mẫu, tools/art/linh_vuc.py): thường = trận đồ VÀNG; thức tỉnh = trận đồ ĐỎ
   // + vòng gai đỏ bao ngoài, 2 lớp xoay NGƯỢC chiều nhau. Ảnh xoay trong container nén dọc = xoay trên mặt đất.
   // DUY TRÌ VĨNH VIỄN quanh nhân vật (không hết giờ); trang demo: tắt khi chọn kỹ năng khác
-  if (lvActive?.aw === aw) return;
+  const R = s.opt?.r ?? (aw ? 240 : 170);
+  if (lvActive?.aw === aw && lvActive.r === R && lvActive.scene === s.kit.scene) return;
   lvActive?.stop();
   const k = s.kit, sc = k.scene;
   const ADD = Phaser.BlendModes.ADD;
-  const R = aw ? 240 : 170;
   const foot = () => pt(s.hero.x, s.hero.y + 20);
   const layers: { c: Phaser.GameObjects.Container; im: Phaser.GameObjects.Image; spin: number }[] = [];
   const layer = (tex: string, half: number, spin: number, depth: number) => {
@@ -1917,42 +1842,17 @@ const linhVuc: Fx = (s, aw) => {
       if (t % 600 < 16) for (const o of near(s, h, R)) s.hit(o, aw ? 0xff4a5a : 0xffd040);
     },
   });
-  const me = { aw, stop: () => {} };
+  const me = { aw, r: R, scene: sc, stop: () => {} };
   const stop = () => {
     if (lvActive === me) lvActive = null;
-    ev.remove(); mist.stop();
+    ev.remove();
+    if (!mist.scene) return;                                           // scene đã đóng (hết màn): hình đã bị huỷ theo
+    mist.stop();
     for (const L of layers) sc.tweens.add({ targets: L.c, alpha: 0, scaleX: 0.3, scaleY: 0.3 * LINH_VUC.ky, duration: 400, ease: 'Back.easeIn', onComplete: () => L.c.destroy(true) });
     k.later(1300, () => mist.destroy());
   };
   me.stop = stop;
   lvActive = me;
-};
-
-const deAn: Fx = (s, aw) => {
-  const k = s.kit, h = H(s);
-  const c = s.targets()[3] ?? pt(h.x + 150, h.y);
-  const big = aw ? 2.2 : 1.4;
-  const sh = k.img(VT.SOFT, c.x, c.y, { tint: 0x000000, add: false, alpha: 0, scale: 1.6 * big, depth: 4 });
-  k.scene.tweens.add({ targets: sh, alpha: 0.5, duration: 900 });
-  k.ring(c.x, c.y, 0xffd040, 120 * big, 110 * big, 900, false, { alpha: 0.7 });
-  const seal = k.img(VT.SEAL, c.x, c.y - 320, { add: false, scale: 0.9 * big, depth: 24, alpha: 0.95 });
-  k.scene.tweens.add({ targets: seal, rotation: 0.15, duration: 900 });
-  k.scene.tweens.add({
-    targets: seal, y: c.y - 20, duration: 900, ease: 'Cubic.easeIn', onComplete: () => {
-      k.flash(0xffe080, 160, 0.3);
-      k.glow(c.x, c.y, 0xffd040, 260 * big, 500);
-      k.ring(c.x, c.y, 0xfff0a0, 30, 170 * big, 500, true);
-      k.ring(c.x, c.y, 0xffd040, 20, 220 * big, 700);
-      k.debris(c.x, c.y, 22);
-      k.shake(320, 0.014);
-      for (const o of near(s, c, 120 * big)) s.hit(o, 0xffd040);
-      k.later(500, () => { k.tw(seal, { alpha: 0 }, 400); k.tw(sh, { alpha: 0 }, 400); });
-      if (aw)
-        s.targets().slice(0, 9).forEach((tg, i) =>
-          k.later(200 + i * 60, () => k.fly(VT.DRAGON, c, tg, { dur: 520, add: false, scale: 1, arc: (i % 2 ? 1 : -1) * 0.5, trail: 0xffd040, trailTex: VT.SOFT, trailScale: 0.25, onArrive: () => { s.hit(tg, 0xffd040); k.glow(tg.x, tg.y, 0xffd040, 70, 240); } })),
-        );
-    },
-  });
 };
 
 export const DAI_DAO = { layers: 'vx_dd_layers', cell: 512, n: 13, ky: 0.5 } as const;
@@ -2264,7 +2164,7 @@ const khiLong: Fx = (s, aw) => dragonFx(s, aw);
 
 export const SKILL_FX: Record<string, Fx> = {
   ngu_kiem: nguKiem, ba_dao: baDao, pha_thuong: phaThuong, bang_quyen: bangQuyen, truy_tien: truyTien, thanh_phien: thanhPhien,
-  ho_khieu: hoKhieu, linh_dan: linhDan, hoa_phu: hoaPhu, kim_dan: kimDan, nguyen_anh: nguyenAnh, khi_long: khiLong, than_thuc: thanThuc,
+  ho_khieu: hoKhieu, linh_dan: linhDan, hoa_phu: hoaPhu, khi_long: khiLong, than_thuc: thanThuc,
   hu_khong: huKhong, phap_tuong: phapTuong, van_kiem: vanKiem, than_loi: thanLoi, lien_hoa: lienHoa, ngan_ha: nganHa,
-  hoang_chung: hoangChung, kim_than: kimThan, linh_vuc: linhVuc, de_an: deAn, dai_dao: daiDao,
+  hoang_chung: hoangChung, linh_vuc: linhVuc, dai_dao: daiDao,
 };

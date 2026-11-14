@@ -3,6 +3,8 @@ import type { GameScene } from './scenes/GameScene';
 import { SCENES } from './config/assets';
 import * as Prog from './systems/progression';
 import { debugGrant } from './systems/progression';
+import { preloadSkillVfx } from './vfx/preload';
+import { skillById } from './config/skills';
 
 /**
  * API gỡ lỗi `window.__vls` — chỉ bật ở chế độ dev hoặc khi URL có `?debug`.
@@ -65,7 +67,24 @@ export function installDebug(game: Phaser.Game): void {
       if (game.scene.isActive(SCENES.GAME)) game.scene.stop(SCENES.GAME);
       game.scene.start(SCENES.GAME, { stageId });
     },
-    /** Bật / tắt bot, tự chọn thẻ ngẫu nhiên khi lên cấp */
+    /** Nạp thêm ảnh hiệu ứng kỹ năng vào màn đang chơi (để thử kỹ năng không mang theo) */
+    loadVfx(ids: string[]): Promise<void> {
+      const s = scene();
+      return new Promise((res) => {
+        preloadSkillVfx(s, ids);
+        s.load.once(Phaser.Loader.Events.COMPLETE, () => res());
+        s.load.start();
+      });
+    },
+    /** Thêm / đặt kỹ năng trong lượt chơi (cấp 1..5, thức tỉnh) */
+    setSkill(id: string, level = 1, awakened = false) {
+      const r = scene().run;
+      const kind = skillById(id).source === 'weapon' ? 'weapon' : 'active';
+      const own = r.find(id) ?? r.add(id, kind);
+      own.level = level;
+      own.awakened = awakened;
+    },
+        /** Bật / tắt bot, tự chọn thẻ ngẫu nhiên khi lên cấp */
     autoplay(on = true) {
       const s = scene();
       s.botInput = on ? bot : null;

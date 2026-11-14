@@ -22,6 +22,7 @@ import { mixColor } from '../utils/format';
 import { audio } from '../systems/Audio';
 import { ArtifactSystem } from '../systems/ArtifactSystem';
 import { weaponSkillOf } from '../config/skills';
+import { preloadSkillVfx } from '../vfx/preload';
 
 export type RunStatus = 'running' | 'levelup' | 'paused' | 'ended';
 
@@ -81,6 +82,11 @@ export class GameScene extends Phaser.Scene {
 
   init(data: { stageId?: string }): void {
     this.stageId = data?.stageId ?? 'w1s1';
+  }
+
+  /** Nạp ảnh hiệu ứng của kỹ năng vũ khí đang cầm + 3 kỹ năng cảnh giới mang theo (màn sau dùng lại, không tải lại) */
+  preload(): void {
+    preloadSkillVfx(this, [weaponSkillOf(computeMeta().weaponId).id, ...currentLoadout()]);
   }
 
   create(): void {

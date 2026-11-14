@@ -1,7 +1,12 @@
-# Thay đổi kỹ năng chờ tích hợp vào game
+# Thay đổi kỹ năng (ĐÃ TÍCH HỢP vào game)
 
-Mọi hiệu ứng mới đang nằm trong phòng thử (`src/vfx/skillFx.ts`, `src/vfxlab/main.ts`, trang `vfx-lab.html`).
-Chỉ đưa vào game **một lượt** sau khi đã duyệt hết toàn bộ kỹ năng.
+Toàn bộ hiệu ứng đã duyệt ở phòng thử (`src/vfx/skillFx.ts`, trang `vfx-lab.html`) đã đưa vào game một lượt:
+- Kỹ năng trong game (`src/systems/skills/weapon.ts`, `realm.ts`) gọi đúng hàm hiệu ứng của phòng thử trên quái thật
+  (`Ctx.stage()`); mỗi lần hiệu ứng báo trúng đòn → kỹ năng tính sát thương / hiệu ứng phụ.
+- Ảnh hiệu ứng nạp theo kỹ năng mang vào màn (`src/vfx/preload.ts`).
+- Thông tin kỹ năng (chữ hiển thị) cập nhật trong `src/config/skills.ts`.
+
+Bên dưới là ghi chú thiết kế đã áp dụng.
 
 ## Ghi chú thiết kế (cách hoạt động trong game)
 

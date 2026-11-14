@@ -6,8 +6,8 @@ import type { Fx } from './Fx';
 import type { OwnedSkill, RunState } from './RunState';
 import type { Pickups } from './Pickups';
 import { Ctx, type Skill } from './skills/Ctx';
-import { WEAPON_IMPLS, type WeaponSkill } from './skills/weapon';
-import { REALM_IMPLS, NguyenAnh, DaiDao } from './skills/realm';
+import { WEAPON_IMPLS } from './skills/weapon';
+import { REALM_IMPLS, DaiDao } from './skills/realm';
 
 type Impl = new (c: Ctx, own: OwnedSkill) => Skill;
 const IMPLS: Record<string, Impl> = { ...WEAPON_IMPLS, ...REALM_IMPLS };
@@ -54,18 +54,10 @@ export class SkillSystem {
     let mul = 1;
     for (const s of this.live.values()) if (s instanceof DaiDao) mul = Math.min(mul, s.cdMul);
     c.cdMul = mul;
-    const weapon = this.weaponSkill();
     for (const own of this.run.skills) {
       if (own.kind === 'passive') continue;
-      const s = this.get(own);
-      if (s instanceof NguyenAnh) s.weapon = weapon;
-      s?.update(dt);
+      this.get(own)?.update(dt);
     }
-  }
-
-  private weaponSkill(): WeaponSkill | null {
-    const w = this.run.skills.find((s) => s.kind === 'weapon');
-    return w ? ((this.get(w) as WeaponSkill | null) ?? null) : null;
   }
 
   clear(): void {

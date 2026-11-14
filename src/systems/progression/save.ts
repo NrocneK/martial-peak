@@ -139,6 +139,7 @@ function sanitize(d: SaveData): SaveData {
   d.items = clean(d.items);
   // Hệ kỹ năng mới (v0.15): kỹ năng mang theo cũ (ac_*) không còn → thay bằng các kỹ năng cảnh giới đã mở
   if (!Array.isArray(d.loadout)) d.loadout = [];
+  d.loadout = d.loadout.map((id) => (id === 'nguyen_anh' ? 'khi_long' : id));             // Nguyên Anh Xuất Khiếu → Khí Long
   d.loadout = d.loadout.filter((id) => REALM_SKILLS.some((s) => s.id === id));
   if (!d.loadout.length) d.loadout = REALM_SKILLS.filter((s) => s.unlockTier <= (d.tier || 0)).slice(-3).map((s) => s.id);
   d.inbox = clean(d.inbox).slice(0, MAX_INBOX);

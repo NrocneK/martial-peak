@@ -8,6 +8,8 @@ import type { Fx } from '../Fx';
 import type { RunState, OwnedSkill } from '../RunState';
 import type { Pickups } from '../Pickups';
 import { audio } from '../Audio';
+import { VfxKit } from '../../vfx/VfxKit';
+import type { Stage } from '../../vfx/skillFx';
 
 export interface HitOpts {
   /** undefined = tung bạo kích theo tỉ lệ; true = luôn bạo kích; false = không */
@@ -29,6 +31,12 @@ export class Ctx {
   /** Hệ số hồi chiêu toàn cục (Hỗn Nguyên Đại Đạo Lô: 0.5 trong 10 giây) */
   cdMul = 1;
   private readonly tmp: Enemy[] = [];
+  /** Bộ công cụ vẽ hiệu ứng kỹ năng (src/vfx — cùng hiệu ứng với trang xem thử vfx-lab) */
+  readonly kit: VfxKit;
+  /** Danh sách mục tiêu cho hiệu ứng: tính 1 lần mỗi khung cho mỗi bán kính */
+  private fxCache = new Map<number, Enemy[]>();
+  private fxFrame = -1;
+  private lastPose = 0;
 
   constructor(
     readonly scene: Phaser.Scene,
@@ -38,7 +46,50 @@ export class Ctx {
     readonly fx: Fx,
     readonly run: RunState,
     readonly pickups: Pickups,
-  ) {}
+  ) {
+    this.kit = new VfxKit(scene);
+  }
+
+  /** Quái còn sống trong bán kính r quanh nhân vật, gần trước xa sau (dùng cho hiệu ứng kỹ năng) */
+  fxTargets(r: number): Enemy[] {
+    const f = this.scene.game.loop.frame;
+    if (f !== this.fxFrame) { this.fxFrame = f; this.fxCache.clear(); }
+    let l = this.fxCache.get(r);
+    if (!l) {
+      const p = this.player;
+      l = this.enemies.list.filter((e) => e.active && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r)
+        .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
+      this.fxCache.set(r, l);
+    }
+    return l;
+  }
+
+  /**
+   * "Sân khấu" cho hàm hiệu ứng kỹ năng (src/vfx/skillFx.ts): mục tiêu = quái thật quanh nhân vật,
+   * mỗi lần hiệu ứng báo trúng đòn (`hit`) → gọi `onHit` để kỹ năng tự tính sát thương / hiệu ứng phụ.
+   * Màu báo trúng giúp phân biệt loại đòn trong cùng một hiệu ứng (ví dụ đòn chính / đòn lan).
+   */
+  stage(onHit: (e: Enemy, color: number) => void, opt?: Stage['opt'], range = 560): Stage {
+    const c = this;
+    return {
+      kit: this.kit,
+      hero: this.player,
+      targets: () => c.fxTargets(range),
+      hit: (t, color) => { const e = t as Enemy; if (e.active) onHit(e, color ?? 0xffffff); },
+      isBoss: (t) => (t as Enemy).isBoss,
+      drag: (t, x, y) => {
+        const e = t as Enemy;
+        if (!e.active || e.isBoss || (e.x - x) ** 2 + (e.y - y) ** 2 > 140 * 140) return;   // không kéo quái ở xa (ô quái đã tái sinh chỗ khác)
+        e.x = x;
+        e.y = y;
+      },
+      pose: (_skill, n, a) => {
+        const now = c.scene.time.now;
+        if (n > 0 || now - c.lastPose > 160) { c.lastPose = now; c.player.playAttack(a); }
+      },
+      opt,
+    };
+  }
 
   get st(): Player['stats'] {
     return this.player.stats;
