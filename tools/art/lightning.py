@@ -5,8 +5,7 @@ CỬU TIÊU THẦN LÔI — sét lấy từ ảnh mẫu (tools/art/ref/lightning
   · lightning_ref_59.png : hàng dưới là MẶT NẠ ĐEN của 5 tia sét hàng trên → lấy hình tia, tô lõi trắng + viền lam,
         dựng ngang (đầu trái → cuối phải) để game kéo dài nối giữa 2 quái (sét lan)
         → public/vfx/thunder_arc.png (5 khung) (+ _aw)
-  · lightning_ref_58.webp : vụ nổ sét lớn (cầu sét + nứt đất), nền xám than → cộng sáng
-        → public/vfx/thunder_blast.png (+ _aw)
+  (nổ tàn dư của kiếp lôi: xem tools/art/lightning_residue.py)
   python3 -I tools/art/lightning.py
 """
 import os
@@ -83,28 +82,6 @@ def arc():
     print('arc', len(tiles), LW, LH)
 
 
-def blast():
-    """nền xám than: độ đục theo phần SÁNG HƠN nền (sét, cầu sét, khói sáng, nứt đất), màu giữ nguyên ảnh gốc;
-    game vẽ thường (không cộng) nên màu đúng như mẫu"""
-    a = np.array(Image.open(os.path.join(REF, 'lightning_ref_58.webp')).convert('RGB')).astype(float)
-    mx = a.max(2)
-    small = ndimage.uniform_filter(mx, 9)[::8, ::8]
-    bgs = ndimage.gaussian_filter(ndimage.grey_opening(small, size=(61, 61)), 6)   # nền (tối, mượt) — cửa sổ lớn hơn cầu sét
-    bg = np.array(Image.fromarray(bgs.astype(np.float32), 'F').resize((a.shape[1], a.shape[0]), Image.BICUBIC))
-    A = np.clip((mx - bg - 10) / 90, 0, 1)
-    out = np.dstack([a, A * 255])
-    img = Image.fromarray(out.astype(np.uint8), 'RGBA').resize((512, 512), Image.LANCZOS)
-    o = np.array(img).astype(float)
-    # chỉ giữ quả cầu (+ nứt đất): xoá tia sét giáng phía trên cầu bằng mặt nạ elip mềm quanh cầu (nửa dưới giữ nguyên)
-    yy, xx = np.mgrid[0:512, 0:512].astype(float)
-    CX, CY = 265.0, 345.0
-    e = np.sqrt(((xx - CX) / 280) ** 2 + ((yy - CY) / 140) ** 2)
-    keep = np.where(yy >= CY, 1.0, np.clip((1.0 - e) / 0.15, 0, 1))
-    o[..., 3] *= keep
-    save(o, 'thunder_blast.png'); save(purple(o), 'thunder_blast_aw.png')
-    print('blast 512 ground', 0.5, round(1010 / 1200, 3))
-
-
 def preview():
     pv = Image.new('RGB', (1500, 900), (26, 24, 40))
     y = 0
@@ -115,15 +92,9 @@ def preview():
         b = Image.fromarray(base.astype(np.uint8))
         b.thumbnail((1500, 300))
         pv.paste(b, (0, y)); y += b.height + 4
-    for i, name in enumerate(('thunder_blast', 'thunder_blast_aw')):
-        im = Image.open(os.path.join(VFX, name + '.png'))
-        a = np.array(im).astype(float)
-        base = np.full(a.shape[:2] + (3,), (26, 24, 40.)) * (1 - a[..., 3:] / 255) + a[..., :3] * a[..., 3:] / 255
-        b = Image.fromarray(base.astype(np.uint8)).resize((300, 300))
-        pv.paste(b, (900 + i * 300, 600))
     pv.save(os.path.join(OUT, 'thunder_preview.png'))
 
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    strike(); arc(); blast(); preview()
+    strike(); arc(); preview()

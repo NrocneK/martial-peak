@@ -51,7 +51,7 @@ class LabScene extends Phaser.Scene {
     for (const sf of ['', '_aw']) {
       this.load.spritesheet(THUNDER.strike + sf, `/vfx/thunder_strike${sf}.png?v=1`, { frameWidth: THUNDER.sw, frameHeight: THUNDER.sh });
       this.load.spritesheet(THUNDER.arc + sf, `/vfx/thunder_arc${sf}.png?v=1`, { frameWidth: THUNDER.aw, frameHeight: THUNDER.ah });
-      this.load.image(THUNDER.blast + sf, `/vfx/thunder_blast${sf}.png?v=1`);
+      this.load.spritesheet(THUNDER.residue + sf, `/vfx/thunder_residue${sf}.png?v=1`, { frameWidth: THUNDER.rw, frameHeight: THUNDER.rh });
     }
     this.load.image(FIRE_SLASH.key, '/vfx/fire_slash.png?v=5');
     this.load.spritesheet(SPIRIT_ORB, '/vfx/spirit_orb.png?v=1', { frameWidth: 96, frameHeight: 96 });

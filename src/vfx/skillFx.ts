@@ -1346,7 +1346,7 @@ const vanKiem: Fx = (s, aw) => {
 
 /** Sét (tools/art/lightning.py, từ ảnh mẫu): tia giáng 5 khung 147×389 (chạm đất ở gx, gy) · tia lan 5 kiểu 320×64 (ngang,
  *  đầu trái) · vụ nổ kiếp lôi 512×512 (chạm đất 0.5, 0.842). Thức tỉnh dùng bản tím (_aw). */
-export const THUNDER = { strike: 'vx_thunder_strike', arc: 'vx_thunder_arc', blast: 'vx_thunder_blast', sw: 147, sh: 389, gx: 0.573, gy: 0.961, aw: 320, ah: 64 } as const;
+export const THUNDER = { strike: 'vx_thunder_strike', arc: 'vx_thunder_arc', residue: 'vx_thunder_residue', rw: 240, rh: 215, rn: 41, rgy: 0.895, sw: 147, sh: 389, gx: 0.573, gy: 0.961, aw: 320, ah: 64 } as const;
 
 const thanLoi: Fx = (s, aw) => {
   const k = s.kit, sc = k.scene;
@@ -1398,23 +1398,13 @@ const thanLoi: Fx = (s, aw) => {
       // nhịp 1: tia kiếp lôi giáng xuống (chạy hết hoạt ảnh) → nhịp 2: mới nổ
       k.flash(0xc0a0ff, 120, 0.2);
       strike(t, 1.8, () => k.later(80, () => {
+        // NỔ TÀN DƯ (41 khung lấy từ video mẫu): cầu nổ trắng → lõi vàng + vòng sét → nhạt dần → khói tàn rồi tắt
         k.flash(0xc0a0ff, 200, 0.35);
-        const bl = sc.add.image(t.x, t.y + 6, THUNDER.blast + sf).setOrigin(0.5, 0.842).setScale(0.2).setDepth(21);
-        sc.tweens.add({ targets: bl, scale: 0.62, duration: 220, ease: 'Back.easeOut' });
-        // tan biến kiểu điện: cầu chập chờn (chớp tắt không đều) rồi dồn xuống đất, phóng các tia sét ngắn ra mặt đất
-        k.later(600, () => {
-          sc.tweens.add({ targets: bl, scaleY: 0.05, scaleX: 0.75, duration: 420, ease: 'Cubic.easeIn' });
-          let f = 0;
-          const flick = sc.time.addEvent({ delay: 45, repeat: 9, callback: () => { bl.setAlpha(f++ % 2 ? 0.25 + Math.random() * 0.2 : 0.8 + Math.random() * 0.2); } });
-          k.later(160, () => {
-            const g = pt(t.x, t.y + 4);
-            for (let i = 0; i < 6; i++) {
-              const a = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
-              k.later(i * 35, () => arc(g, { x: g.x + Math.cos(a) * 95, y: g.y + Math.sin(a) * 95 * 0.55 + 14 }));
-            }
-          });
-          k.later(430, () => { flick.remove(); bl.destroy(); k.glow(t.x, t.y, COL, 110, 260); });
-        });
+        const rk = 'vx_thunder_residue_anim' + sf;
+        if (!sc.anims.exists(rk)) sc.anims.create({ key: rk, frames: sc.anims.generateFrameNumbers(THUNDER.residue + sf, { start: 0, end: THUNDER.rn - 1 }), frameRate: 15, repeat: 0 });
+        const bl = sc.add.sprite(t.x, t.y + 6, THUNDER.residue + sf, 0).setOrigin(0.5, THUNDER.rgy).setScale(1.1).setDepth(21);
+        bl.play(rk);
+        bl.once('animationcomplete', () => bl.destroy());
         k.shake(300, 0.012);
         for (const o of near(s, t, 140)) s.hit(o, COL);
       }));
