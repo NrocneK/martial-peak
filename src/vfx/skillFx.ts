@@ -1401,7 +1401,20 @@ const thanLoi: Fx = (s, aw) => {
         k.flash(0xc0a0ff, 200, 0.35);
         const bl = sc.add.image(t.x, t.y + 6, THUNDER.blast + sf).setOrigin(0.5, 0.842).setScale(0.2).setDepth(21);
         sc.tweens.add({ targets: bl, scale: 0.62, duration: 220, ease: 'Back.easeOut' });
-        sc.tweens.add({ targets: bl, alpha: 0, scale: 0.7, delay: 650, duration: 400, onComplete: () => bl.destroy() });
+        // tan biến kiểu điện: cầu chập chờn (chớp tắt không đều) rồi dồn xuống đất, phóng các tia sét ngắn ra mặt đất
+        k.later(600, () => {
+          sc.tweens.add({ targets: bl, scaleY: 0.05, scaleX: 0.75, duration: 420, ease: 'Cubic.easeIn' });
+          let f = 0;
+          const flick = sc.time.addEvent({ delay: 45, repeat: 9, callback: () => { bl.setAlpha(f++ % 2 ? 0.25 + Math.random() * 0.2 : 0.8 + Math.random() * 0.2); } });
+          k.later(160, () => {
+            const g = pt(t.x, t.y + 4);
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+              k.later(i * 35, () => arc(g, { x: g.x + Math.cos(a) * 95, y: g.y + Math.sin(a) * 95 * 0.55 + 14 }));
+            }
+          });
+          k.later(430, () => { flick.remove(); bl.destroy(); k.glow(t.x, t.y, COL, 110, 260); });
+        });
         k.shake(300, 0.012);
         for (const o of near(s, t, 140)) s.hit(o, COL);
       }));
