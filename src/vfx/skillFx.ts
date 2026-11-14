@@ -1576,8 +1576,8 @@ const nganHa: Fx = (s, aw) => {
     count.set(o, c);
     if (c === 5 && !boss && !frozen.has(o)) {                            // ĐÓNG BĂNG
       frozen.add(o);
-      const ice = sc.add.image(o.x, o.y + 4, NGAN_HA.ice).setOrigin(0.5, 0.96).setDepth(12).setScale(0.62, 0.05).setAlpha(0.95);
-      sc.tweens.add({ targets: ice, scaleY: 0.62, duration: 160, ease: 'Back.easeOut' });
+      const ice = sc.add.image(o.x, o.y + 21, NGAN_HA.ice).setOrigin(0.5, 0.96).setDepth(12).setScale(0.5, 0.05).setAlpha(0.88);
+      sc.tweens.add({ targets: ice, scaleY: 0.5, duration: 180, ease: 'Back.easeOut' });
       k.burst(o.x, o.y - 18, 0xe8fbff, 8, { tex: VT.SHARD, speed: [40, 120], scale: [0.5, 0.2], rotate: true, life: 400 });
       k.later(1600, () => {
         k.burst(o.x, o.y - 18, 0xe8fbff, 10, { tex: VT.SHARD, speed: [80, 200], scale: [0.55, 0.2], rotate: true, life: 450 });
@@ -1672,10 +1672,11 @@ const nganHa: Fx = (s, aw) => {
             if (along > 0 && along < L && off < 16 * BIG && t - (hitT.get(o) ?? -999) >= TICK) { hitT.set(o, t); damage(o); }
           }
         }
-        // THỨC TỈNH: định kỳ phóng 3 tên lửa băng truy kích từ cổng phát, 3 hướng cách đều 120°
+        // THỨC TỈNH: định kỳ phóng 3 tên lửa băng truy kích từ cổng phát — chỉ nhắm quái PHÍA TRƯỚC mặt (±75° quanh hướng tia)
         if (aw && t > 300 && t < DUR - 400 && t % 704 < 16) {
-          const pool = s.targets().filter((o) => o !== tgt && dist(o, h) < RANGE * 1.4).sort(() => Math.random() - 0.5);
-          for (let n = 0; n < 3; n++) launch(st0, rot + Math.PI + (n - 1) * (Math.PI * 2 / 3), pool[n % Math.max(1, pool.length)] ?? tgt);
+          const front = (o: Pt) => { let d = Math.atan2(o.y - h.y, o.x - h.x) - rot; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return Math.abs(d) < 1.3; };
+          const pool = s.targets().filter((o) => o !== tgt && front(o) && dist(o, h) < RANGE * 1.4).sort(() => Math.random() - 0.5);
+          for (let n = 0; n < 3; n++) launch(st0, rot + (n - 1) * 0.6, pool[n % Math.max(1, pool.length)] ?? tgt);   // toả 3 hướng về phía trước
         }
       }
       stepMissiles(16);
