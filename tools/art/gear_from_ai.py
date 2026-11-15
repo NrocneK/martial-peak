@@ -34,7 +34,12 @@ ONLY_BIGGEST = {(6, 'wp_spear')}
 # xoá bớt chi tiết thừa (toạ độ trong hộp cắt): cung cấp Tiên bỏ mũi tên (lông đuôi, thân tên ngoài thân cung, đầu tên)
 ERASE = {(3, 'wp_bow'): [[(55, 30), (125, 30), (125, 100), (55, 100)],
                          [(85, 55), (100, 50), (192, 132), (178, 145)],
-                         [(222, 160), (280, 160), (280, 215), (222, 215)]]}
+                         [(222, 160), (280, 160), (280, 215), (222, 215)],
+                         [(120, 92), (132, 88), (162, 120), (152, 130)]],          # mẩu thân tên còn sót
+         # cung Linh: bỏ 2 móc bạc ở đầu dây + dây cũ → nối dây thẳng vào cánh cung (LINES)
+         (2, 'wp_bow'): [[(92, 36), (156, 34), (157, 60), (115, 84), (92, 84)],
+                         [(18, 128), (54, 128), (56, 172), (30, 176), (16, 170)],
+                         [(106, 70), (47, 168), (36, 160), (95, 64)], [(78, 78), (106, 78), (106, 114), (78, 114)]]}
 # quầng sáng nhạt giữa các vòng dây ngoài mặt ngọc (tâm x, y, bán kính, độ sáng tối thiểu) → trong suốt
 GLOW_OUT = {(6, 'accessory'): (122, 125, 86, 195)}
 # chỉ giữ phần trong đa giác (toạ độ trong hộp): găng Linh lấy CHIẾC BÊN PHẢI của cặp (chiếc trái lỗi hai đầu đều là nắm tay)
@@ -43,9 +48,13 @@ KEEP_POLY = {(2, 'wp_fist'): [(55, 15), (90, 5), (127, 25), (132, 57), (110, 90)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
 PALE_ERASE = {(5, 'wp_fist'): [[(0, 85), (85, 85), (75, 125), (50, 150), (25, 170), (0, 170)],
-                               [(308, 140), (333, 140), (333, 280), (270, 280), (247, 260), (265, 225), (295, 200), (305, 190)]]}
+                               [(308, 140), (333, 140), (333, 280), (258, 280), (258, 262), (263, 222), (268, 183), (305, 170)],
+                               [(281, 166), (302, 158), (302, 184), (281, 184)], [(252, 236), (264, 236), (264, 258), (252, 258)]]}
 PALE_GAPS = {(2, 'accessory')}                                        # khe sáng nhạt giữa các nút thắt → trong suốt
 CORD = {(2, 'wp_spear'), (3, 'wp_spear')}                             # nối lại sợi dây mảnh treo tua bị rembg bỏ
+MIRROR_PAIR = {(2, 'wp_fist'): (0.08, 180)}                            # (độ chồng của 2 chiếc, góc xoay để nắm tay hướng lên)
+LINES = {(3, 'wp_bow'): [((48, 179), (248, 31), (215, 240, 246), 3)],   # dây cung Tiên bị đứt chỗ mũi tên cũ
+         (2, 'wp_bow'): [((158, 58), (46, 177), (105, 160, 105), 2)]}
 FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
 
@@ -110,52 +119,83 @@ def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
     return np.dstack([np.clip(c, 0, 255), a * 255]).astype(np.uint8)
 
 
+def build(t, k, src, msk, box):
+    x0, y0, x1, y1 = box
+    rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0))
+    crgb = src[y0:y1, x0:x1][..., ::-1].astype(float)
+    al = np.ascontiguousarray(rgba[..., 3])
+    if (t, k) in KEEP_POLY:
+        km = np.zeros_like(al); cv2.fillPoly(km, [np.array(KEEP_POLY[(t, k)], np.int32)], 1); al = al * km
+    if (t, k) in OUTLINE_ONLY:
+        dark = cv2.morphologyEx((crgb.mean(2) < 110).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        inside = ndimage.binary_fill_holes(dark).astype(np.uint8)
+        n, lab, st, _ = cv2.connectedComponentsWithStats(inside)
+        big = [i for i in range(1, n) if st[i][4] > st[1:, 4].max() * 0.3]
+        al = al * cv2.dilate(np.isin(lab, big).astype(np.uint8), np.ones((3, 3), np.uint8))
+    if (t, k) in PALE_ERASE:
+        pm = np.zeros_like(al)
+        for poly in PALE_ERASE[(t, k)]: cv2.fillPoly(pm, [np.array(poly, np.int32)], 1)
+        al[(pm == 1) & (crgb.min(2) > 150)] = 0
+    if (t, k) in PALE_GAPS:
+        pale = (crgb.min(2) > 175).astype(np.uint8)
+        n, lab, st, _ = cv2.connectedComponentsWithStats(pale, connectivity=4)
+        for i in range(1, n):
+            if st[i][4] >= 25: al[lab == i] = 0
+    if (t, k) in CORD:
+        strong = (np.abs(crgb - 250).max(2) > 95).astype(np.uint8)
+        n, lab, st, _ = cv2.connectedComponentsWithStats(strong)
+        fgd = cv2.dilate((al > 128).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        for i in range(1, n):
+            c = lab == i
+            if (c & fgd).any() and st[i][4] < 2000: al[c & (al < 200)] = 255
+        rgba[..., :3] = np.where((al > 0)[..., None] & (rgba[..., 3] < 200)[..., None], crgb[..., :3], rgba[..., :3]).astype(np.uint8)
+    rgba[..., 3] = al
+    if (t, k) in GLOW_OUT:
+        gx, gy, gr, gl = GLOW_OUT[(t, k)]
+        yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
+        rgba[..., 3][(np.hypot(xx - gx, yy - gy) > gr) & (rgba[..., :3].mean(2) > gl)] = 0
+    if (t, k) in ERASE:
+        al = np.ascontiguousarray(rgba[..., 3])
+        for poly in ERASE[(t, k)]:
+            cv2.fillPoly(al, [np.array(poly, np.int32)], 0)
+        rgba[..., 3] = al
+    for (p0, p1, col, th) in LINES.get((t, k), []):                     # vẽ lại dây cung (nối chỗ đứt / nối thẳng vào cánh cung)
+        lm = np.zeros(rgba.shape[:2], np.uint8)
+        cv2.line(lm, p0, p1, 255, th, cv2.LINE_AA)
+        f = lm[..., None] / 255.0
+        rgba[..., :3] = (rgba[..., :3] * (1 - f) + np.array(col) * f).astype(np.uint8)
+        rgba[..., 3] = np.maximum(rgba[..., 3], lm)
+    if (t, k) in PALE_ERASE:                                            # mảnh sáng vụn tách rời còn sót → bỏ
+        al = np.ascontiguousarray(rgba[..., 3])
+        n, lab, st, _ = cv2.connectedComponentsWithStats((al > 40).astype(np.uint8))
+        if n > 2:
+            big = st[1:, 4].max()
+            for i in range(1, n):
+                if st[i][4] < big * 0.01: al[lab == i] = 0
+        # vụn trắng bám sát viền ngoài: điểm sáng nhạt không có điểm tối/màu nào trong bán kính 2 về phía ngoài
+        pale = (rgba[..., :3].min(2) > 200) & (al > 0)
+        edge = cv2.dilate((al == 0).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        al[pale & edge] = 0
+        rgba[..., 3] = al
+    return rgba
+
+
 def main():
     pv = Image.new('RGBA', (66 * 9, 66 * 6), (26, 24, 40, 255))
     for t, boxes in BOXES.items():
         src = cv2.imread(os.path.join(REF, f'gear_t{t}_ai.webp'))
         msk = np.array(Image.open(os.path.join(REF, f'gear_t{t}_mask.png')).convert('L')).astype(float) / 255
         for k, (x0, y0, x1, y1) in zip(KEYS, boxes):
-            rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0))
-            crgb = src[y0:y1, x0:x1][..., ::-1].astype(float)
-            al = np.ascontiguousarray(rgba[..., 3])
-            if (t, k) in KEEP_POLY:
-                km = np.zeros_like(al); cv2.fillPoly(km, [np.array(KEEP_POLY[(t, k)], np.int32)], 1); al = al * km
-            if (t, k) in OUTLINE_ONLY:
-                dark = cv2.morphologyEx((crgb.mean(2) < 110).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-                inside = ndimage.binary_fill_holes(dark).astype(np.uint8)
-                n, lab, st, _ = cv2.connectedComponentsWithStats(inside)
-                big = [i for i in range(1, n) if st[i][4] > st[1:, 4].max() * 0.3]
-                al = al * cv2.dilate(np.isin(lab, big).astype(np.uint8), np.ones((3, 3), np.uint8))
-            if (t, k) in PALE_ERASE:
-                pm = np.zeros_like(al)
-                for poly in PALE_ERASE[(t, k)]: cv2.fillPoly(pm, [np.array(poly, np.int32)], 1)
-                al[(pm == 1) & (crgb.min(2) > 150)] = 0
-            if (t, k) in PALE_GAPS:
-                pale = (crgb.min(2) > 175).astype(np.uint8)
-                n, lab, st, _ = cv2.connectedComponentsWithStats(pale, connectivity=4)
-                for i in range(1, n):
-                    if st[i][4] >= 25: al[lab == i] = 0
-            if (t, k) in CORD:
-                strong = (np.abs(crgb - 250).max(2) > 95).astype(np.uint8)
-                n, lab, st, _ = cv2.connectedComponentsWithStats(strong)
-                fgd = cv2.dilate((al > 128).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
-                for i in range(1, n):
-                    c = lab == i
-                    if (c & fgd).any() and st[i][4] < 2000: al[c & (al < 200)] = 255
-                rgba[..., :3] = np.where((al > 0)[..., None] & (rgba[..., 3] < 200)[..., None], crgb[..., :3], rgba[..., :3]).astype(np.uint8)
-            rgba[..., 3] = al
-            if (t, k) in GLOW_OUT:
-                gx, gy, gr, gl = GLOW_OUT[(t, k)]
-                yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
-                rgba[..., 3][(np.hypot(xx - gx, yy - gy) > gr) & (rgba[..., :3].mean(2) > gl)] = 0
-            if (t, k) in ERASE:
-                al = np.ascontiguousarray(rgba[..., 3])
-                for poly in ERASE[(t, k)]:
-                    cv2.fillPoly(al, [np.array(poly, np.int32)], 0)
-                rgba[..., 3] = al
+            rgba = build(t, k, src, msk, (x0, y0, x1, y1))
             im = Image.fromarray(rgba, 'RGBA')
             im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+            if (t, k) in MIRROR_PAIR:                                    # ghép đôi: chiếc găng đúng + bản lật gương của nó
+                ov, rot = MIRROR_PAIR[(t, k)]
+                im = im.rotate(rot, expand=True)
+                pair = Image.new('RGBA', (round(im.width * (2 - ov)), im.height))
+                pair.alpha_composite(im.transpose(Image.FLIP_LEFT_RIGHT), (pair.width - im.width, 0))
+                pair.alpha_composite(im, (0, 0))
+                im = pair
             s = 64 / max(im.size)
             im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
             out = Image.new('RGBA', (66, 66))
