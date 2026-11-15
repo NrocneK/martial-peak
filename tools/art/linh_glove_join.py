@@ -23,6 +23,10 @@ full=g.cutout(src,msk)
 fist=full.copy(); fist[...,3]=(fist[...,3].astype(int)*fm//255).astype(np.uint8)
 T_SR=np.float32([[0.729,0.121,1023.461],[-0.121,0.729,-114.088]])
 fist=cv2.warpAffine(fist,T_SR,(W,H),flags=cv2.INTER_AREA,borderValue=(0,0,0,0))
+# nắm tay găng đơn vẽ nghiêng hơn (lộ ngón cái) nên trông to hơn nắm tay chiếc phải → thu nhỏ quanh đầu phải vòng đai
+SF=float(sys.argv[1]) if len(sys.argv)>1 else 0.88
+R=np.array([1196.0,156.0])
+fist=cv2.warpAffine(fist,np.float32([[SF,0,(1-SF)*R[0]],[0,SF,(1-SF)*R[1]]]),(W,H),flags=cv2.INTER_AREA,borderValue=(0,0,0,0))
 # cổ găng: lấy từ chiếc găng phải đã làm sạch
 rg=np.array(Image.open(f'{g.REF}/linh_glove_right.png'))
 res=cv2.matchTemplate(cv2.cvtColor(full[...,:3][...,::-1].copy(),cv2.COLOR_RGB2GRAY), cv2.cvtColor(rg[...,:3],cv2.COLOR_RGB2GRAY), cv2.TM_SQDIFF, mask=(rg[...,3]>200).astype(np.uint8)*255)
@@ -35,8 +39,8 @@ cuff[...,3]=(cuff[...,3].astype(int)*cp//255).astype(np.uint8)
 # Đo trên lưới phóng to (toạ độ ảnh mẫu): đai từ (1131,126) tới (1192,155); mép phải cổ găng khớp đầu phải đai (~1196,156),
 # góc dưới-trái cổ găng ở (1143,122). Kéo giãn cổ găng dọc hướng đai, giữ cố định mép phải, để mép trái chạm đầu trái đai.
 u=np.array([61.0,29.0]); u/=np.linalg.norm(u)
-s_r=np.dot([1196,156],u); s_cl=np.dot([1143,122],u); s_bl=np.dot([1131,126],u)
-f=(s_r-(s_bl+1))/(s_r-s_cl)
+s_r=np.dot([1196,156],u); s_cl=np.dot([1143,122],u); s_bl=np.dot(R+SF*(np.array([1131,126])-R),u)
+f=max(1.0,(s_r-(s_bl+1))/(s_r-s_cl))
 A=np.eye(2)+(f-1)*np.outer(u,u); o=(1-f)*s_r*u
 cuff=cv2.warpAffine(cuff,np.hstack([A,o[:,None]]).astype(np.float32),(W,H),flags=cv2.INTER_LINEAR,borderValue=(0,0,0,0))
 print('giãn cổ găng theo hướng đai x%.3f'%f)
