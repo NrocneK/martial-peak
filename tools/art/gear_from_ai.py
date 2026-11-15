@@ -34,6 +34,8 @@ ONLY_BIGGEST = {(6, 'wp_spear')}
 ERASE = {(3, 'wp_bow'): [[(55, 30), (125, 30), (125, 100), (55, 100)],
                          [(85, 55), (100, 50), (192, 132), (178, 145)],
                          [(222, 160), (280, 160), (280, 215), (222, 215)]]}
+# quầng sáng nhạt giữa các vòng dây ngoài mặt ngọc (tâm x, y, bán kính, độ sáng tối thiểu) → trong suốt
+GLOW_OUT = {(6, 'accessory'): (122, 125, 86, 195)}
 FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
 
@@ -42,10 +44,32 @@ def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
     → trong suốt; gỡ nền trắng ở mép (F = a·C + (1−a)·255 → C) để không còn viền trắng"""
     a = np.clip((m - 0.1) / 0.8, 0, 1)
     rgb = crop[..., ::-1].astype(float)
-    # lưỡi kiếm sáng gần trắng bị rembg khoét lỗ → lấp các lỗ nằm TRONG viền món đồ (không lấy quầng sáng bên ngoài)
     from scipy import ndimage
-    if not holes:
-        a = np.maximum(a, ndimage.binary_fill_holes(a > 0.5).astype(float))
+    lum = rgb.mean(2)
+    white = np.abs(rgb - 250).max(2) < 14
+    solid = a > 0.5
+    # Phân loại từng vùng "lỗ" (lỗ trong mặt nạ rembg + mảng gần trắng nằm trong món đồ):
+    #   · gần trắng VÀ bị viền đen (nét viền pixel art) bao quanh → nền lọt vào (lỗ ngọc bội, khe nút thắt) → trong suốt
+    #   · còn lại (vệt sáng trên lưỡi kiếm/đao, bao bởi màu sáng của thân) → giữ đặc, không bị xén đen
+    hole = ndimage.binary_fill_holes(solid) & ~solid
+    cand = (hole | (white & solid)).astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(cand, connectivity=4)
+    k5 = np.ones((5, 5), np.uint8)
+    bgm = np.zeros_like(solid)
+    for i in range(1, n):
+        comp = lab == i
+        if st[i][4] < 6:
+            if hole[comp].all(): a[comp] = 1
+            continue
+        ring = cv2.dilate(comp.astype(np.uint8), k5).astype(bool) & ~comp
+        wf = white[comp].mean()
+        dark = (lum[ring] < 120).mean() if ring.any() else 0
+        bgish = wf > 0.75 and (dark > (0.25 if holes else 0.4) or (holes and st[i][4] > 60))
+        if bgish: a[comp] = 0; bgm |= comp
+        elif hole[comp].any() and not holes: a[comp] = np.maximum(a[comp], 1.0)
+    if not holes:                                                       # mặt nạ mờ một nửa ở giữa món đồ (xén đen) → đặc hẳn
+        inner = cv2.erode(ndimage.binary_fill_holes(a > 0.5).astype(np.uint8), np.ones((3, 3), np.uint8), iterations=2).astype(bool)
+        a[inner & ~cv2.dilate(bgm.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)] = 1
     if flood_tol:                                                       # lưỡi trắng sát nền: lấy vùng không nối với mép qua điểm gần trắng
         h, w = crop.shape[:2]
         near = (np.abs(rgb - 250).max(2) < flood_tol).astype(np.uint8)
@@ -57,10 +81,13 @@ def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
             for y in (0, h - 1):
                 if near[y, x] == 1: cv2.floodFill(near, fm, (x, y), 2, 0, 0, 4)
         a = np.maximum(a, cv2.erode((near != 2).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(float))
-    whiteish = (np.abs(rgb - 250).max(2) < 16).astype(np.uint8)
-    n, lab, st, _ = cv2.connectedComponentsWithStats(whiteish)
+    # mảng trắng nối ra mép hộp = nền
+    wl = white.astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(wl, connectivity=4)
+    h, w = wl.shape
     for i in range(1, n):
-        if st[i][4] > (60 if holes else 900): a[lab == i] = 0      # chỉ cung mới khoét khe nhỏ; món khác chỉ bỏ mảng nền lớn
+        x, y, bw, bh = st[i][:4]
+        if x == 0 or y == 0 or x + bw == w or y + bh == h: a[lab == i] = 0
     fg = (a > 0.3).astype(np.uint8)
     n, lab, st, _ = cv2.connectedComponentsWithStats(fg)
     if n > 1:
@@ -80,6 +107,10 @@ def main():
         msk = np.array(Image.open(os.path.join(REF, f'gear_t{t}_mask.png')).convert('L')).astype(float) / 255
         for k, (x0, y0, x1, y1) in zip(KEYS, boxes):
             rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0))
+            if (t, k) in GLOW_OUT:
+                gx, gy, gr, gl = GLOW_OUT[(t, k)]
+                yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
+                rgba[..., 3][(np.hypot(xx - gx, yy - gy) > gr) & (rgba[..., :3].mean(2) > gl)] = 0
             if (t, k) in ERASE:
                 al = np.ascontiguousarray(rgba[..., 3])
                 for poly in ERASE[(t, k)]:
