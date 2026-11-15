@@ -3,6 +3,7 @@ import { getSave, progressCount, gameCompleted } from '../../systems/progression
 import { tierLabel } from '../../config/realms';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
+import { SectFx } from '../sectFx';
 
 /**
  * Menu chính: nền Vân Hạc Tông (dùng chung với Lobby), tiêu đề vàng,
@@ -31,8 +32,10 @@ export function buildMainMenu(onPlay: () => void): HTMLElement {
   };
   render();
 
+  const sect = h('div', { class: 'sect' });
+  new SectFx(sect, 'menu');                                              // hoạt ảnh nền: đảo bay, thác, mây, cánh hoa
   root.append(
-    h('div', { class: 'sect' }),
+    sect,
     h('div', { class: 'menu-shade' }),
     h('header', { class: 'menu-head' },
       h('h1', { class: 'menu-title' }, h('span', { text: 'VẠN GIỚI' }), h('span', { text: 'TẦM QUANG' })),

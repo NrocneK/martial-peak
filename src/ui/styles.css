@@ -45,7 +45,7 @@
 
 /* ---------- Nền tông môn dùng chung (Menu + Lobby) + nhân vật pixel ---------- */
 .sect { position: absolute; inset: 0; background: url('/ui/bg_lobby_wide.jpg?v=2') 50% 70% / cover no-repeat #6aa8f2; }
-.menu .sect { background-image: url('/ui/bg_menu_wide.jpg?v=1'); background-position: 50% 50%; }
+.menu .sect { background-image: url('/ui/bg_menu_wide.jpg?v=2'); background-position: 50% 50%; }
 /* hoạt ảnh nền (src/ui/sectFx.ts): canvas phủ trong suốt, không chặn bấm */
 .sect-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 /* màn hình dọc dùng bản 9:16 — tỉ lệ + vị trí phải khớp SECT trong Hub.ts */

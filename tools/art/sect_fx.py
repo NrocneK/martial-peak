@@ -32,6 +32,16 @@ BG = {
         falls=[(212, 408, 252, 500), (198, 500, 242, 555), (252, 500, 282, 580), (448, 500, 502, 640), (528, 505, 562, 600), (44, 385, 78, 455)],
         qi_skip=None,                                                   # bản dọc không có suối linh khí (chỉ cổng truyền tống)
     ),
+    'bg_menu_wide': dict(
+        islands=[(1272, 300, 1370, 382), (1262, 676, 1462, 960, 40)],
+        falls=[(205, 615, 265, 740), (430, 785, 480, 895), (810, 815, 880, 1060), (968, 625, 1025, 790), (1018, 815, 1080, 990), (1110, 620, 1155, 775)],
+        qi_skip=None,
+    ),
+    'bg_menu_tall': dict(
+        islands=[],
+        falls=[(108, 785, 152, 885), (495, 815, 552, 1124)],
+        qi_skip=None,
+    ),
 }
 
 
@@ -98,8 +108,9 @@ def main():
             hole[y0:y1, x0:x1] |= hm
             ts.append(f"      {{ src: '{name}_i{n}', x: {x0}, y: {y0}, w: {x1 - x0}, h: {y1 - y0} }},")
         ts.append('    ],')
-        patched = cv2.inpaint(bgr, hole, 9, cv2.INPAINT_TELEA)
-        cv2.imwrite(os.path.join(UI, f'{name}.jpg'), patched, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if cfg['islands']:
+            patched = cv2.inpaint(bgr, hole, 9, cv2.INPAINT_TELEA)
+            cv2.imwrite(os.path.join(UI, f'{name}.jpg'), patched, [cv2.IMWRITE_JPEG_QUALITY, 90])
         # --- mặt nạ thác + linh khí (theo màu ảnh gốc)
         b, g, r = (bgr[..., i].astype(int) for i in range(3))
         water = (b > 200) & (g > 185) & (b - r > 25)

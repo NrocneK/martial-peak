@@ -41,4 +41,17 @@ export const SECT_FX: Record<string, SectFxDef> = {
     fall: { src: 'bg_lobby_tall_fall', x: 42, y: 383, w: 522, h: 259 },
     clouds: [[150, -40, 260, 40], [470, -40, 220, 35], [700, 440, 680, 40], [1085, -40, 200, 40]],
   },
+  menu_wide: { w: 2000, h: 1124, posX: 0.5, posY: 0.5,
+    islands: [
+      { src: 'bg_menu_wide_i0', x: 1272, y: 300, w: 98, h: 82 },
+      { src: 'bg_menu_wide_i1', x: 1262, y: 676, w: 200, h: 284 },
+    ],
+    fall: { src: 'bg_menu_wide_fall', x: 203, y: 614, w: 954, h: 448 },
+    clouds: [[650, 1150, 2060, 60], [1010, 560, 1500, 60], [160, 700, 1600, 55], [480, 1500, 2060, 50]],
+  },
+  menu_tall: { w: 632, h: 1124, posX: 0.5, posY: 0.5,
+    islands: [],
+    fall: { src: 'bg_menu_tall_fall', x: 106, y: 783, w: 448, h: 341 },
+    clouds: [[130, 300, 680, 45], [900, -40, 300, 40], [1080, 250, 680, 40]],
+  },
 };
