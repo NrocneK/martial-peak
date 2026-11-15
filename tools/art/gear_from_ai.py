@@ -145,17 +145,19 @@ def linh_fist(src, msk):
                                 (1144, 100), (1138, 125), (1128, 140), (1118, 155), (1105, 175), (1100, 218), (1015, 218),
                                 (1008, 150)], np.int32)], 0)                                       # bỏ nguyên chiếc trái
     base[..., 3] = al
-    T = np.float32([[1, 0, -80], [0, 1, -37]])                          # 2a (cổ găng + vòng đai chiếc phải) → chỗ chiếc trái
-    p2 = piece(full, [(1150, 72), (1180, 66), (1215, 83), (1234, 110), (1226, 136), (1197, 161), (1136, 143), (1143, 125),
-                      (1149, 100)], T, (W, H))
-    M = cv2.getRotationMatrix2D((115, 380), 13, 0.6)                    # 1a: nắm tay găng đơn (kèm vòng đai, nằm dưới đai 2a)
-    M[0, 2] += 1085 - 115; M[1, 2] += 118 - 380
+    # Biến đổi tìm bằng khớp điểm đặc trưng SIFT + RANSAC (3 mẫu cùng bộ vẽ → khớp khít):
+    #   chiếc phải → chiếc trái: phần đai + nắm tay chiếc phải trùng phần đai + đầu dưới chiếc trái
+    #   găng đơn → chiếc phải: phần đai + nắm tay găng đơn trùng phần đai + nắm tay chiếc phải
+    T_RL = np.float32([[1.016, 0.002, -90.835], [-0.002, 1.016, -31.289]])
+    T_SR = np.float32([[0.729, 0.121, 1023.461], [-0.121, 0.729, -114.088]])
+    T_SL = (np.vstack([T_RL, [0, 0, 1]]) @ np.vstack([T_SR, [0, 0, 1]]))[:2].astype(np.float32)
+    p2 = piece(full, [(1157, 73), (1190, 69), (1215, 83), (1234, 110), (1226, 136), (1197, 161), (1133, 143), (1140, 125),
+                      (1146, 100), (1150, 80)], T_RL, (W, H))                       # 2a: cổ găng + đai chiếc phải → thay 2b
     p1 = piece(full, [(30, 380), (70, 345), (110, 345), (175, 380), (175, 430), (160, 470), (130, 495), (60, 495), (15, 460)],
-               M, (W, H))
+               T_SL, (W, H))                                            # 1a: nắm tay găng đơn → thay 1b
     out = under(base, under(p1, p2))[0:260, 1000:1260]                  # chiếc phải nằm trên các mảnh ghép
-    # viền tối 2px quanh hình ghép (mép trái cổ găng mới không có nét viền)
-    solid = (out[..., 3] > 128).astype(np.uint8)
-    ring = cv2.dilate(solid, np.ones((5, 5), np.uint8)).astype(bool) & ~solid.astype(bool)
+    solid = (out[..., 3] > 128).astype(np.uint8)                        # nét viền mảnh 1px quanh hình ghép
+    ring = cv2.dilate(solid, np.ones((3, 3), np.uint8)).astype(bool) & ~solid.astype(bool)
     out[ring] = (18, 32, 24, 255)
     return out
 
