@@ -10,6 +10,7 @@ import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
+import { SectFx } from '../sectFx';
 
 /** Biểu tượng pixel (xem tools/art/icons.px.js) */
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
@@ -81,6 +82,8 @@ export class Hub {
   /** Hộp thoại chi tiết đang mở (đóng khi thao tác xong) + hàm vẽ lại nó */
   private modal: { close: () => void; refresh?: () => void } | null = null;
   private readonly sect = h('div', { class: 'sect' });
+  /** hoạt ảnh nền: đảo bay, thác, mây, linh khí, cánh hoa */
+  private readonly fx: SectFx;
   private readonly portalBtn = h('button', { class: 'portal-hit', 'aria-label': 'Truyền Tống Trận: vào Lịch Luyện chọn màn' },
     h('span', { class: 'portal-swirl' }, h('i'), h('i')), h('i', { class: 'portal-ring' }), h('span', { class: 'portal-tag' }, h('b', { text: 'Truyền Tống Trận' }), h('small', { text: 'Lịch Luyện' })));
   private readonly top = h('header', { class: 'lb-top' });
@@ -100,6 +103,7 @@ export class Hub {
       this.go('stage');
     });
     this.sect.append(this.portalBtn);
+    this.fx = new SectFx(this.sect, 'lobby');
     this.root.append(this.sect, this.top, this.body, this.nav);
     // Giữ nút Truyền Tống Trận đúng vị trí cổng; đổi cỡ màn hình thì tính lại số ô mỗi trang
     new ResizeObserver(() => {
@@ -130,6 +134,7 @@ export class Hub {
       this.tab = 'home';
     }
     this.render();
+    requestAnimationFrame(() => this.fx.resume());
   }
 
   private go(tab: Tab): void {
