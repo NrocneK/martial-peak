@@ -573,6 +573,11 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* Nhân vật + ngoại trang (Hành Trang) */
 .figure { position: relative; width: calc(58px * var(--s)); height: calc(106px * var(--s)); flex-shrink: 0; }
 .figure .hero-sprite { position: relative; z-index: 2; }
+/* bộ hình theo cảnh giới 2–6 (khung 96×112): cả khối (người + vũ khí) nhún nhẹ, vũ khí không nhún riêng */
+.figure.look { width: calc(96px * var(--s)); height: calc(112px * var(--s)); animation: realm-float 2.4s ease-in-out infinite; }
+.figure.look .realm-body { position: absolute; inset: 0; z-index: 2; background: no-repeat 0 0 / 100% 100%; image-rendering: pixelated; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
+.figure.look .wpn { animation: none; }
+.figure.look .wpn.held { animation: wpn-frames 1s steps(8) infinite; }
 /* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
 .figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
 .figure .wpn.front { z-index: 3; }

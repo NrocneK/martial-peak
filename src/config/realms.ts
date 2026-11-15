@@ -112,6 +112,11 @@ export function realmLook(tier: number): number {
 }
 /** Tâm mặt (điểm ảnh trên khung 96×112) của từng bộ hình — dùng cắt ảnh đại diện tròn */
 export const REALM_FACE: [number, number][] = [[42, 24], [40, 32], [43, 32], [44, 30], [43, 34], [43, 29]];
+/** Vị trí 2 bàn tay (khung 96×112) của từng bộ hình — tay phải nhân vật (bên trái màn hình) và tay trái — để gắn vũ khí */
+export const REALM_HANDS: { r: [number, number]; l: [number, number] }[] = [
+  { r: [30, 59], l: [56, 60] }, { r: [29, 61], l: [52, 63] }, { r: [27, 62], l: [53, 65] },
+  { r: [29, 64], l: [52, 58] }, { r: [27, 64], l: [51, 67] }, { r: [32, 64], l: [52, 66] },
+];
 
 export function tierName(i: number): string {
   return TIERS[Math.max(0, Math.min(MAX_TIER, i))].name;

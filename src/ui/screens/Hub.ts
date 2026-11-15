@@ -3,7 +3,7 @@ import { skillIconStyle } from '../../config/assets';
 import { RUN } from '../../config/balance';
 import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
-import { MAX_TIER, TIERS, nextTierNeed, tierCap, tierLabel, tierName } from '../../config/realms';
+import { MAX_TIER, REALM_HANDS, TIERS, nextTierNeed, realmLook, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { PASSIVES, REALM_SKILLS, WEAPON_IDS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
 import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
@@ -520,6 +520,9 @@ export class Hub {
     const wpn = P.equippedItem('weapon');
     const bb = P.equippedItem('bibao');
     const hd = wpn?.weaponId ? (WEAPON_HOLD[wpn.weaponId] ?? WEAPON_HOLD.wp_sword) : null;
+    // bộ hình theo cảnh giới: bộ 1 = sprite gốc có hoạt ảnh thở + tư thế cầm quạt; bộ 2–6 = hình đứng khung 96×112
+    const look = realmLook(P.getSave().tier);
+    if (look > 1) return this.figureLook(look, scale, wpn, bb, hd);
     const hero = heroSprite(scale, hd?.pose ? 'pose-' + hd.pose : '');
     const kids: HTMLElement[] = [hero];
     const img = (src: string, cls: string, x: number, y: number, w: number, hgt: number): HTMLElement =>
@@ -545,6 +548,33 @@ export class Hub {
     // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)
     if (bb) kids.push(h('img', { class: 'bb-float' + (wpn?.weaponId === 'wp_spear' ? ' bb-left' : ''), src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
     return h('div', { class: 'figure', style: `--s:${scale}` }, ...kids);
+  }
+
+  /** Nhân vật bộ hình 2–6: vũ khí gắn theo vị trí tay đo trên từng bộ (REALM_HANDS), cả khối nhún nhẹ như vận khí */
+  private figureLook(look: number, scale: number, wpn: ItemInst | null, bb: ItemInst | null, hd: (typeof WEAPON_HOLD)[string] | null): HTMLElement {
+    const hand = REALM_HANDS[look - 1];
+    const kids: HTMLElement[] = [h('div', { class: 'realm-body', style: `background-image:url('/ui/realm_${look}.png?v=1')` })];
+    const img = (src: string, cls: string, x: number, y: number, w: number, hgt: number): HTMLElement =>
+      h('img', { class: cls, src, alt: '', draggable: 'false', style: `left:${x * scale}px;top:${y * scale}px;width:${w * scale}px;height:${hgt * scale}px` });
+    if (wpn && hd) {
+      if (wpn.weaponId === 'wp_fist') {
+        const [near, far] = FIST_GEAR;
+        kids.push(img(weaponHoldSrc(wpn, near.img), 'wpn front', hand.l[0] - 6.5, hand.l[1] - 6.5, near.w, near.h));
+        kids.push(img(weaponHoldSrc(wpn, far.img), 'wpn front', hand.r[0] - 5, hand.r[1] - 6, far.w, far.h));
+      } else {
+        const at = hd.anchor === 'chest' ? { x: (hand.r[0] + hand.l[0]) / 2, y: hand.r[1] - 12 } : { x: hand.r[0], y: hand.r[1] };
+        const style = `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
+          `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
+        kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
+        if (hd.front) {
+          const pts: string[] = [];
+          for (let i = 0; i < hd.front.length; i += 2) pts.push(`${hd.front[i] * scale}px ${hd.front[i + 1] * scale}px`);
+          kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:polygon(${pts.join(',')})` }));
+        }
+      }
+    }
+    if (bb) kids.push(h('img', { class: 'bb-float' + (wpn?.weaponId === 'wp_spear' ? ' bb-left' : ''), src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
+    return h('div', { class: 'figure look', style: `--s:${scale}`, role: 'img', 'aria-label': 'Cố Trường Ca' }, ...kids);
   }
 
   private vDoll(): HTMLElement {
