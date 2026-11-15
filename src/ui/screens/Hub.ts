@@ -1,4 +1,4 @@
-import { bar, h, heroAvatar, heroSprite, openModal } from '../dom';
+import { bar, h, heroAvatar, heroSprite, openModal, realmFigure } from '../dom';
 import { skillIconStyle } from '../../config/assets';
 import { RUN } from '../../config/balance';
 import { fmt, fmtTime } from '../../utils/format';
@@ -398,7 +398,7 @@ export class Hub {
     const pk = P.packInfo();
     const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
     return h('div', { class: 'realm-wrap' },
-      h('div', { class: 'meditate', role: 'img', 'aria-label': 'Cố Trường Ca ngồi thiền tu luyện' }),
+      realmFigure(s.tier, window.matchMedia('(max-width: 760px)').matches ? 2 : 3),
       h('div', { class: 'realm-info' },
         h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
         h('div', { class: 'dim', text: `Bậc ${s.tier} / ${MAX_TIER}` }),

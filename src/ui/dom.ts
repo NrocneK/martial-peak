@@ -1,3 +1,5 @@
+import { realmLook, REALM_FACE } from '../config/realms';
+import { getSave } from '../systems/progression';
 /** Tiện ích dựng giao diện HTML (không dùng thư viện): h('div', {class:'a', onclick: fn}, 'text', child...) */
 type Child = Node | string | number | null | undefined | false;
 type Props = Record<string, unknown> & { class?: string; text?: string; style?: Partial<CSSStyleDeclaration> | string };
@@ -45,9 +47,17 @@ export function heroSprite(scale = 3, cls = ''): HTMLElement {
   return h('div', { class: 'hero-sprite ' + cls, style: `--s:${scale}`, role: 'img', 'aria-label': 'Cố Trường Ca' });
 }
 
-/** Avatar tròn: phần đầu của sprite nhân vật */
+/** Avatar tròn: phần mặt của hình nhân vật theo cảnh giới hiện tại */
 export function heroAvatar(cls = ''): HTMLElement {
-  return h('div', { class: 'avatar ' + cls }, h('i'));
+  const look = realmLook(getSave().tier);
+  const [fx, fy] = REALM_FACE[look - 1];
+  return h('div', { class: 'avatar ' + cls, style: `--fx:${fx};--fy:${fy}` }, h('i', { style: `background-image:url('/ui/realm_${look}.png?v=1')` }));
+}
+
+/** Hình nhân vật đứng theo cảnh giới (khung 96×112, phóng `scale` lần) */
+export function realmFigure(tier: number, scale = 3): HTMLElement {
+  const look = realmLook(tier);
+  return h('div', { class: 'realm-look', style: `--s:${scale};background-image:url('/ui/realm_${look}.png?v=1')`, role: 'img', 'aria-label': 'Cố Trường Ca' });
 }
 
 /**

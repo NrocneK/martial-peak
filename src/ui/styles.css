@@ -56,7 +56,14 @@
 @keyframes hero-idle { from { background-position: 0 0; } to { background-position: calc(-232px * var(--s)) 0; } }
 .avatar { position: relative; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   background: radial-gradient(circle at 50% 35%, #8ccaf8, #2763d0); border: 2px solid #e8b24a; box-shadow: 0 0 0 2px #0a1030, 0 0 10px #ffd96a66; }
-.avatar i { position: absolute; inset: 0; background: url('/ui/hero_full.png?v=0.10.5') -16px -12px / 464px 212px no-repeat; image-rendering: pixelated; }
+.avatar { --a: 52px; }
+.avatar i { position: absolute; inset: 0; background: no-repeat 0 0 / 192px 224px; image-rendering: pixelated;
+  background-position: calc(var(--a) / 2 - var(--fx) * 2px) calc(var(--a) / 2 - var(--fy) * 2px + 4px); }
+/* hình nhân vật theo cảnh giới (Tu Luyện): khung 96×112, nhún nhẹ như đang vận khí */
+.realm-look { flex-shrink: 0; width: calc(96px * var(--s)); height: calc(112px * var(--s)); background: no-repeat center / 100% 100%;
+  image-rendering: pixelated; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); animation: realm-float 2.4s ease-in-out infinite; }
+@keyframes realm-float { 50% { transform: translateY(calc(-2px * var(--s))); } }
+@media (prefers-reduced-motion: reduce) { .realm-look { animation: none; } }
 
 /* ---------- Menu chính ---------- */
 .menu { overflow: hidden; --frame: #e8b24a; --frame-hi: #fff0b0; --panel1: #1c2a63; --panel2: #0e1738; }
@@ -504,8 +511,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* ---------- Điện thoại: gọn khung để nội dung vừa màn hình (cơ chế tự co chỉ là lưới bảo vệ cuối) ---------- */
 @media (max-width: 760px) {
   .lb-top { padding: 6px 8px 4px; gap: 6px; }
-  .avatar { width: 42px; height: 42px; }
-  .avatar i { background-position: -21px -17px; }
+  .avatar { width: 42px; height: 42px; --a: 42px; }
   .pf-name { font-size: 15px; }
   .pf-realm { font-size: 12px; }
   .pf-text .bar { width: 130px; height: 12px; }

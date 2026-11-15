@@ -98,6 +98,21 @@ export const MAX_TIER = TIERS.length - 1; // 48
 export const WORLD_FIRST_TIER: number[] = [0, 0, 12, 21, 30, 39, 48];
 export const WORLD_LAST_TIER: number[] = [0, 11, 20, 29, 38, 47, 48];
 
+/**
+ * Bộ hình nhân vật theo cảnh giới (public/ui/realm_1..6.png, tools/art/realm_sprites.py):
+ * 1 Luyện Thể–Luyện Khí · 2 Trúc Cơ–Nguyên Anh · 3 Hóa Thần–Hợp Thể · 4 Đại Thừa–Độ Kiếp · 5 Chân Tiên–Tiên Đế · 6 Đạo Tổ
+ */
+const LOOK_GROUPS: string[][] = [
+  ['Luyện Thể', 'Luyện Khí'], ['Trúc Cơ', 'Kim Đan', 'Nguyên Anh'], ['Hóa Thần', 'Luyện Hư', 'Hợp Thể'],
+  ['Đại Thừa', 'Độ Kiếp'], ['Chân Tiên', 'Thiên Tiên', 'Huyền Tiên', 'Kim Tiên', 'Đại La Kim Tiên', 'Tiên Đế'], ['Đạo Tổ'],
+];
+export function realmLook(tier: number): number {
+  const g = TIERS[Math.max(0, Math.min(MAX_TIER, tier))].group;
+  return LOOK_GROUPS.findIndex((l) => l.includes(g)) + 1 || 1;
+}
+/** Tâm mặt (điểm ảnh trên khung 96×112) của từng bộ hình — dùng cắt ảnh đại diện tròn */
+export const REALM_FACE: [number, number][] = [[42, 24], [40, 32], [43, 32], [44, 30], [43, 34], [43, 29]];
+
 export function tierName(i: number): string {
   return TIERS[Math.max(0, Math.min(MAX_TIER, i))].name;
 }
