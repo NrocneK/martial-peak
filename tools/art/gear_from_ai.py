@@ -16,6 +16,8 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 GEAR = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'gear')
 REF = os.path.join(HERE, 'ref')
+# áo dựng đứng làm lại cho 4 bậc vốn là áo gấp (ảnh 2×2 tools/art/ref/robes_ai.png + mặt nạ rembg robes_mask.png)
+ROBES = {1: (64, 22, 602, 559), 3: (707, 22, 1262, 564), 4: (46, 618, 621, 1173), 5: (702, 618, 1267, 1176)}
 KEYS = ['wp_sword', 'wp_blade', 'wp_spear', 'wp_fist', 'wp_bow', 'wp_fan', 'clothes', 'shoes', 'accessory']
 G3 = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]   # lưới 3×3 (cột, hàng), ô 341px
 BOXES = {
@@ -350,11 +352,16 @@ def glove_pair(t, rgba):
 
 def main():
     pv = Image.new('RGBA', (66 * 9, 66 * 6), (26, 24, 40, 255))
+    robe_src = cv2.imread(os.path.join(REF, 'robes_ai.png'))
+    robe_msk = np.array(Image.open(os.path.join(REF, 'robes_mask.png')).convert('L')).astype(float) / 255
     for t, boxes in BOXES.items():
         src = cv2.imread(os.path.join(REF, f'gear_t{t}_ai.webp'))
         msk = np.array(Image.open(os.path.join(REF, f'gear_t{t}_mask.png')).convert('L')).astype(float) / 255
         for k, (x0, y0, x1, y1) in zip(KEYS, boxes):
-            rgba = build(t, k, src, msk, (x0, y0, x1, y1))
+            if k == 'clothes' and t in ROBES:
+                rgba = build(t, k, robe_src, robe_msk, ROBES[t])
+            else:
+                rgba = build(t, k, src, msk, (x0, y0, x1, y1))
             if k == 'wp_fist':
                 rgba = glove_pair(t, rgba)
             im = Image.fromarray(rgba, 'RGBA')
