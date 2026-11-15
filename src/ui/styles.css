@@ -576,10 +576,12 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* bộ hình theo cảnh giới 2–6 (khung 96×112): cả khối (người + vũ khí) nhún nhẹ, vũ khí không nhún riêng */
 .figure.look { width: calc(96px * var(--s)); height: calc(112px * var(--s)); animation: realm-float 2.4s ease-in-out infinite; }
 .figure.look .realm-body { position: absolute; inset: 0; z-index: 2; background: no-repeat 0 0 / 100% 100%; image-rendering: pixelated; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
-/* vũ khí ngự khí bay cạnh vai phải màn hình, nghiêng nhẹ, nhịp lệch với bí bảo */
-.figure.look .wpn-float { position: absolute; z-index: 4; right: -6%; top: 24%; image-rendering: pixelated; pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(160, 210, 255, 0.85)); animation: wpn-hover 3s ease-in-out infinite; }
-@keyframes wpn-hover { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-10px) rotate(-3deg); } }
+/* vũ khí ngự khí: dựng đứng song song thân, bên phải nhân vật (sau thân), nhấp nhô nhẹ; bí bảo bên trái */
+.figure.look .wpn-float { position: absolute; z-index: 3; pointer-events: none; display: grid; place-items: center;
+  filter: drop-shadow(0 0 5px rgba(160, 210, 255, 0.8)); animation: wpn-hover 3s ease-in-out infinite; }
+.figure.look .wpn-float > * { position: absolute; flex-shrink: 0; image-rendering: pixelated; }
+.figure.look .wpn-float .wpn.held { animation: wpn-frames 1s steps(8) infinite; background-repeat: no-repeat; }
+@keyframes wpn-hover { 0%, 100% { translate: 0 0; } 50% { translate: 0 calc(-3px * var(--s)); } }
 /* lớp: vũ khí phía sau (1) → nhân vật (2) → vũ khí phía trước (3) → bí bảo (5) */
 .figure .wpn { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; max-height: none; }
 .figure .wpn.front { z-index: 3; }
@@ -601,3 +603,5 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
   .it-tile .gi { height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .figure .wpn, .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
+
+.figure.look .bb-float.bb-left { left: 0; top: 30%; }

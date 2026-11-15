@@ -1,4 +1,4 @@
-import { bar, h, heroAvatar, heroSprite, openModal, realmFigure } from '../dom';
+import { bar, h, heroAvatar, openModal, realmFigure } from '../dom';
 import { skillIconStyle } from '../../config/assets';
 import { RUN } from '../../config/balance';
 import { fmt, fmtTime } from '../../utils/format';
@@ -6,7 +6,7 @@ import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../con
 import { MAX_TIER, TIERS, nextTierNeed, realmLook, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { PASSIVES, REALM_SKILLS, WEAPON_IDS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
-import { BIBAOS, DAO_TIER, FIST_GEAR, HELD_FRAMES, HERO_CHEST, HERO_RIGHT_FIST, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, HELD_FRAMES, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, weaponHoldSrc, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -14,6 +14,8 @@ import { openSettings } from './Settings';
 /** Biểu tượng pixel (xem tools/art/icons.px.js) */
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
 const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
+/** góc xoay (độ, chiều kim đồng hồ) để hình cầm tay dựng thẳng, mũi chĩa lên — đo trục từ chỗ cầm tới mũi */
+const WEAPON_UPRIGHT: Record<string, number> = { wp_sword: 134, wp_blade: 134, wp_spear: 137, wp_bow: 50 };
 const SLOT_ICON: Record<SlotId, string> = { weapon: 'forge', clothes: 'gear', shoes: 'boots', accessory: 'pendant', bibao: 'essence' };
 const slotIcon = (slot: SlotId): string => SLOT_ICON[slot];
 /** Lớp viền theo phẩm: q-0..q-4 (Hạ..Thượng Cổ), q-dao (thất thải), q-bb (bí bảo) */
@@ -517,44 +519,33 @@ export class Hub {
    * bí bảo bay lơ lửng cạnh vai. Y phục / giày / trang sức không đổi ngoại hình.
    */
   private figure(scale: number): HTMLElement {
+    // mọi cảnh giới: hình đứng theo cảnh giới + vũ khí ngự khí bên phải + bí bảo bên trái (figureLook)
     const wpn = P.equippedItem('weapon');
     const bb = P.equippedItem('bibao');
     const hd = wpn?.weaponId ? (WEAPON_HOLD[wpn.weaponId] ?? WEAPON_HOLD.wp_sword) : null;
     // bộ hình theo cảnh giới: bộ 1 = sprite gốc có hoạt ảnh thở + tư thế cầm quạt; bộ 2–6 = hình đứng khung 96×112
-    const look = realmLook(P.getSave().tier);
-    if (look > 1) return this.figureLook(look, scale, wpn, bb);
-    const hero = heroSprite(scale, hd?.pose ? 'pose-' + hd.pose : '');
-    const kids: HTMLElement[] = [hero];
-    const img = (src: string, cls: string, x: number, y: number, w: number, hgt: number): HTMLElement =>
-      h('img', { class: cls, src, alt: '', draggable: 'false', style: `left:${x * scale}px;top:${y * scale}px;width:${w * scale}px;height:${hgt * scale}px` });
-    if (wpn && hd) {
-      if (wpn.weaponId === 'wp_fist') {
-        // quyền sáo: phiến giáp đeo trùm lên cả hai nắm tay
-        for (const g of FIST_GEAR) kids.push(img(weaponHoldSrc(wpn, g.img), 'wpn front', g.x, g.y, g.w, g.h));
-      } else {
-        // hình cầm tay: dải HELD_FRAMES khung → div nền chạy hoạt ảnh (CSS .wpn.held), điểm cầm trùng điểm neo
-        const at = hd.anchor === 'chest' ? HERO_CHEST : HERO_RIGHT_FIST;
-        const style = `left:${(at.x - hd.gx - 0.5) * scale}px;top:${(at.y - hd.gy - 0.5) * scale}px;width:${hd.w * scale}px;height:${hd.h * scale}px;` +
-          `background-image:url('${weaponHoldSrc(wpn)}');background-size:${hd.w * HELD_FRAMES * scale}px ${hd.h * scale}px;--fw:${hd.w * scale}px`;
-        kids.push(h('div', { class: `wpn held ${hd.layer}`, style }));
-        // phần quanh chỗ cầm đưa ra trước thân (bản sao cắt theo đa giác front): chuôi / cán lộ tới giữa bàn tay
-        if (hd.front) {
-          const pts: string[] = [];
-          for (let i = 0; i < hd.front.length; i += 2) pts.push(`${hd.front[i] * scale}px ${hd.front[i + 1] * scale}px`);
-          kids.push(h('div', { class: 'wpn held front', style: style + `;clip-path:polygon(${pts.join(',')})` }));
-        }
-      }
-    }
-    // bí bảo bay ở phía vai không vướng vũ khí (thương có đốc sau vai phải → bí bảo sang trái)
-    if (bb) kids.push(h('img', { class: 'bb-float' + (wpn?.weaponId === 'wp_spear' ? ' bb-left' : ''), src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
-    return h('div', { class: 'figure', style: `--s:${scale}` }, ...kids);
+    return this.figureLook(realmLook(P.getSave().tier), scale, wpn, bb, hd);
   }
 
-  /** Nhân vật bộ hình 2–6: vũ khí gắn theo vị trí tay đo trên từng bộ (REALM_HANDS), cả khối nhún nhẹ như vận khí */
-  private figureLook(look: number, scale: number, wpn: ItemInst | null, bb: ItemInst | null): HTMLElement {
+  /** Nhân vật theo cảnh giới (khung 96×112): vũ khí ngự khí bên phải, bí bảo bên trái, cả khối nhún nhẹ như vận khí */
+  private figureLook(look: number, scale: number, wpn: ItemInst | null, bb: ItemInst | null, hd: (typeof WEAPON_HOLD)[string] | null): HTMLElement {
     const kids: HTMLElement[] = [h('div', { class: 'realm-body', style: `background-image:url('/ui/realm_${look}.png?v=1')` })];
-    // tay trên bộ hình mới không được vẽ để cầm vũ khí → vũ khí NGỰ KHÍ bay lơ lửng cạnh người (không thêm tay giả)
-    if (wpn) kids.push(h('img', { class: 'wpn-float' + (bb ? '' : ' solo'), src: itemIcon(wpn), alt: '', draggable: 'false', title: itemName(wpn), style: `width:${30 * scale}px` }));
+    // vũ khí NGỰ KHÍ: dựng thẳng đứng song song thân, bên PHẢI nhân vật, đúng kích thước như khi cầm tay (dải hình cầm tay
+    // có hoạt ảnh linh khí, xoay cho mũi chĩa lên). Quạt / quyền sáo (hình cầm tay kèm bàn tay) dùng hình vật phẩm.
+    if (wpn) {
+      const rot = WEAPON_UPRIGHT[wpn.weaponId ?? ''];
+      let inner: HTMLElement, w: number, hgt: number;
+      if (rot !== undefined && hd) {
+        w = hd.w; hgt = hd.h;
+        inner = h('div', { class: 'wpn held', style: `width:${w * scale}px;height:${hgt * scale}px;transform:rotate(${rot}deg);` +
+          `background-image:url('${weaponHoldSrc(wpn)}');background-size:${w * HELD_FRAMES * scale}px ${hgt * scale}px;--fw:${w * scale}px` });
+      } else {
+        const fist = wpn.weaponId === 'wp_fist';
+        w = hgt = fist ? 30 : 34;
+        inner = h('img', { class: 'wpn-icon', src: itemIcon(wpn), alt: '', draggable: 'false', style: `width:${w * scale}px;height:${hgt * scale}px` + (fist ? ';transform:rotate(-45deg)' : '') });
+      }
+      kids.push(h('div', { class: 'wpn-float', title: itemName(wpn), style: `left:${(86 - w / 2) * scale}px;top:${(60 - hgt / 2) * scale}px;width:${w * scale}px;height:${hgt * scale}px` }, inner));
+    }
     if (bb) kids.push(h('img', { class: 'bb-float bb-left', src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
     return h('div', { class: 'figure look', style: `--s:${scale}`, role: 'img', 'aria-label': 'Cố Trường Ca' }, ...kids);
   }
