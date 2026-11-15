@@ -1,7 +1,7 @@
 """
 HÌNH TRANG BỊ 6 CẤP — lấy NGUYÊN từ ảnh mẫu bạn tạo (tools/art/ref/gear_t{1..6}_ai.webp, nền trắng), không vẽ lại:
   · mỗi cấp chọn 9 món dùng được (kiếm, đao, thương, quyền sáo, cung, phiến, y phục, giày, trang sức) theo hộp cắt BOXES
-  · tách nền: loang từ mép hộp qua điểm gần trắng (giữ nguyên viền + thân món đồ), bỏ mảnh vụn / món bên cạnh lọt vào hộp
+  · tách nền: mặt nạ rembg isnet (tools/art/ref/gear_t*_mask.png) + gỡ nền trắng ở mép, khe trắng kẹp giữa (cung) → trong suốt
   · thu vừa khung vuông 66×66 (cạnh dài 62), giữ tỉ lệ, căn giữa
   → public/gear/<loại>_<cấp 0..5>.png (đè hình cũ; hình cầm tay / trong trận giữ nguyên)
   Bí bảo: chưa có ảnh mẫu → giữ hình cũ.
@@ -20,7 +20,7 @@ G3 = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]   
 BOXES = {
     1: [(50, 0, 294, 250), (389, 7, 627, 256), (723, 0, 970, 249), (1041, 37, 1309, 236), (1391, 8, 1625, 247),
         (1697, 45, 1975, 228), (34, 280, 303, 489), (1380, 271, 1632, 492), (1753, 263, 1941, 482)],
-    2: [(25, 7, 240, 244), (280, 7, 489, 243), (774, 6, 988, 244), (1023, 15, 1232, 242), (1290, 6, 1475, 246),
+    2: [(25, 7, 240, 244), (280, 7, 489, 243), (774, 6, 988, 244), (25, 270, 233, 493), (278, 258, 492, 494),
         (1256, 290, 1489, 468), (1505, 258, 1742, 496), (774, 263, 984, 490), (1795, 8, 1943, 236)],
     3: [(29, 6, 336, 249), (381, 8, 685, 247), (715, 0, 998, 251), (28, 263, 353, 487), (384, 255, 684, 495),
         (1683, 32, 1989, 240), (1053, 264, 1332, 492), (1385, 255, 1660, 500), (1729, 256, 1938, 500)],
@@ -30,52 +30,64 @@ BOXES = {
         (1673, 18, 1991, 234), (1085, 255, 1350, 495), (1397, 256, 1654, 500), (1724, 256, 1968, 488)],
 }
 ONLY_BIGGEST = {(6, 'wp_spear')}
-TOL = {(5, 'wp_sword'): 70, (5, 'wp_spear'): 90}                      # quầng / tia sáng nhạt quanh món đồ → bỏ                                       # thương cấp 6: cung bên cạnh lọt vào hộp
+# xoá bớt chi tiết thừa (toạ độ trong hộp cắt): cung cấp Tiên bỏ mũi tên (lông đuôi, thân tên ngoài thân cung, đầu tên)
+ERASE = {(3, 'wp_bow'): [[(55, 30), (125, 30), (125, 100), (55, 100)],
+                         [(85, 55), (100, 50), (192, 132), (178, 145)],
+                         [(222, 160), (280, 160), (280, 215), (222, 215)]]}
+FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
 
-def cutout(crop, biggest=False, grid=False, tol=22, holes=False):
-    h, w = crop.shape[:2]
-    diff = np.abs(crop.astype(int) - 250).max(2)
-    near = (diff < tol).astype(np.uint8)
-    # đường kẻ lưới ở mép ô (ảnh 3×3) → coi như nền
-    for ax in ((0, 1) if grid else ()):
-        dark = (crop.mean(2) < 90).mean(ax)
-        idx = np.nonzero(dark > 0.85)[0]
-        if ax == 0: near[:, idx] = 1
-        else: near[idx, :] = 1
-    flood = near.copy()
-    mask = np.zeros((h + 2, w + 2), np.uint8)
-    for y in range(h):
-        for x in (0, w - 1):
-            if flood[y, x] == 1: cv2.floodFill(flood, mask, (x, y), 2, 0, 0, 4)
-    for x in range(w):
-        for y in (0, h - 1):
-            if flood[y, x] == 1: cv2.floodFill(flood, mask, (x, y), 2, 0, 0, 4)
-    fg = (flood != 2).astype(np.uint8)
-    if holes:                                                           # cung: khoảng trắng kẹp giữa dây và thân cung cũng là nền
-        n2, lab2, st2, _ = cv2.connectedComponentsWithStats(near * fg)
-        for i in range(1, n2):
-            if st2[i][4] > 150: fg[lab2 == i] = 0
-    fg = cv2.morphologyEx(fg, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
+    """crop: BGR; m: mặt nạ rembg (0..1) cùng hộp. Độ đục = mặt nạ; vùng gần trắng kẹp trong món đồ (khe cung, lỗ ngọc bội)
+    → trong suốt; gỡ nền trắng ở mép (F = a·C + (1−a)·255 → C) để không còn viền trắng"""
+    a = np.clip((m - 0.1) / 0.8, 0, 1)
+    rgb = crop[..., ::-1].astype(float)
+    # lưỡi kiếm sáng gần trắng bị rembg khoét lỗ → lấp các lỗ nằm TRONG viền món đồ (không lấy quầng sáng bên ngoài)
+    from scipy import ndimage
+    if not holes:
+        a = np.maximum(a, ndimage.binary_fill_holes(a > 0.5).astype(float))
+    if flood_tol:                                                       # lưỡi trắng sát nền: lấy vùng không nối với mép qua điểm gần trắng
+        h, w = crop.shape[:2]
+        near = (np.abs(rgb - 250).max(2) < flood_tol).astype(np.uint8)
+        fm = np.zeros((h + 2, w + 2), np.uint8)
+        for y in range(h):
+            for x in (0, w - 1):
+                if near[y, x] == 1: cv2.floodFill(near, fm, (x, y), 2, 0, 0, 4)
+        for x in range(w):
+            for y in (0, h - 1):
+                if near[y, x] == 1: cv2.floodFill(near, fm, (x, y), 2, 0, 0, 4)
+        a = np.maximum(a, cv2.erode((near != 2).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(float))
+    whiteish = (np.abs(rgb - 250).max(2) < 16).astype(np.uint8)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(whiteish)
+    for i in range(1, n):
+        if st[i][4] > (60 if holes else 900): a[lab == i] = 0      # chỉ cung mới khoét khe nhỏ; món khác chỉ bỏ mảng nền lớn
+    fg = (a > 0.3).astype(np.uint8)
     n, lab, st, _ = cv2.connectedComponentsWithStats(fg)
     if n > 1:
         areas = st[1:, 4]
         big = areas.max()
-        keep = [i + 1 for i, a in enumerate(areas) if (a == big if biggest else a > big * 0.12)]
-        fg = np.isin(lab, keep).astype(np.uint8)
-    a = cv2.GaussianBlur(fg.astype(np.float32), (3, 3), 0.7)
-    return np.dstack([crop[..., ::-1], (a * 255).astype(np.uint8)])
+        keep = [i + 1 for i, ar in enumerate(areas) if (ar == big if biggest else ar > big * 0.12)]
+        a = a * cv2.dilate(np.isin(lab, keep).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(float)
+    c = (rgb - (1 - a[..., None]) * 255) / np.maximum(a[..., None], 0.15)
+    c = np.where(a[..., None] > 0.95, rgb, c)
+    return np.dstack([np.clip(c, 0, 255), a * 255]).astype(np.uint8)
 
 
 def main():
     pv = Image.new('RGBA', (66 * 9, 66 * 6), (26, 24, 40, 255))
     for t, boxes in BOXES.items():
         src = cv2.imread(os.path.join(REF, f'gear_t{t}_ai.webp'))
+        msk = np.array(Image.open(os.path.join(REF, f'gear_t{t}_mask.png')).convert('L')).astype(float) / 255
         for k, (x0, y0, x1, y1) in zip(KEYS, boxes):
-            rgba = cutout(src[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, grid=t in (4, 5), tol=TOL.get((t, k), 48 if t == 5 else 22), holes=k == 'wp_bow')
+            rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0))
+            if (t, k) in ERASE:
+                al = np.ascontiguousarray(rgba[..., 3])
+                for poly in ERASE[(t, k)]:
+                    cv2.fillPoly(al, [np.array(poly, np.int32)], 0)
+                rgba[..., 3] = al
             im = Image.fromarray(rgba, 'RGBA')
-            im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 30 else 0).getbbox())
-            s = 62 / max(im.size)
+            im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+            s = 64 / max(im.size)
             im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
             out = Image.new('RGBA', (66, 66))
             out.alpha_composite(im, ((66 - im.width) // 2, (66 - im.height) // 2))
