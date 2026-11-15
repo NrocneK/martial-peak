@@ -60,6 +60,7 @@ ROTATE = {}
 # Đồng bộ góc: kiếm/đao/thương/cung xoay để đường nối 2 đầu xa nhất (mũi–chuôi, đầu cánh cung–đầu cánh cung) nghiêng đúng 45°
 AXIS45 = {'wp_sword', 'wp_blade', 'wp_spear', 'wp_bow'}
 # Găng: tách 2 chiếc, xoay mỗi chiếc thẳng đứng (nắm tay hướng lên), xếp cạnh nhau. Đạo: 2 chiếc chạm nhau → cắt theo đường này
+TIP_FLIP = {(3, 'wp_sword')}                                         # mũi ở đầu dưới-trái sau khi xoay → quay 180°
 GLOVE_CUT = {6: [(167, 0), (167, 60), (150, 95), (120, 125), (102, 145), (100, 230)]}
 FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
@@ -267,7 +268,7 @@ def upright(g, flip=False):
 def glove_pair(t, rgba):
     if t == 2:                                                          # Linh: chiếc ghép (nắm tay + cổ găng) và bản lật gương
         j = np.array(Image.open(os.path.join(REF, 'linh_glove_joined.png')).convert('RGBA'))
-        L, R = upright(j, flip=True), upright(j[:, ::-1].copy(), flip=True)
+        R, L = upright(j, flip=True), upright(j[:, ::-1].copy(), flip=True)   # ngón cái hướng vào trong như các bậc khác
     else:
         al = rgba[..., 3]
         if t in GLOVE_CUT:
@@ -303,7 +304,8 @@ def main():
             im = Image.fromarray(rgba, 'RGBA')
             im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
             if k in AXIS45:
-                im = im.rotate(45 - tip_angle(np.array(im)[..., 3] > 100), resample=Image.BICUBIC, expand=True)
+                im = im.rotate(45 - tip_angle(np.array(im)[..., 3] > 100) + (180 if (t, k) in TIP_FLIP else 0),
+                               resample=Image.BICUBIC, expand=True)
                 im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
             if k == 'wp_bow':                                            # cánh cung cùng một phía (dưới-phải), dây phía trên-trái
                 ys, xs = np.nonzero(np.array(im)[..., 3] > 100)
