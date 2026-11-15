@@ -17,6 +17,13 @@ const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore
 /** góc xoay (độ, chiều kim đồng hồ) để hình cầm tay dựng thẳng, mũi chĩa lên — đo trục từ chỗ cầm tới mũi */
 /** icon vũ khí vẽ nghiêng 45° (mũi phải-trên) → xoay -45° để dựng đứng cạnh nhân vật */
 const WEAPON_DIAG: Record<string, true> = { wp_sword: true, wp_blade: true, wp_spear: true, wp_bow: true };
+/** lật ngang sau khi dựng: đao (lưỡi quay ra ngoài), cung (dây quay vào người) */
+const WEAPON_MIRROR: Record<string, true> = { wp_blade: true, wp_bow: true };
+/** vị trí 2 bàn tay (trái, phải theo người xem) trên khung 96×112 của từng bộ hình cảnh giới — để đặt quyền sáo lơ lửng cạnh tay */
+const REALM_HANDS: [number, number][][] = [
+  [[32, 53], [59, 46]], [[28, 62], [54, 62]], [[31, 72], [54, 53]],
+  [[26, 70], [62, 65]], [[25, 69], [57, 69]], [[30, 62], [63, 66]],
+];
 const SLOT_ICON: Record<SlotId, string> = { weapon: 'forge', clothes: 'gear', shoes: 'boots', accessory: 'pendant', bibao: 'essence' };
 const slotIcon = (slot: SlotId): string => SLOT_ICON[slot];
 /** Lớp viền theo phẩm: q-0..q-4 (Hạ..Thượng Cổ), q-dao (thất thải), q-bb (bí bảo) */
@@ -532,12 +539,24 @@ export class Hub {
   private figureLook(look: number, scale: number, wpn: ItemInst | null, bb: ItemInst | null, hd: (typeof WEAPON_HOLD)[string] | null): HTMLElement {
     const kids: HTMLElement[] = [h('div', { class: 'realm-body', style: `background-image:url('/ui/realm_${look}.png?v=1')` })];
     // vũ khí NGỰ KHÍ: dùng icon trang bị mới (public/gear), dựng thẳng đứng mũi chĩa lên, bên TRÁI nhân vật.
-    // Icon kiếm/đao/thương/cung vẽ nghiêng 45° (mũi phải-trên) → xoay -45°. Quạt / quyền sáo giữ nguyên.
-    if (wpn) {
-      const diag = WEAPON_DIAG[wpn.weaponId ?? ''];
-      const sz = diag ? Math.round(hd ? Math.hypot(hd.w, hd.h) * 0.7 : 60) : wpn.weaponId === 'wp_fist' ? 30 : 34;
+    // Icon kiếm/đao/thương/cung vẽ nghiêng 45° (mũi phải-trên) → xoay -45°; đao lật cho lưỡi quay ra ngoài,
+    // cung lật cho dây quay vào người. Quyền sáo: tách đôi, lật ngược (nắm tay chúc xuống), lơ lửng cặp 2 bên bàn tay.
+    if (wpn?.weaponId === 'wp_fist') {
+      const [l, r] = REALM_HANDS[look - 1] ?? REALM_HANDS[0];
+      const gw = 14, gh = 28, off = 13; // mỗi chiếc = nửa icon 66×66 thu về 28 đơn vị; lơ lửng cách bàn tay `off` ra ngoài
+      for (const [k, [hx, hy], dx] of [[0, l, -off], [1, r, off]] as const) {
+        kids.push(h('div', { class: 'wpn-float glove-float', title: itemName(wpn), style: `left:${(hx + dx - gw / 2) * scale}px;top:${(hy - gh / 2) * scale}px;` +
+          `width:${gw * scale}px;height:${gh * scale}px` },
+          h('div', { class: 'glove-half', style: `width:${gw * scale}px;height:${gh * scale}px;background-image:url('${itemIcon(wpn)}');` +
+            `background-size:${gh * scale}px ${gh * scale}px;background-position:${-k * gw * scale}px 0` })));
+      }
+    } else if (wpn) {
+      const id = wpn.weaponId ?? '';
+      const diag = WEAPON_DIAG[id];
+      const sz = diag ? Math.round(hd ? Math.hypot(hd.w, hd.h) * 0.7 : 60) : 34;
+      const tf = diag ? (WEAPON_MIRROR[id] ? 'scaleX(-1) ' : '') + 'rotate(-45deg)' : '';
       const inner = h('img', { class: 'wpn-icon', src: itemIcon(wpn), alt: '', draggable: 'false',
-        style: `width:${sz * scale}px;height:${sz * scale}px` + (diag ? ';transform:rotate(-45deg)' : '') });
+        style: `width:${sz * scale}px;height:${sz * scale}px` + (tf ? `;transform:${tf}` : '') });
       kids.push(h('div', { class: 'wpn-float', title: itemName(wpn), style: `left:${(12 - sz / 2) * scale}px;top:${(60 - sz / 2) * scale}px;width:${sz * scale}px;height:${sz * scale}px` }, inner));
     }
     if (bb) kids.push(h('img', { class: 'bb-float bb-right', src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));

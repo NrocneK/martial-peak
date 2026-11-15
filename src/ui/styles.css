@@ -606,3 +606,5 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 
 .figure.look .bb-float.bb-right { right: 0; left: auto; top: 30%; }
 .figure.look .wpn-float .wpn-icon { image-rendering: auto; }
+/* quyền sáo lơ lửng cặp 2 bên tay: lật ngược (nắm tay chúc xuống) */
+.figure.look .glove-half { background-repeat: no-repeat; transform: scaleY(-1); }
