@@ -56,9 +56,9 @@ KEEP_POLY = {(5, 'wp_spear'): [(320, 4), (332, 14), (301, 70), (287, 94), (270, 
                                (30, 334), (8, 334), (8, 318), (206, 108), (218, 92), (226, 62), (262, 38)]}
 HEAD_OUTLINE = {(5, 'wp_spear'): 125}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
 # vẽ quầng sáng tròn mềm phía sau món đồ: (tâm x, y, bán kính, màu, độ đục tối đa)
-GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 40, (255, 240, 200), 245)}
+GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 52, (255, 240, 200), 245, 0.6)}
 # vòng sáng (hình nhẫn) phía sau món đồ: (tâm x, y, bán kính, độ dày nét, màu)
-GLOW_RING = {(5, 'wp_spear'): (247, 92, 58, 5, (255, 232, 170))}
+GLOW_RING = {}
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
@@ -251,10 +251,10 @@ def build(t, k, src, msk, box):
         rgba[..., :3] = (rgba[..., :3] * (1 - f) + np.array(col) * f).astype(np.uint8)
         rgba[..., 3] = np.maximum(rgba[..., 3], lm)
     if (t, k) in GLOW_RADIAL:
-        gx, gy, gr, gc, ga = GLOW_RADIAL[(t, k)]
+        gx, gy, gr, gc, ga, gcore = GLOW_RADIAL[(t, k)]
         yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
         d = np.hypot(xx - gx, yy - gy) / gr
-        e = np.clip((d - 0.3) / 0.7, 0, 1); e = e * e * (3 - 2 * e)      # lõi sáng đặc tới 30% bán kính rồi mờ dần (smoothstep)
+        e = np.clip((d - gcore) / (1 - gcore), 0, 1); e = e * e * (3 - 2 * e)   # lõi sáng đặc tới gcore·bán kính rồi mờ dần
         ga_ = (ga * (1 - e)).astype(np.uint8)
         glow = np.dstack([np.full(d.shape + (3,), gc, np.uint8), ga_])
         rgba = np.array(Image.alpha_composite(Image.fromarray(glow, 'RGBA'), Image.fromarray(rgba, 'RGBA')))
