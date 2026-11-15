@@ -20,6 +20,8 @@ const WEAPON_DIAG: Record<string, true> = { wp_sword: true, wp_blade: true, wp_s
 /** lật ngang sau khi dựng: đao (lưỡi quay ra ngoài), cung (dây quay vào người) */
 const WEAPON_MIRROR: Record<string, true> = { wp_blade: true, wp_bow: true };
 /** vị trí 2 bàn tay (trái, phải theo người xem) trên khung 96×112 của từng bộ hình cảnh giới — để đặt quyền sáo lơ lửng cạnh tay */
+/** độ cao (tâm) chung của quyền sáo lơ lửng, khung 96×112 */
+const GLOVE_Y = 62;
 const REALM_HANDS: [number, number][][] = [
   [[32, 55], [59, 48]], [[27, 61], [54, 61]], [[30, 71], [54, 51]],
   [[24, 68], [63, 63]], [[23, 68], [58, 68]], [[28, 59], [64, 64]],
@@ -543,9 +545,9 @@ export class Hub {
     // cung lật cho dây quay vào người. Quyền sáo: tách đôi, lật ngược (nắm tay chúc xuống), lơ lửng cặp 2 bên bàn tay.
     if (wpn?.weaponId === 'wp_fist') {
       const [l, r] = REALM_HANDS[look - 1] ?? REALM_HANDS[0];
-      const gw = 14, gh = 28, off = 13; // mỗi chiếc = nửa icon 66×66 thu về 28 đơn vị; lơ lửng cách bàn tay `off` ra ngoài
-      for (const [k, [hx, hy], dx] of [[0, l, -off], [1, r, off]] as const) {
-        kids.push(h('div', { class: 'wpn-float glove-float', title: itemName(wpn), style: `left:${(hx + dx - gw / 2) * scale}px;top:${(hy - gh / 2) * scale}px;` +
+      const gw = 14, gh = 28, off = 13, gy = GLOVE_Y; // mỗi chiếc = nửa icon 66×66 thu về 28 đơn vị; lơ lửng cách bàn tay `off` ra ngoài, cùng một độ cao mọi bộ hình
+      for (const [k, [hx], dx] of [[0, l, -off], [1, r, off]] as const) {
+        kids.push(h('div', { class: 'wpn-float glove-float', title: itemName(wpn), style: `left:${(hx + dx - gw / 2) * scale}px;top:${(gy - gh / 2) * scale}px;` +
           `width:${gw * scale}px;height:${gh * scale}px` },
           h('div', { class: 'glove-half', style: `width:${gw * scale}px;height:${gh * scale}px;background-image:url('${itemIcon(wpn)}');` +
             `background-size:${gh * scale}px ${gh * scale}px;background-position:${-k * gw * scale}px 0` })));

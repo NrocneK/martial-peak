@@ -604,7 +604,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 }
 @media (prefers-reduced-motion: reduce) { .figure .wpn, .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
 
-.figure.look .bb-float.bb-right { right: 0; left: auto; top: 30%; }
+.figure.look .bb-float.bb-right { right: 0; left: auto; top: 8%; } /* ngang tầm đầu */
 .figure.look .wpn-float .wpn-icon { image-rendering: auto; }
 /* quyền sáo lơ lửng cặp 2 bên tay: lật ngược (nắm tay chúc xuống) */
 .figure.look .glove-half { background-repeat: no-repeat; transform: scaleY(-1); }
