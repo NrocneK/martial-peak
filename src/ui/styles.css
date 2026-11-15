@@ -576,7 +576,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* bộ hình theo cảnh giới 2–6 (khung 96×112): cả khối (người + vũ khí) nhún nhẹ, vũ khí không nhún riêng */
 .figure.look { width: calc(96px * var(--s)); height: calc(112px * var(--s)); animation: realm-float 2.4s ease-in-out infinite; }
 .figure.look .realm-body { position: absolute; inset: 0; z-index: 2; background: no-repeat 0 0 / 100% 100%; image-rendering: pixelated; filter: drop-shadow(0 6px 0 rgba(10, 16, 48, 0.35)); }
-/* vũ khí ngự khí: dựng đứng song song thân, bên phải nhân vật (sau thân), nhấp nhô nhẹ; bí bảo bên trái */
+/* vũ khí ngự khí: icon dựng đứng, bên trái nhân vật, nhấp nhô nhẹ; bí bảo bên phải */
 .figure.look .wpn-float { position: absolute; z-index: 3; pointer-events: none; display: grid; place-items: center;
   filter: drop-shadow(0 0 5px rgba(160, 210, 255, 0.8)); animation: wpn-hover 3s ease-in-out infinite; }
 .figure.look .wpn-float > * { position: absolute; flex-shrink: 0; image-rendering: pixelated; }
@@ -604,4 +604,5 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 }
 @media (prefers-reduced-motion: reduce) { .figure .wpn, .figure .bb-float, .q-dao::after, .dao-text { animation: none; } }
 
-.figure.look .bb-float.bb-left { left: 0; top: 30%; }
+.figure.look .bb-float.bb-right { right: 0; left: auto; top: 30%; }
+.figure.look .wpn-float .wpn-icon { image-rendering: auto; }
