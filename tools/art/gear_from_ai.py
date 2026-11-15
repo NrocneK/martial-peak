@@ -54,7 +54,9 @@ GLOW_OUT = {(6, 'accessory'): (122, 125, 86, 195)}
 # chỉ giữ phần trong đa giác (toạ độ trong hộp). Thương Thánh: chỉ giữ đầu + thân, bỏ đường cong sáng phía sau
 KEEP_POLY = {(5, 'wp_spear'): [(320, 4), (332, 14), (301, 70), (287, 94), (270, 108), (250, 124), (232, 130),
                                (30, 334), (8, 334), (8, 318), (206, 108), (218, 92), (226, 62), (262, 38)]}
-HEAD_OUTLINE = {}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
+HEAD_OUTLINE = {(5, 'wp_spear'): 125}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
+# vẽ quầng sáng tròn mềm phía sau món đồ: (tâm x, y, bán kính, màu, độ đục tối đa)
+GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 40, (255, 240, 200), 245)}
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
@@ -246,6 +248,14 @@ def build(t, k, src, msk, box):
         f = lm[..., None] / 255.0
         rgba[..., :3] = (rgba[..., :3] * (1 - f) + np.array(col) * f).astype(np.uint8)
         rgba[..., 3] = np.maximum(rgba[..., 3], lm)
+    if (t, k) in GLOW_RADIAL:
+        gx, gy, gr, gc, ga = GLOW_RADIAL[(t, k)]
+        yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
+        d = np.hypot(xx - gx, yy - gy) / gr
+        e = np.clip((d - 0.3) / 0.7, 0, 1); e = e * e * (3 - 2 * e)      # lõi sáng đặc tới 30% bán kính rồi mờ dần (smoothstep)
+        ga_ = (ga * (1 - e)).astype(np.uint8)
+        glow = np.dstack([np.full(d.shape + (3,), gc, np.uint8), ga_])
+        rgba = np.array(Image.alpha_composite(Image.fromarray(glow, 'RGBA'), Image.fromarray(rgba, 'RGBA')))
     if (t, k) in PALE_ERASE:                                            # mảnh sáng vụn tách rời còn sót → bỏ
         al = np.ascontiguousarray(rgba[..., 3])
         n, lab, st, _ = cv2.connectedComponentsWithStats((al > 40).astype(np.uint8))
