@@ -19,7 +19,8 @@ export interface BookChapter {
   rows: HTMLElement[];
 }
 
-interface Page { ch: number; head: boolean; rows: HTMLElement[]; num: number }
+/** head: 'title' = trang mở chương (tiêu đề); 'pad' = trang đối diện trong cặp mở chương (dải đầu trống cùng cỡ để các mục 2 trang thẳng hàng) */
+interface Page { ch: number; head: 'title' | 'pad' | ''; rows: HTMLElement[]; num: number }
 
 const NARROW_MQ = '(max-width: 760px)';
 const FLIP_MS = 650;
@@ -63,22 +64,18 @@ export class SkillBook {
     const curCh = this.pages[this.at]?.ch ?? 0;
     this.pages = [];
     this.chapters.forEach((c, ci) => {
-      if (sp === 2 && this.pages.length % 2) this.pages.push({ ch: ci - 1, head: false, rows: [], num: 0 });  // chương mới luôn ở trang trái
+      if (sp === 2 && this.pages.length % 2) this.pages.push({ ch: ci - 1, head: '', rows: [], num: 0 });  // chương mới luôn ở trang trái
       const capHead = Math.max(1, Math.floor(this.room(true) / c.rowH));
       const cap = Math.max(1, Math.floor(this.room(false) / c.rowH));
-      let n = 1;
-      while (capHead + (n - 1) * cap < c.rows.length) n++;
-      if (sp === 2 && n % 2) n++;                                        // cặp trang đủ đôi cho cân
-      // rải đều: mỗi trang lấy phần chia đều của số mục còn lại (trang đầu chương bớt chỗ cho tiêu đề)
+      // cả cặp trang mở chương đều chừa dải đầu → 2 trang cùng sức chứa, các mục thẳng hàng
+      const capOf = (p: number): number => (p < sp ? capHead : cap);
+      let n = sp;
+      const fits = (k: number): boolean => { let t = 0; for (let p = 0; p < k; p++) t += capOf(p); return t >= c.rows.length; };
+      while (!fits(n)) n += sp;
       let i = 0;
       for (let p = 0; p < n; p++) {
-        const take = Math.min(p === 0 ? capHead : cap, Math.ceil((c.rows.length - i) / (n - p)));
-        this.pages.push({ ch: ci, head: p === 0, rows: c.rows.slice(i, i + take), num: 0 });
-        i += take;
-      }
-      while (i < c.rows.length) {                                        // phòng hờ làm tròn
-        const take = Math.min(cap, c.rows.length - i);
-        this.pages.push({ ch: ci, head: false, rows: c.rows.slice(i, i + take), num: 0 });
+        const take = Math.min(capOf(p), Math.ceil((c.rows.length - i) / (n - p)));
+        this.pages.push({ ch: ci, head: p === 0 ? 'title' : p < sp ? 'pad' : '', rows: c.rows.slice(i, i + take), num: 0 });
         i += take;
       }
     });
@@ -97,7 +94,8 @@ export class SkillBook {
     if (!p) return h('div', { class: `bk-page ${side} blank` });
     const c = this.chapters[p.ch];
     return h('div', { class: `bk-page ${side}` + (p.rows.length ? '' : ' blank') },
-      p.head ? h('div', { class: 'bk-head' }, h('b', { text: c.title }), c.sub ? h('span', { text: c.sub }) : null) : null,
+      p.head === 'title' ? h('div', { class: 'bk-head' }, h('b', { text: c.title }), c.sub ? h('span', { text: c.sub }) : null)
+        : p.head === 'pad' ? h('div', { class: 'bk-head pad' }) : null,
       h('div', { class: 'bk-rows' }, ...(copy ? p.rows.map((r) => r.cloneNode(true) as HTMLElement) : p.rows)),
       p.rows.length ? h('div', { class: 'bk-num', text: `— ${p.num} —` }) : h('div', { class: 'bk-seal', text: '道' }),
     );
