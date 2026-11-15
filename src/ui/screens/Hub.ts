@@ -400,7 +400,7 @@ export class Hub {
     const pk = P.packInfo();
     const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
     return h('div', { class: 'realm-wrap' },
-      realmFigure(s.tier, window.matchMedia('(max-width: 760px)').matches ? 2 : 3),
+      realmFigure(s.tier, 2),
       h('div', { class: 'realm-info' },
         h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
         h('div', { class: 'dim', text: `Bậc ${s.tier} / ${MAX_TIER}` }),

@@ -54,10 +54,13 @@ export function heroAvatar(cls = ''): HTMLElement {
   return h('div', { class: 'avatar ' + cls, style: `--fx:${fx};--fy:${fy}` }, h('i', { style: `background-image:url('/ui/realm_${look}.png?v=1')` }));
 }
 
-/** Hình nhân vật đứng theo cảnh giới (khung 96×112, phóng `scale` lần) */
+/** Bộ hình ngồi thiền đã có (public/ui/meditate_n.png, tools/art/meditate_sprites.py); bộ chưa có dùng hình ngồi thiền cũ */
+const MEDITATE_LOOKS = new Set([2, 3, 4, 5, 6]);
+/** Hình nhân vật ngồi thiền theo cảnh giới (tab Tu Luyện; khung 128×112, phóng `scale` lần) */
 export function realmFigure(tier: number, scale = 3): HTMLElement {
   const look = realmLook(tier);
-  return h('div', { class: 'realm-look', style: `--s:${scale};background-image:url('/ui/realm_${look}.png?v=1')`, role: 'img', 'aria-label': 'Cố Trường Ca' });
+  if (!MEDITATE_LOOKS.has(look)) return h('div', { class: 'meditate', role: 'img', 'aria-label': 'Cố Trường Ca ngồi thiền tu luyện' });
+  return h('div', { class: 'realm-look', style: `--s:${scale};background-image:url('/ui/meditate_${look}.png?v=1')`, role: 'img', 'aria-label': 'Cố Trường Ca ngồi thiền tu luyện' });
 }
 
 /**
