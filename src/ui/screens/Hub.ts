@@ -21,8 +21,8 @@ const WEAPON_DIAG: Record<string, true> = { wp_sword: true, wp_blade: true, wp_s
 const WEAPON_MIRROR: Record<string, true> = { wp_blade: true, wp_bow: true };
 /** vị trí 2 bàn tay (trái, phải theo người xem) trên khung 96×112 của từng bộ hình cảnh giới — để đặt quyền sáo lơ lửng cạnh tay */
 const REALM_HANDS: [number, number][][] = [
-  [[32, 53], [59, 46]], [[28, 62], [54, 62]], [[31, 72], [54, 53]],
-  [[26, 70], [62, 65]], [[25, 69], [57, 69]], [[30, 62], [63, 66]],
+  [[32, 55], [59, 48]], [[27, 61], [54, 61]], [[30, 71], [54, 51]],
+  [[24, 68], [63, 63]], [[23, 68], [58, 68]], [[28, 59], [64, 64]],
 ];
 const SLOT_ICON: Record<SlotId, string> = { weapon: 'forge', clothes: 'gear', shoes: 'boots', accessory: 'pendant', bibao: 'essence' };
 const slotIcon = (slot: SlotId): string => SLOT_ICON[slot];
@@ -537,7 +537,7 @@ export class Hub {
 
   /** Nhân vật theo cảnh giới (khung 96×112): vũ khí ngự khí bên trái, bí bảo bên phải, cả khối nhún nhẹ như vận khí */
   private figureLook(look: number, scale: number, wpn: ItemInst | null, bb: ItemInst | null, hd: (typeof WEAPON_HOLD)[string] | null): HTMLElement {
-    const kids: HTMLElement[] = [h('div', { class: 'realm-body', style: `background-image:url('/ui/realm_${look}.png?v=1')` })];
+    const kids: HTMLElement[] = [h('div', { class: 'realm-body', style: `background-image:url('/ui/realm_${look}.png?v=2')` })];
     // vũ khí NGỰ KHÍ: dùng icon trang bị mới (public/gear), dựng thẳng đứng mũi chĩa lên, bên TRÁI nhân vật.
     // Icon kiếm/đao/thương/cung vẽ nghiêng 45° (mũi phải-trên) → xoay -45°; đao lật cho lưỡi quay ra ngoài,
     // cung lật cho dây quay vào người. Quyền sáo: tách đôi, lật ngược (nắm tay chúc xuống), lơ lửng cặp 2 bên bàn tay.

@@ -51,7 +51,7 @@ export function heroSprite(scale = 3, cls = ''): HTMLElement {
 export function heroAvatar(cls = ''): HTMLElement {
   const look = realmLook(getSave().tier);
   const [fx, fy] = REALM_FACE[look - 1];
-  return h('div', { class: 'avatar ' + cls, style: `--fx:${fx};--fy:${fy}` }, h('i', { style: `background-image:url('/ui/realm_${look}.png?v=1')` }));
+  return h('div', { class: 'avatar ' + cls, style: `--fx:${fx};--fy:${fy}` }, h('i', { style: `background-image:url('/ui/realm_${look}.png?v=2')` }));
 }
 
 /** Bộ hình ngồi thiền đã có (public/ui/meditate_n.png, tools/art/meditate_sprites.py); bộ chưa có dùng hình ngồi thiền cũ */

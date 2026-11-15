@@ -111,7 +111,7 @@ export function realmLook(tier: number): number {
   return LOOK_GROUPS.findIndex((l) => l.includes(g)) + 1 || 1;
 }
 /** Tâm mặt (điểm ảnh trên khung 96×112) của từng bộ hình — dùng cắt ảnh đại diện tròn */
-export const REALM_FACE: [number, number][] = [[42, 24], [40, 32], [43, 32], [44, 30], [43, 34], [43, 29]];
+export const REALM_FACE: [number, number][] = [[42, 26], [39, 29], [43, 28], [44, 25], [43, 31], [43, 23]];
 
 export function tierName(i: number): string {
   return TIERS[Math.max(0, Math.min(MAX_TIER, i))].name;

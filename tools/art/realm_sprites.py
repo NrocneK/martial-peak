@@ -4,8 +4,8 @@ HÌNH NHÂN VẬT THEO CẢNH GIỚI (6 bộ) — lấy NGUYÊN từ ảnh mẫu
   2 Trúc Cơ, Kim Đan, Nguyên Anh · 3 Hóa Thần, Luyện Hư, Hợp Thể · 4 Đại Thừa, Độ Kiếp
   5 Chân Tiên → Tiên Đế         · 6 Đạo Tổ
   · tách nền: loang từ mép ảnh qua các điểm gần màu nền (trắng / xám nhạt) — chính xác với ảnh pixel art, xoá luôn chữ "Dola AI"
-  · thu về cỡ sprite gốc bằng lấy mẫu ĐIỂM GIỮA mỗi ô (giữ nét pixel sắc): thân người cao ~100 điểm ảnh như hero_full (106)
-  · đặt lên khung chung 96×112, CHÂN đứng cùng một dòng (y=108), tâm thân cùng một cột → đổi cảnh giới không bị nhảy chỗ
+  · thu về cỡ sprite gốc bằng lấy mẫu ĐIỂM GIỮA mỗi ô (giữ nét pixel sắc): người cao 106 điểm ảnh (đỉnh tóc → chân, không tính vương miện / hào quang) đúng như hero_full
+  · đặt lên khung chung 96×112, CHÂN đứng cùng một dòng (y=110, chừa chỗ cho hào quang trên đầu), tâm thân cùng một cột → đổi cảnh giới không bị nhảy chỗ
   → public/ui/realm_{1..6}.png
   python3 -I tools/art/realm_sprites.py   (cần opencv: pip install opencv-python-headless)
 """
@@ -17,7 +17,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 UI = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui')
 REF = os.path.join(HERE, 'ref')
-W, H, FOOT, BODY = 96, 112, 108, 100
+W, H, FOOT, BODY = 96, 112, 110, 106   # BODY = chiều cao người (đỉnh tóc → chân) như sprite gốc hero_full
 
 
 def cut(path):
@@ -43,7 +43,10 @@ def cut(path):
 def to_sprite(rgba):
     a = rgba[..., 3] > 0
     ys, xs = np.nonzero(a)
-    top, bot = ys.min(), ys.max()
+    bot = ys.max()
+    # đo chiều cao NGƯỜI (đỉnh tóc → chân), bỏ qua vương miện / hào quang phía trên: đỉnh tóc = điểm tối đầu tiên
+    dark = a & (rgba[..., :3].astype(int).sum(2) < 250)
+    top = np.nonzero(dark)[0].min()
     k = (bot - top + 1) / BODY                                          # số điểm ảnh gốc / 1 điểm ảnh sprite
     nh, nw = int(rgba.shape[0] / k), int(rgba.shape[1] / k)
     yy = np.clip(((np.arange(nh) + 0.5) * k).astype(int), 0, rgba.shape[0] - 1)
