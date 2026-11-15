@@ -55,7 +55,7 @@ export function heroAvatar(cls = ''): HTMLElement {
 }
 
 /** Bộ hình ngồi thiền đã có (public/ui/meditate_n.png, tools/art/meditate_sprites.py); bộ chưa có dùng hình ngồi thiền cũ */
-const MEDITATE_LOOKS = new Set([2, 3, 4, 5, 6]);
+const MEDITATE_LOOKS = new Set([1, 2, 3, 4, 5, 6]);
 /** Hình nhân vật ngồi thiền theo cảnh giới (tab Tu Luyện; khung 128×112, phóng `scale` lần) */
 export function realmFigure(tier: number, scale = 3): HTMLElement {
   const look = realmLook(tier);
