@@ -5,12 +5,13 @@ import { fmt, fmtTime } from '../../utils/format';
 import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../config/types';
 import { MAX_TIER, TIERS, nextTierNeed, realmLook, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
-import { PASSIVES, REALM_SKILLS, WEAPON_IDS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
+import { PASSIVES, REALM_SKILLS, WEAPON_IDS, WEAPON_SKILLS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
 import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
 import { SectFx } from '../sectFx';
+import { SkillBook } from '../skillBook';
 
 /** Biểu tượng pixel (xem tools/art/icons.px.js) */
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
@@ -69,7 +70,9 @@ export class Hub {
   private tab: Tab = 'home';
   private world = 1;
   private craftMode: 'forge' | 'alchemy' = 'forge';
-  private cultMode: 'realm' | 'active' | 'passive' = 'realm';
+  private cultMode: 'realm' | 'book' = 'realm';
+  /** Sách Công Pháp (giữ trang đang mở qua các lần vẽ lại) */
+  private readonly book = new SkillBook();
   private bagMode: 'gear' | 'inv' = 'gear';
   private questMode: 'daily' | 'main' | 'achieve' = 'daily';
   private filterSlot: SlotId | 'all' = 'all';
@@ -403,9 +406,9 @@ export class Hub {
 
   // ------------------------------------------------------------------ Tu Luyện: Cảnh Giới / Kỹ Năng / Bị Động
   private vCultivateTab(): HTMLElement {
-    return h('div', null,
-      this.segs(this.cultMode, [['realm', 'Cảnh Giới', 'cultivate'], ['active', 'Kỹ Năng', 'skill'], ['passive', 'Bị Động', 'essence']], (v) => { this.cultMode = v; }),
-      this.cultMode === 'realm' ? this.vCultivate() : this.cultMode === 'active' ? this.vSkill() : this.vPassive(),
+    return h('div', { class: this.cultMode === 'book' ? 'cult-fill' : undefined },
+      this.segs(this.cultMode, [['realm', 'Cảnh Giới', 'cultivate'], ['book', 'Công Pháp', 'skill']], (v) => { this.cultMode = v; }),
+      this.cultMode === 'realm' ? this.vCultivate() : this.vBook(),
     );
   }
 
@@ -461,24 +464,68 @@ export class Hub {
     );
   }
 
-  private vSkill(): HTMLElement {
+  /** Sách Công Pháp: chương Chủ Động (kỹ năng vũ khí + cảnh giới) / Bị Động / Thức Tỉnh (công thức kết hợp) */
+  private vBook(): HTMLElement {
     const s = P.getSave();
     const loadout = P.currentLoadout();
-    const w = weaponSkillOf(P.computeMeta().weaponId);
-    const head = h('button', { class: 'skill-head', onclick: () => this.openSkill(w.id) },
-      h('div', { class: 'swatch skico', style: skillIconStyle(w.id) }),
-      h('div', { class: 'grow' }, h('b', { text: `Kỹ năng vũ khí: ${w.name}` }), h('div', { class: 'dim', text: `${w.type} · tự động, không chiếm chỗ mang theo.` })),
-      h('div', { class: 'gold', text: `Mang theo ${loadout.length}/3` }),
-    );
-    return h('div', null, head, this.paged(this.fit('active', 66, 56 + 70, 230), REALM_SKILLS, (a) => {
-      const un = a.unlockTier <= s.tier;
-      const on = loadout.includes(a.id);
-      return h('button', { class: 'sk-tile' + (on ? ' on' : '') + (un ? '' : ' lock'), onclick: () => this.openSkill(a.id) },
-        h('i', { class: 'swatch skico', style: skillIconStyle(a.id) }),
-        h('span', { class: 'sk-name', text: a.name }),
-        h('span', { class: 'sk-sub', text: on ? 'Đang mang' : un ? 'Chưa mang' : `🔒 ${a.unlock}` }),
-      );
-    }));
+    const curWeapon = weaponSkillOf(P.computeMeta().weaponId).id;
+    const icon = (id: string, extra = ''): HTMLElement => h('i', { class: 'swatch skico' + extra, style: skillIconStyle(id) });
+    const row = (cls: string, rh: number, onclick: () => void, ...kids: (HTMLElement | null)[]): HTMLElement =>
+      h('button', { class: 'bk-row ' + cls, style: `height:${rh}px`, onclick }, ...kids);
+    const active = [...WEAPON_SKILLS, ...REALM_SKILLS].map((a) => {
+      const weapon = a.source === 'weapon';
+      const un = weapon || a.unlockTier <= s.tier;
+      const on = weapon ? a.id === curWeapon : loadout.includes(a.id);
+      const state = weapon ? (on ? 'Đang dùng' : 'Vũ khí') : on ? 'Đang mang' : un ? 'Chưa mang' : `🔒 ${a.unlock}`;
+      return row((on ? 'on' : '') + (un ? '' : ' lock'), 56, () => this.openSkill(a.id),
+        icon(a.id), h('span', { class: 'bk-txt' }, h('b', { text: a.name }), h('small', { text: weapon ? `Kỹ năng vũ khí · ${a.type}` : a.type })),
+        h('span', { class: 'bk-state', text: state }));
+    });
+    const passive = PASSIVES.map((p) => row('', 56, () => this.openPassive(p.id),
+      icon(p.id), h('span', { class: 'bk-txt' }, h('b', { text: p.name }), h('small', { text: `${p.stat}: ${p.levels[0]} / cấp` }))));
+    const all = [...WEAPON_SKILLS, ...REALM_SKILLS];
+    const known = all.filter((a) => P.isAwakenKnown(a.id)).length;
+    const formula = all.map((a) => {
+      const k = P.isAwakenKnown(a.id);
+      const pv = passiveById(a.passive);
+      return row('fx' + (k ? ' known' : ' lock'), 64, () => this.openAwaken(a.id),
+        h('span', { class: 'bk-mix' }, icon(a.id), h('em', { text: '+' }), icon(a.passive)),
+        h('span', { class: 'bk-txt' }, h('small', { text: `${a.name} (cấp 5) + ${pv.name}` }), h('b', { text: k ? `⭐ ${a.awaken.name}` : '⭐ ???' })));
+    });
+    this.book.set([
+      { id: 'active', title: 'Chủ Động Công Pháp', tab: 'Chủ Động', sub: `Mang theo ${loadout.length}/3 · kỹ năng vũ khí tự động`, rowH: 56, rows: active },
+      { id: 'passive', title: 'Bị Động Tâm Pháp', tab: 'Bị Động', sub: `Tự xuất hiện khi lên cấp trong màn · tối đa ${RUN.maxSkills} kỹ năng mỗi màn`, rowH: 56, rows: passive },
+      { id: 'awaken', title: 'Thức Tỉnh Bí Lục', tab: 'Thức Tỉnh', sub: `Đã khai mở ${known}/${all.length} · thức tỉnh trong màn để mở`, rowH: 64, rows: formula },
+    ]);
+    return this.book.el;
+  }
+
+  private openPassive(id: string): void {
+    const p = passiveById(id);
+    audio.play('click');
+    this.detail(p.name, () => h('div', null,
+      h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(p.id) }), h('p', { text: p.stat })),
+      h('div', { class: 'stat-list' },
+        ...p.levels.map((v, i) => h('div', null, h('span', { class: 'dim', text: `Cấp ${i + 1}` }), h('b', { text: v }))),
+        h('div', null, h('span', { class: 'dim', text: 'Mở thức tỉnh cho' }), h('b', { text: p.awakens.map((k) => skillById(k).name).join(', ') })),
+      ),
+    ));
+  }
+
+  /** Công thức thức tỉnh: đã khai mở → tên + hiệu ứng; chưa → chỉ nguyên liệu */
+  private openAwaken(id: string): void {
+    const a = skillById(id);
+    const pv = passiveById(a.passive);
+    const k = P.isAwakenKnown(id);
+    audio.play('click');
+    this.detail(k ? a.awaken.name : 'Công thức chưa khai mở', () => h('div', null,
+      h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(a.id) }), h('p', { text: `${a.name} (cấp 5) + ${pv.name}` })),
+      k
+        ? h('div', { class: 'stat-list' },
+            h('div', null, h('span', { class: 'dim', text: 'Sát thương' }), h('b', { text: a.awaken.damage })),
+            h('div', null, h('span', { class: 'dim', text: 'Hiệu ứng' }), h('b', { text: a.awaken.effect })))
+        : h('p', { class: 'dim', text: `Trong màn chơi, đưa ${a.name} lên cấp 5 và có ${pv.name} để nhận thẻ thức tỉnh. Thức tỉnh lần đầu sẽ ghi công thức vào sách.` }),
+    ));
   }
 
   /** Bảng chi tiết kỹ năng: 5 cấp + thức tỉnh + bị động liên kết */
@@ -503,22 +550,6 @@ export class Hub {
           : h('p', { class: 'dim note', text: 'Kỹ năng vũ khí đổi theo loại vũ khí đang trang bị.' }),
       );
     });
-  }
-
-  private vPassive(): HTMLElement {
-    return h('div', null,
-      h('p', { class: 'dim note', text: `Bị động tự xuất hiện dưới dạng thẻ khi lên cấp trong màn. Tối đa ${RUN.maxSkills} kỹ năng mỗi màn (tính cả kỹ năng vũ khí).` }),
-      this.paged(this.fit('passive', 66, 56 + 34, 230), PASSIVES, (p) => h('button', { class: 'sk-tile', onclick: () => {
-        audio.play('click');
-        this.detail(p.name, () => h('div', null,
-          h('div', { class: 'sk-detail-head' }, h('i', { class: 'swatch skico big', style: skillIconStyle(p.id) }), h('p', { text: p.stat })),
-          h('div', { class: 'stat-list' },
-            ...p.levels.map((v, i) => h('div', null, h('span', { class: 'dim', text: `Cấp ${i + 1}` }), h('b', { text: v }))),
-            h('div', null, h('span', { class: 'dim', text: 'Mở thức tỉnh cho' }), h('b', { text: p.awakens.map((k) => skillById(k).name).join(', ') })),
-          ),
-        ));
-      } }, h('i', { class: 'swatch skico', style: skillIconStyle(p.id) }), h('span', { class: 'sk-name', text: p.name }), h('span', { class: 'sk-sub', text: `${p.stat}: ${p.levels[0]} / cấp` }))),
-    );
   }
 
   // ------------------------------------------------------------------ Hành Trang: Trang Bị / Kho Đồ

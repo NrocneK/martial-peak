@@ -118,3 +118,14 @@ export function toggleLoadout(id: string): Result {
 export function currentLoadout(): string[] {
   return data.loadout.filter((id) => ACTIVES.some((a) => a.id === id && a.unlockTier <= data.tier)).slice(0, 3);
 }
+
+/** Ghi nhận lần đầu thức tỉnh một kỹ năng trong màn → mở công thức trong Sách Công Pháp */
+export function recordAwaken(id: string): void {
+  if (data.awakened.includes(id)) return;
+  data.awakened.push(id);
+  save();
+}
+
+export function isAwakenKnown(id: string): boolean {
+  return data.awakened.includes(id);
+}

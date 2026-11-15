@@ -15,7 +15,7 @@ import { RunState } from '../systems/RunState';
 import { SkillSystem } from '../systems/SkillSystem';
 import { Spawner } from '../systems/Spawner';
 import { generateCards, type Card } from '../systems/CardPicker';
-import { computeMeta, currentLoadout, equippedItem, type StageResult } from '../systems/progression';
+import { computeMeta, currentLoadout, equippedItem, recordAwaken, type StageResult } from '../systems/progression';
 import { WORLD_FIRST_TIER } from '../config/realms';
 import { econScale } from '../config/balance';
 import { mixColor } from '../utils/format';
@@ -234,6 +234,7 @@ export class GameScene extends Phaser.Scene {
         const own = run.find(c.id);
         if (own) own.awakened = true;
         if (own?.kind === 'active') run.lastActive = c.id;
+        recordAwaken(c.id);
         break;
       }
       case 'heal':

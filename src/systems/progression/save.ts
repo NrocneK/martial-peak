@@ -48,6 +48,8 @@ export interface SaveData {
   stats: { runs: number; wins: number; kills: number };
   /** Tiến độ nhiệm vụ (hằng ngày + chính tuyến) */
   quests: QuestState;
+  /** id kỹ năng đã từng thức tỉnh trong màn chơi (mở công thức trong Sách Công Pháp) */
+  awakened: string[];
 }
 
 export type Result = { ok: boolean; msg: string };
@@ -72,6 +74,7 @@ function defaultSave(): SaveData {
     sound: true,
     stats: { runs: 0, wins: 0, kills: 0 },
     quests: defaultQuests(),
+    awakened: [],
   };
 }
 
@@ -177,6 +180,7 @@ function normalize(parsed: Partial<SaveData>): SaveData {
   if (!Array.isArray(d.quests.dailyClaimed)) d.quests.dailyClaimed = [];
   if (!Array.isArray(d.quests.mainClaimed)) d.quests.mainClaimed = [];
   if (!d.quests.daily || typeof d.quests.daily !== 'object') d.quests.daily = {};
+  if (!Array.isArray(d.awakened)) d.awakened = [];
   migrate(d, parsed.v ?? 1);
   d.v = SAVE_VERSION;
   return sanitize(d);
