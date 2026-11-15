@@ -32,4 +32,4 @@ Người dùng là lập trình viên mới bắt đầu → **trả lời bằn
 - Vũ khí (kiếm, đao, thương, cung) đồng bộ nghiêng 45°, mũi hướng phải-trên; cung cùng một phía;
   găng tay là cặp đứng thẳng.
 - **Mỗi lần đổi hình trang bị phải tăng `GEAR_ART_V` trong `src/config/items.ts`** (để trình duyệt tải ảnh mới).
-- Còn chờ: 4 áo (Phàm, Tiên, Thần, Thánh) đợi ảnh AI mới; icon bí bảo hoãn lại.
+- Icon bí bảo: tools/art/bibao_from_ai.py (ảnh tools/art/ref/bibao_{1,2}_ai.png). Áo 4 bậc dựng đứng: ROBES trong gear_from_ai.py.
