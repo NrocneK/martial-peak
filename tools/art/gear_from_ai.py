@@ -58,7 +58,10 @@ HEAD_OUTLINE = {(5, 'wp_spear'): 125}                                 # vùng y 
 # vẽ quầng sáng tròn mềm phía sau món đồ: (tâm x, y, bán kính, màu, độ đục tối đa)
 GLOW_RADIAL = {}
 # vòng sáng (hình nhẫn) phía sau món đồ: (tâm x, y, bán kính, độ dày nét, màu)
-GLOW_RING = {(5, 'wp_spear'): (247, 92, 74, 5, (255, 232, 170))}
+GLOW_RING = {}
+# vòng sáng QUẤN QUANH thân (nhìn nghiêng thành elip vuông góc với thân): (tâm x, y, bán trục ngang, bán trục dọc thân,
+#   góc trục ngang (độ), độ dày nét, màu). Nửa phía chuôi vẽ ĐÈ lên thân, nửa phía mũi nằm SAU thân.
+WRAP_RING = {(5, 'wp_spear'): (214, 126, 50, 15, 43.3, 4, (255, 236, 180))}
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
@@ -258,6 +261,17 @@ def build(t, k, src, msk, box):
         ga_ = (ga * (1 - e)).astype(np.uint8)
         glow = np.dstack([np.full(d.shape + (3,), gc, np.uint8), ga_])
         rgba = np.array(Image.alpha_composite(Image.fromarray(glow, 'RGBA'), Image.fromarray(rgba, 'RGBA')))
+    if (t, k) in WRAP_RING:
+        cx, cy, ra, rb, ang, th, gc = WRAP_RING[(t, k)]
+        def half(a0, a1):
+            m = np.zeros(rgba.shape[:2], np.uint8)
+            cv2.ellipse(m, (cx, cy), (ra, rb), ang, a0, a1, 255, th, cv2.LINE_AA)
+            halo = cv2.GaussianBlur(cv2.dilate(m, np.ones((3, 3), np.uint8)), (0, 0), th * 1.3)
+            a_ = np.maximum(m, (halo.astype(float) * 0.8).astype(np.uint8))
+            col = np.where((m > 128)[..., None], np.array([255, 252, 236]), np.array(gc)).astype(np.uint8)
+            return Image.fromarray(np.dstack([col, a_]), 'RGBA')
+        out = Image.alpha_composite(half(180, 360), Image.fromarray(rgba, 'RGBA'))   # nửa sau: dưới thân
+        rgba = np.array(Image.alpha_composite(out, half(0, 180)))                    # nửa trước: đè lên thân
     if (t, k) in GLOW_RING:
         gx, gy, gr, gw, gc = GLOW_RING[(t, k)]
         yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
