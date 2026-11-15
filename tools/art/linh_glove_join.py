@@ -31,7 +31,17 @@ cuff=np.zeros((H,W,4),np.uint8); cuff[oy:oy+rg.shape[0],ox:ox+rg.shape[1]]=rg
 cp=np.zeros((H,W),np.uint8)
 cv2.fillPoly(cp,[np.array([(1140,40),(1260,40),(1260,150),(1200,166),(1128,148)],np.int32)],255)   # phần trên vòng đai
 cuff[...,3]=(cuff[...,3].astype(int)*cp//255).astype(np.uint8)
+# Cổ găng chiếc phải bị nắm tay găng trái che mất mép trái trong ảnh mẫu → hẹp hơn vòng đai ~12px ở mép trái.
+# Đo trên lưới phóng to (toạ độ ảnh mẫu): đai từ (1131,126) tới (1192,155); mép phải cổ găng khớp đầu phải đai (~1196,156),
+# góc dưới-trái cổ găng ở (1143,122). Kéo giãn cổ găng dọc hướng đai, giữ cố định mép phải, để mép trái chạm đầu trái đai.
+u=np.array([61.0,29.0]); u/=np.linalg.norm(u)
+s_r=np.dot([1196,156],u); s_cl=np.dot([1143,122],u); s_bl=np.dot([1131,126],u)
+f=(s_r-(s_bl+1))/(s_r-s_cl)
+A=np.eye(2)+(f-1)*np.outer(u,u); o=(1-f)*s_r*u
+cuff=cv2.warpAffine(cuff,np.hstack([A,o[:,None]]).astype(np.float32),(W,H),flags=cv2.INTER_LINEAR,borderValue=(0,0,0,0))
+print('giãn cổ găng theo hướng đai x%.3f'%f)
 out=np.array(Image.alpha_composite(Image.fromarray(cuff,'RGBA'),Image.fromarray(fist,'RGBA')))
+
 im=Image.fromarray(out,'RGBA'); im=im.crop(im.getchannel('A').point(lambda v:255 if v>30 else 0).getbbox())
 im.save(g.REF+'/linh_glove_joined.png'); im.save('/home/user/martial-peak/tools/art/out/linh_glove_joined.png')
 Image.alpha_composite(Image.new('RGBA',im.size,(255,255,255,255)),im).convert('RGB').save('/home/user/martial-peak/tools/art/out/linh_glove_joined_white.png')
