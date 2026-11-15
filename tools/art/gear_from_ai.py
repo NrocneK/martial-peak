@@ -51,7 +51,10 @@ ERASE = {   # 6 cây thương: bỏ dây tua rua (Đạo: tua che thân thương
 # quầng sáng nhạt giữa các vòng dây ngoài mặt ngọc (tâm x, y, bán kính, độ sáng tối thiểu) → trong suốt
 GLOW_OUT = {(6, 'accessory'): (122, 125, 86, 195)}
 # chỉ giữ phần trong đa giác (toạ độ trong hộp): găng Linh lấy CHIẾC BÊN PHẢI của cặp (chiếc trái lỗi hai đầu đều là nắm tay)
-KEEP_POLY = {}
+# chỉ giữ phần trong đa giác (toạ độ trong hộp). Thương Thánh: chỉ giữ đầu + thân, bỏ đường cong sáng phía sau
+KEEP_POLY = {(5, 'wp_spear'): [(320, 4), (332, 14), (301, 70), (287, 94), (270, 108), (250, 124), (232, 130),
+                               (30, 334), (8, 334), (8, 318), (206, 108), (218, 92), (226, 62), (262, 38)]}
+HEAD_OUTLINE = {}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
@@ -187,6 +190,13 @@ def build(t, k, src, msk, box):
     al = np.ascontiguousarray(rgba[..., 3])
     if (t, k) in KEEP_POLY:
         km = np.zeros_like(al); cv2.fillPoly(km, [np.array(KEEP_POLY[(t, k)], np.int32)], 1); al = al * km
+    if (t, k) in HEAD_OUTLINE:
+        yl = HEAD_OUTLINE[(t, k)]
+        dark = cv2.morphologyEx((crgb.mean(2) < 110).astype(np.uint8), cv2.MORPH_CLOSE,
+                                cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)))
+        inside = cv2.dilate(ndimage.binary_fill_holes(dark).astype(np.uint8), np.ones((3, 3), np.uint8))
+        cv2.line(inside, (196, 136), (256, 74), 1, 11)                  # giữ phần cổ nối đầu thương với thân
+        al[:yl] = al[:yl] * inside[:yl]
     if (t, k) in OUTLINE_ADD:
         dark = cv2.morphologyEx((crgb.mean(2) < OUTLINE_ADD[(t, k)]).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
         al = np.maximum(al, (ndimage.binary_fill_holes(dark) * 255).astype(np.uint8))
