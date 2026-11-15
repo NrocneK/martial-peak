@@ -14,7 +14,8 @@ import { openSettings } from './Settings';
 /** Biểu tượng pixel (xem tools/art/icons.px.js) */
 const ic = (name: string, cls = ''): HTMLElement => h('img', { src: `/ui/ic_${name}.png`, alt: '', class: 'ic ' + cls });
 const MAT_ICON: Record<string, string> = { herb: 'herb', core: 'core', ore: 'ore', essence: 'essence' };
-const slotIcon = (slot: SlotId): string => (slot === 'weapon' ? 'forge' : slot === 'bibao' ? 'essence' : 'gear');
+const SLOT_ICON: Record<SlotId, string> = { weapon: 'forge', clothes: 'gear', shoes: 'boots', accessory: 'pendant', bibao: 'essence' };
+const slotIcon = (slot: SlotId): string => SLOT_ICON[slot];
 /** Lớp viền theo phẩm: q-0..q-4 (Hạ..Thượng Cổ), q-dao (thất thải), q-bb (bí bảo) */
 const qClass = (it: ItemInst): string => (it.slot === 'bibao' ? 'q-bb' : it.tier >= DAO_TIER ? 'q-dao' : 'q-' + it.quality);
 /** Hình món đồ (public/gear) */
@@ -699,7 +700,7 @@ export class Hub {
       const cnt = P.pillCount(p.id);
       grid.append(
         h('div', { class: 'card craft' },
-          h('div', { class: 'gold hd' }, ic('alchemy'), p.name + (p.cap ? ` (${cnt}/${p.cap})` : '')),
+          h('div', { class: 'gold hd' }, ic('pill'), p.name + (p.cap ? ` (${cnt}/${p.cap})` : '')),
           h('div', { class: 'dim', text: p.desc }),
           h('div', { class: 'cost', text: `Cần: ${p.herb} thảo dược${p.core ? `, ${p.core} yêu đan` : ''}, ${fmt(P.pillLinhCost(p.id))} linh thạch` }),
           h('button', { class: 'btn small primary', text: 'Luyện đan', onclick: () => this.act(P.craftPill(p.id)) }),

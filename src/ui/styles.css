@@ -191,12 +191,12 @@
 .lb-nav { position: relative; z-index: 2; display: flex; gap: 6px; height: var(--nav-h); padding: 6px 8px; padding-bottom: max(6px, env(safe-area-inset-bottom)); box-sizing: content-box !important;
   justify-content: center; background: linear-gradient(180deg, #1a2760, #0a1030); border-top: 2px solid #e8b24a; box-shadow: 0 -2px 0 #0a1030, 0 -6px 14px rgba(10, 20, 80, 0.35); flex-shrink: 0; }
 .nv { position: relative; flex: 1; min-width: 0; max-width: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; font: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.1; white-space: nowrap; text-shadow: 0 1px 2px #0a1030, 0 0 4px #0a1030; color: #e6eeff; cursor: pointer; text-shadow: 0 1px 0 #0a1030;
-  background: none; border: 12px solid transparent; border-image: url('/ui/k_btn9.png?v=1') 92 fill / 12px / 0 stretch; }
+  background: url('/ui/k_nav.png?v=1') center / 100% 100% no-repeat; border: 0; padding: 6px 4px 7px; }
 .nv .ic { width: 34px; height: 34px; filter: grayscale(0.5) brightness(0.85); }
 .nv:hover { color: #fff; }
 .nv:hover .ic { filter: none; }
 .nv:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
-.nv.on { color: #ffe9a8; border-image-source: url('/ui/k_btn_hi9.png?v=1'); filter: drop-shadow(0 0 8px #ffd96acc); transform: translateY(-3px); }
+.nv.on { color: #ffe9a8; background-image: url('/ui/k_nav_on.png?v=1'); filter: drop-shadow(0 0 8px #ffd96acc); transform: translateY(-3px); }
 .nv.on .ic { filter: drop-shadow(0 0 6px #ffbf5e99); }
 /* Tu Luyện: nhân vật ngồi thiền (dải 8 khung 60x60, phóng 3 lần) */
 .realm-card { text-align: center; }
@@ -254,7 +254,7 @@
   .lb-top .res { order: 3; width: 100%; margin-left: 0; }
   .lb-top .icon-btn { margin-left: auto; }
   .pf-text .bar { width: 150px; }
-  .nv { font-size: 10.5px; border-width: 10px; border-image-width: 10px; }
+  .nv { font-size: 10.5px; }
   .nv .ic { width: 26px; height: 26px; }
   .lb-nav { gap: 4px; padding: 5px 5px; }
   .panel { inset: 6px; }

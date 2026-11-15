@@ -51,19 +51,22 @@ def wipe_mark(rgba, box):
     rgba[box[1]:box[3], box[0]:box[2], 3] = 0
 
 
-def main():
-    ic = cutout('icons_ai')
-    wipe_mark(ic, (1300, 1860, 1540, 1950))                             # chữ "Dola AI"
-    for (r, c), name in ICONS.items():
-        x0, y0 = c * 320, 60 + r * 370
-        arr = ic[y0:y0 + 370, x0:x0 + 320].copy()
+def save_icon(ic, x0, y0, cw, ch, name):
+    if True:
+        arr = ic[y0:y0 + ch, x0:x0 + cw].copy()
         lab, n = ndimage.label(arr[..., 3] > 24)
         keep = np.zeros(arr.shape[:2], bool)
         for j, sl in enumerate(ndimage.find_objects(lab)):              # chỉ giữ mảng có tâm nằm ở phần giữa ô (bỏ mép icon bên cạnh)
             cy, cx = (sl[0].start + sl[0].stop) / 2, (sl[1].start + sl[1].stop) / 2
-            if 30 < cx < 290 and 25 < cy < 345:
+            if 0.09 * cw < cx < 0.91 * cw and 0.07 * ch < cy < 0.93 * ch:
                 keep |= lab == j + 1
         arr[..., 3] = np.where(ndimage.binary_dilation(keep, iterations=2), arr[..., 3], 0)
+        if name in FILL:                                                # vật màu sáng gần trắng (phong thư): mặt nạ ăn mất lòng → lấp đặc
+            src = np.array(Image.open(os.path.join(REF, FILL[name])).convert('RGB'))[y0:y0 + ch, x0:x0 + cw]
+            solid = ndimage.binary_fill_holes(arr[..., 3] > 60)
+            hole = solid & (arr[..., 3] < 250)
+            arr[..., :3] = np.where(hole[..., None], src, arr[..., :3])
+            arr[..., 3] = np.where(solid, 255, arr[..., 3])
         cell = Image.fromarray(arr, 'RGBA')
         bb = cell.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()
         cell = cell.crop(bb)
@@ -72,6 +75,39 @@ def main():
         out = Image.new('RGBA', (128, 128))
         out.alpha_composite(cell, ((128 - cell.width) // 2, (128 - cell.height) // 2))
         out.save(os.path.join(UI, f'ic_{name}.png'))
+
+
+# bộ icon bổ sung (icons2_ai.webp 2000×1333, lưới 3×2, ô ~667×640 bắt đầu y≈40)
+FILL = {'mail': 'icons2_ai.webp'}
+ICONS2 = {(0, 0): 'pill', (0, 1): 'mail', (0, 2): 'notice', (1, 0): 'gear', (1, 1): 'boots', (1, 2): 'pendant'}
+
+
+def main():
+    ic = cutout('icons_ai')
+    wipe_mark(ic, (1300, 1860, 1540, 1950))                             # chữ "Dola AI"
+    for (r, c), name in ICONS.items():
+        save_icon(ic, c * 320, 60 + r * 370, 320, 370, name)
+    ic2 = cutout('icons2_ai')
+    wipe_mark(ic2, (1700, 1190, 1960, 1290))
+    for (r, c), name in ICONS2.items():
+        save_icon(ic2, c * 667, 40 + r * 640, 667, 640, name)
+    # nút điều hướng bát giác (octa_ai.webp 793×672): thường (trái) + đang chọn (phải)
+    oc = cutout('octa_ai')
+    for name, (x0, x1) in (('nav', (0, 396)), ('nav_on', (396, 793))):
+        arr = oc[:, x0:x1].copy()
+        lab, n = ndimage.label(arr[..., 3] > 24)
+        big = np.argmax(ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))) + 1
+        keepm = ndimage.binary_dilation(lab == big, iterations=4)
+        a = np.where(keepm, arr[..., 3], 0)
+        inner = ndimage.binary_erosion(ndimage.binary_fill_holes(a > 128), iterations=3)
+        hole = inner & (a < 250)
+        if hole.any():                                                  # lòng nút bị mặt nạ ăn (quầng sáng) → lấy lại màu gốc của ảnh mẫu
+            src = np.array(Image.open(os.path.join(REF, 'octa_ai.webp')).convert('RGB'))[:, x0:x1]
+            arr[..., :3] = np.where(hole[..., None], src, arr[..., :3])
+        a = np.where(inner, 255, a)                                     # lòng nút đặc
+        arr[..., 3] = a
+        im = Image.fromarray(arr, 'RGBA')
+        im.crop(im.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()).save(os.path.join(UI, f'k_{name}.png'))
     kit = cutout('uikit_ai')
     wipe_mark(kit, (1880, 1790, 2000, 2000))
     for name, box in KIT.items():
@@ -120,8 +156,8 @@ def main():
         out[S:n - S, :S] = P[my:my + 1, :S]; out[S:n - S, n - S:] = P[my:my + 1, w - S:]
         Image.fromarray(out, 'RGBA').save(os.path.join(UI, dst + '.png'))
     # bảng xem trước
-    pv = Image.new('RGBA', (128 * 8, 128 * 2), (26, 24, 40, 255))
-    for i, name in enumerate(ICONS.values()):
+    pv = Image.new('RGBA', (128 * 8, 128 * 3), (26, 24, 40, 255))
+    for i, name in enumerate(list(ICONS.values()) + list(ICONS2.values())):
         pv.alpha_composite(Image.open(os.path.join(UI, f'ic_{name}.png')), ((i % 8) * 128, (i // 8) * 128))
     pv.convert('RGB').save(os.path.join(HERE, 'out', 'icons_preview.png'))
 
