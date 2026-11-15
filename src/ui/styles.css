@@ -545,7 +545,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 
 /* ---------- Trang bị: màu phẩm ở viền + tên (không đổi màu món đồ) ---------- */
 .q-0 { --rc: #eef0f4; } .q-1 { --rc: #4fd06a; } .q-2 { --rc: #3f8cff; } .q-3 { --rc: #b45cff; } .q-4 { --rc: #ff9a2e; } .q-bb { --rc: #8fe4f8; } .q-dao { --rc: #ffd765; }
-.gi { image-rendering: pixelated; max-width: 100%; max-height: 50px; pointer-events: none; }
+.gi { max-width: 100%; max-height: 50px; pointer-events: none; }
 .it-tile, .eq-slot:not(.empty) { position: relative; }
 .it-tile::after, .eq-slot:not(.empty)::after, .big-frame::after, .mini-frame::after {
   content: ''; position: absolute; inset: -6px; border: 2px solid var(--rc); border-radius: 3px; pointer-events: none;
