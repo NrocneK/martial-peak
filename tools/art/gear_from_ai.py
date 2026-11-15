@@ -56,7 +56,7 @@ KEEP_POLY = {(5, 'wp_spear'): [(320, 4), (332, 14), (301, 70), (287, 94), (270, 
                                (30, 334), (8, 334), (8, 318), (206, 108), (218, 92), (226, 62), (262, 38)]}
 HEAD_OUTLINE = {(5, 'wp_spear'): 125}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
 # vẽ quầng sáng tròn mềm phía sau món đồ: (tâm x, y, bán kính, màu, độ đục tối đa)
-GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 40, (255, 240, 200), 245)}
+GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 54, (255, 240, 200), 245)}
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
