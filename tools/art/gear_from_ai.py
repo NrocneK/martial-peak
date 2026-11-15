@@ -56,7 +56,9 @@ KEEP_POLY = {(5, 'wp_spear'): [(320, 4), (332, 14), (301, 70), (287, 94), (270, 
                                (30, 334), (8, 334), (8, 318), (206, 108), (218, 92), (226, 62), (262, 38)]}
 HEAD_OUTLINE = {(5, 'wp_spear'): 125}                                 # vùng y < giá trị: chỉ giữ phần trong nét viền tối (bỏ quầng sáng)
 # vẽ quầng sáng tròn mềm phía sau món đồ: (tâm x, y, bán kính, màu, độ đục tối đa)
-GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 54, (255, 240, 200), 245)}
+GLOW_RADIAL = {(5, 'wp_spear'): (247, 92, 40, (255, 240, 200), 245)}
+# vòng sáng (hình nhẫn) phía sau món đồ: (tâm x, y, bán kính, độ dày nét, màu)
+GLOW_RING = {(5, 'wp_spear'): (247, 92, 58, 5, (255, 232, 170))}
 OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
@@ -256,6 +258,16 @@ def build(t, k, src, msk, box):
         ga_ = (ga * (1 - e)).astype(np.uint8)
         glow = np.dstack([np.full(d.shape + (3,), gc, np.uint8), ga_])
         rgba = np.array(Image.alpha_composite(Image.fromarray(glow, 'RGBA'), Image.fromarray(rgba, 'RGBA')))
+    if (t, k) in GLOW_RING:
+        gx, gy, gr, gw, gc = GLOW_RING[(t, k)]
+        yy, xx = np.mgrid[:rgba.shape[0], :rgba.shape[1]]
+        dist = np.abs(np.hypot(xx - gx, yy - gy) - gr)
+        core = np.clip(1 - dist / (gw / 2), 0, 1)                       # nét vòng sáng đặc
+        halo = np.exp(-(dist / (gw * 1.6)) ** 2) * 0.55                 # tỏa sáng mềm hai bên nét
+        a_ = np.clip(np.maximum(core, halo) * 255, 0, 255).astype(np.uint8)
+        col = np.where(core[..., None] > 0.5, np.array([255, 250, 230]), np.array(gc)).astype(np.uint8)
+        ring = np.dstack([col, a_])
+        rgba = np.array(Image.alpha_composite(Image.fromarray(ring, 'RGBA'), Image.fromarray(rgba, 'RGBA')))
     if (t, k) in PALE_ERASE:                                            # mảnh sáng vụn tách rời còn sót → bỏ
         al = np.ascontiguousarray(rgba[..., 3])
         n, lab, st, _ = cv2.connectedComponentsWithStats((al > 40).astype(np.uint8))
