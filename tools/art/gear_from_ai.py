@@ -21,7 +21,7 @@ G3 = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]   
 BOXES = {
     1: [(50, 0, 294, 250), (389, 7, 627, 256), (723, 0, 970, 249), (1041, 37, 1309, 236), (1391, 8, 1625, 247),
         (1697, 45, 1975, 228), (34, 280, 303, 489), (1380, 271, 1632, 492), (1753, 263, 1941, 482)],
-    2: [(25, 7, 240, 244), (280, 7, 489, 243), (774, 6, 988, 244), (1100, 60, 1240, 250), (278, 258, 492, 494),
+    2: [(25, 7, 240, 244), (280, 7, 489, 243), (774, 6, 988, 244), (1000, 0, 1260, 260), (278, 258, 492, 494),
         (1256, 290, 1489, 468), (1505, 258, 1742, 496), (774, 263, 984, 490), (1795, 8, 1943, 236)],
     3: [(29, 6, 336, 249), (381, 8, 685, 247), (715, 0, 998, 251), (28, 263, 353, 487), (384, 255, 684, 495),
         (1683, 32, 1989, 240), (1053, 264, 1332, 492), (1385, 255, 1660, 500), (1729, 256, 1938, 500)],
@@ -43,22 +43,24 @@ ERASE = {(3, 'wp_bow'): [[(55, 30), (125, 30), (125, 100), (55, 100)],
 # quầng sáng nhạt giữa các vòng dây ngoài mặt ngọc (tâm x, y, bán kính, độ sáng tối thiểu) → trong suốt
 GLOW_OUT = {(6, 'accessory'): (122, 125, 86, 195)}
 # chỉ giữ phần trong đa giác (toạ độ trong hộp): găng Linh lấy CHIẾC BÊN PHẢI của cặp (chiếc trái lỗi hai đầu đều là nắm tay)
-KEEP_POLY = {(2, 'wp_fist'): [(55, 15), (90, 5), (127, 25), (132, 57), (110, 90), (80, 110), (77, 150), (65, 182), (2, 177),
-                              (0, 130), (15, 105), (22, 80), (42, 62), (52, 40)]}
+KEEP_POLY = {}
+OUTLINE_ADD = {(4, 'wp_blade'): 150}                                      # lấy thêm phần nằm trong nét viền đen (lưỡi đao sáng bị bỏ)
 OUTLINE_ONLY = set()                                                  # chỉ giữ phần nằm trong nét viền đen
 # xoá điểm sáng nhạt trong đa giác (vòng sáng xoáy quanh găng Thánh), giữ nét viền & thân găng
 PALE_ERASE = {(5, 'wp_fist'): [[(0, 85), (85, 85), (75, 125), (50, 150), (25, 170), (0, 170)],
-                               [(308, 140), (333, 140), (333, 280), (258, 280), (258, 262), (263, 222), (268, 183), (305, 170)],
-                               [(281, 166), (302, 158), (302, 184), (281, 184)], [(252, 236), (264, 236), (264, 258), (252, 258)]]}
+                               [(252, 236), (333, 236), (333, 264), (252, 264)]]}
+# xoá điểm sáng nhạt nằm bên phải nét viền đen ngoài cùng của từng hàng (vòng sáng bên phải găng Thánh): (y0, y1, x tối thiểu)
+RIGHT_OF_OUTLINE = {(5, 'wp_fist'): (100, 337, 200)}
 PALE_GAPS = {(2, 'accessory')}                                        # khe sáng nhạt giữa các nút thắt → trong suốt
 CORD = {(2, 'wp_spear'), (3, 'wp_spear')}                             # nối lại sợi dây mảnh treo tua bị rembg bỏ
-MIRROR_PAIR = {(2, 'wp_fist'): (0.08, 180)}                            # (độ chồng của 2 chiếc, góc xoay để nắm tay hướng lên)
+MIRROR_PAIR = {}                            # (độ chồng của 2 chiếc, góc xoay để nắm tay hướng lên)
 LINES = {(3, 'wp_bow'): [((48, 179), (248, 31), (215, 240, 246), 3)],   # dây cung Tiên bị đứt chỗ mũi tên cũ
          (2, 'wp_bow'): [((158, 58), (46, 177), (105, 160, 105), 2)]}
+ROTATE = {(2, 'wp_fist'): 180}                                        # xoay cho nắm tay hướng lên như các bậc khác
 FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
 
-def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
+def cutout(crop, m, biggest=False, holes=False, flood_tol=0, solid_holes=False):
     """crop: BGR; m: mặt nạ rembg (0..1) cùng hộp. Độ đục = mặt nạ; vùng gần trắng kẹp trong món đồ (khe cung, lỗ ngọc bội)
     → trong suốt; gỡ nền trắng ở mép (F = a·C + (1−a)·255 → C) để không còn viền trắng"""
     a = np.clip((m - 0.1) / 0.8, 0, 1)
@@ -83,7 +85,7 @@ def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
         ring = cv2.dilate(comp.astype(np.uint8), k5).astype(bool) & ~comp
         wf = white[comp].mean()
         dark = (lum[ring] < 120).mean() if ring.any() else 0
-        bgish = wf > 0.75 and (dark > (0.25 if holes else 0.4) or (holes and st[i][4] > 60))
+        bgish = not solid_holes and wf > 0.75 and (dark > (0.25 if holes else 0.4) or (holes and st[i][4] > 60))
         if bgish: a[comp] = 0; bgm |= comp
         elif hole[comp].any() and not holes: a[comp] = np.maximum(a[comp], 1.0)
     if not holes:                                                       # mặt nạ mờ một nửa ở giữa món đồ (xén đen) → đặc hẳn
@@ -119,13 +121,59 @@ def cutout(crop, m, biggest=False, holes=False, flood_tol=0):
     return np.dstack([np.clip(c, 0, 255), a * 255]).astype(np.uint8)
 
 
+def piece(rgba, poly, M, size):
+    """cắt phần trong đa giác (toạ độ tuyệt đối trong ảnh mẫu, rgba bắt đầu từ 0,0) rồi biến đổi affine M sang khung size"""
+    m = np.zeros(rgba.shape[:2], np.uint8); cv2.fillPoly(m, [np.array(poly, np.int32)], 255)
+    m = cv2.GaussianBlur(m, (3, 3), 0)
+    pc = rgba.copy(); pc[..., 3] = (pc[..., 3].astype(int) * m // 255).astype(np.uint8)
+    return cv2.warpAffine(pc, M, size, flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0, 0))
+
+
+def under(top, bottom):
+    """top đè lên bottom (RGBA uint8)"""
+    return np.array(Image.alpha_composite(Image.fromarray(bottom, 'RGBA'), Image.fromarray(top, 'RGBA')))
+
+
+def linh_fist(src, msk):
+    """Găng Linh: cặp găng mẫu có chiếc trái lỗi (2 đầu đều là nắm tay). Sửa theo chú thích:
+       đầu dưới chiếc trái (1b) ← nắm tay 1a của chiếc găng đơn (thu nhỏ); đầu trên chiếc trái (2b) ← cổ găng 2a của chiếc phải"""
+    H, W = src.shape[:2]
+    full = cutout(src, msk)                                             # toàn ảnh, toạ độ tuyệt đối
+    base = full.copy()
+    al = np.ascontiguousarray(base[..., 3])
+    cv2.fillPoly(al, [np.array([(1050, 118), (1060, 90), (1080, 40), (1105, 8), (1160, 8), (1190, 20), (1192, 64), (1160, 67), (1151, 72),
+                                (1144, 100), (1138, 125), (1128, 140), (1118, 155), (1105, 175), (1100, 218), (1015, 218),
+                                (1008, 150)], np.int32)], 0)                                       # bỏ nguyên chiếc trái
+    base[..., 3] = al
+    T = np.float32([[1, 0, -80], [0, 1, -37]])                          # 2a (cổ găng + vòng đai chiếc phải) → chỗ chiếc trái
+    p2 = piece(full, [(1150, 72), (1180, 66), (1215, 83), (1234, 110), (1226, 136), (1197, 161), (1136, 143), (1143, 125),
+                      (1149, 100)], T, (W, H))
+    M = cv2.getRotationMatrix2D((115, 380), 13, 0.6)                    # 1a: nắm tay găng đơn (kèm vòng đai, nằm dưới đai 2a)
+    M[0, 2] += 1085 - 115; M[1, 2] += 118 - 380
+    p1 = piece(full, [(30, 380), (70, 345), (110, 345), (175, 380), (175, 430), (160, 470), (130, 495), (60, 495), (15, 460)],
+               M, (W, H))
+    out = under(base, under(p1, p2))[0:260, 1000:1260]                  # chiếc phải nằm trên các mảnh ghép
+    # viền tối 2px quanh hình ghép (mép trái cổ găng mới không có nét viền)
+    solid = (out[..., 3] > 128).astype(np.uint8)
+    ring = cv2.dilate(solid, np.ones((5, 5), np.uint8)).astype(bool) & ~solid.astype(bool)
+    out[ring] = (18, 32, 24, 255)
+    return out
+
+
 def build(t, k, src, msk, box):
     x0, y0, x1, y1 = box
-    rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0))
+    if (t, k) == (2, 'wp_fist'):
+        return linh_fist(src, msk)
+    rgba = cutout(src[y0:y1, x0:x1], msk[y0:y1, x0:x1], (t, k) in ONLY_BIGGEST, holes=k == 'wp_bow', flood_tol=FLOOD.get((t, k), 0),
+                  solid_holes=k in ('wp_sword', 'wp_blade'))
     crgb = src[y0:y1, x0:x1][..., ::-1].astype(float)
     al = np.ascontiguousarray(rgba[..., 3])
     if (t, k) in KEEP_POLY:
         km = np.zeros_like(al); cv2.fillPoly(km, [np.array(KEEP_POLY[(t, k)], np.int32)], 1); al = al * km
+    if (t, k) in OUTLINE_ADD:
+        dark = cv2.morphologyEx((crgb.mean(2) < OUTLINE_ADD[(t, k)]).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+        al = np.maximum(al, (ndimage.binary_fill_holes(dark) * 255).astype(np.uint8))
+        rgba[..., :3] = np.where((al > 0)[..., None] & (rgba[..., 3] < 250)[..., None], crgb, rgba[..., :3]).astype(np.uint8)
     if (t, k) in OUTLINE_ONLY:
         dark = cv2.morphologyEx((crgb.mean(2) < 110).astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
         inside = ndimage.binary_fill_holes(dark).astype(np.uint8)
@@ -136,6 +184,12 @@ def build(t, k, src, msk, box):
         pm = np.zeros_like(al)
         for poly in PALE_ERASE[(t, k)]: cv2.fillPoly(pm, [np.array(poly, np.int32)], 1)
         al[(pm == 1) & (crgb.min(2) > 150)] = 0
+    if (t, k) in RIGHT_OF_OUTLINE:
+        ya, yb, xm = RIGHT_OF_OUTLINE[(t, k)]
+        dk = crgb.mean(2) < 70
+        for y in range(ya, min(yb, al.shape[0])):
+            xs = np.nonzero(dk[y, xm:])[0]
+            if len(xs): al[y, xm + xs.max() + 1:] = 0
     if (t, k) in PALE_GAPS:
         pale = (crgb.min(2) > 175).astype(np.uint8)
         n, lab, st, _ = cv2.connectedComponentsWithStats(pale, connectivity=4)
@@ -189,6 +243,8 @@ def main():
             rgba = build(t, k, src, msk, (x0, y0, x1, y1))
             im = Image.fromarray(rgba, 'RGBA')
             im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+            if (t, k) in ROTATE:
+                im = im.rotate(ROTATE[(t, k)], expand=True)
             if (t, k) in MIRROR_PAIR:                                    # ghép đôi: chiếc găng đúng + bản lật gương của nó
                 ov, rot = MIRROR_PAIR[(t, k)]
                 im = im.rotate(rot, expand=True)
