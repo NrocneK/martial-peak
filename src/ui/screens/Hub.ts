@@ -414,12 +414,25 @@ export class Hub {
     const need = nextTierNeed(s.tier);
     const pk = P.packInfo();
     const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
-    return h('div', { class: 'realm-wrap' },
-      realmFigure(s.tier, 2),
-      h('div', { class: 'realm-info' },
+    const narrow = window.matchMedia('(max-width: 760px)').matches;
+    const base = TIERS[s.tier].cumTuVi;
+    const pct = need === null ? 100 : Math.max(0, Math.min(100, ((s.tuVi - base) / (need - base)) * 100));
+    // hạt linh khí bay lên quanh nhân vật (vị trí / nhịp cố định theo chỉ số để không nhảy khi vẽ lại)
+    const motes = Array.from({ length: 14 }, (_, i) => h('i', { class: 'rs-mote',
+      style: `--x:${(i * 37) % 100}%;--d:${4 + (i % 5) * 0.9}s;--t:${-(i * 0.73) % 6}s;--z:${1 + (i % 3)}` }));
+    return h('div', { class: `realm-stage rl-${realmLook(s.tier)}` },
+      h('div', { class: 'rs-sky' }), h('div', { class: 'rs-stars' }),
+      h('div', { class: 'rs-motes' }, ...motes),
+      h('div', { class: 'rs-head' },
         h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
         h('div', { class: 'dim', text: `Bậc ${s.tier} / ${MAX_TIER}` }),
-        h('p', { text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}: cần ${fmt(need)} tu vi (đang có ${fmt(s.tuVi)}).` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '') }),
+      ),
+      // vòng linh khí bám theo hình ngồi thiền: quầng sáng sau lưng + 2 vòng xoay quanh đài sen
+      h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow ? 1.5 : 2), h('i', { class: 'rs-ring r1' })),
+      h('div', { class: 'rs-panel' },
+        h('div', { class: 'rs-bar', title: `${pct.toFixed(0)}%` }, h('i', { style: { width: `${pct}%` } }),
+          h('span', { text: need === null ? 'Viên mãn' : `${fmt(s.tuVi)} / ${fmt(need)} tu vi` })),
+        h('p', { text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}.` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '') }),
         ...(P.daoToLocked() ? [h('p', { class: 'gold', text: `Ngưỡng Đạo Tổ còn bị phong ấn: phải đánh bại ${P.FINAL_BOSS_NAME} (màn 10 Hỗn Độn Thần Vực).` })] : []),
         h('div', { class: 'row' },
           s.tier >= MAX_TIER

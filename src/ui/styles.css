@@ -420,6 +420,63 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .stage-detail .hd { margin-bottom: 8px; }
 
 /* ---------- Tu Luyện ---------- */
+/* Tu Luyện · Cảnh Giới: sân khấu trời sao + vòng linh khí xoay + hạt sáng bay lên, màu theo bộ hình cảnh giới */
+.realm-stage { --c1: #8fd8ff; --c2: #16275e; --c3: #070c26; position: relative; overflow: hidden; isolation: isolate; border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 16px 14px; min-height: 100%; text-align: center;
+  border: 1px solid color-mix(in srgb, var(--c1) 35%, #34406f); }
+.realm-stage.rl-2 { --c1: #ffd77a; --c2: #2b2a5e; --c3: #0c0b26; }
+.realm-stage.rl-3 { --c1: #b896ff; --c2: #261a5c; --c3: #0a0722; }
+.realm-stage.rl-4 { --c1: #f0c8ff; --c2: #3a2160; --c3: #120a26; }
+.realm-stage.rl-5 { --c1: #ffc46b; --c2: #4a1f3a; --c3: #170818; }
+.realm-stage.rl-6 { --c1: #e8f2ff; --c2: #1f2a4a; --c3: #05070f; }
+.rs-sky, .rs-stars, .rs-motes { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.rs-sky { background: radial-gradient(ellipse 60% 45% at 50% 42%, color-mix(in srgb, var(--c1) 30%, transparent), transparent 70%),
+  radial-gradient(ellipse 50% 40% at 15% 15%, color-mix(in srgb, var(--c1) 12%, transparent), transparent 70%),
+  radial-gradient(ellipse 45% 35% at 88% 80%, color-mix(in srgb, var(--c1) 10%, transparent), transparent 70%),
+  linear-gradient(180deg, var(--c2), var(--c3)); }
+.rs-stars { background-image: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 28% 62%, #fff, transparent),
+  radial-gradient(1.5px 1.5px at 44% 9%, #fff, transparent), radial-gradient(1px 1px at 63% 33%, #fff, transparent),
+  radial-gradient(1.5px 1.5px at 81% 14%, #fff, transparent), radial-gradient(1px 1px at 92% 52%, #fff, transparent),
+  radial-gradient(1px 1px at 7% 78%, #fff, transparent), radial-gradient(1.5px 1.5px at 71% 88%, #fff, transparent),
+  radial-gradient(1px 1px at 36% 92%, #fff, transparent), radial-gradient(1px 1px at 55% 71%, #fff, transparent);
+  background-size: 340px 300px; opacity: 0.7; animation: rs-twinkle 4s ease-in-out infinite alternate; }
+@keyframes rs-twinkle { to { opacity: 0.35; } }
+/* vòng linh khí quanh đài sen + quầng sáng sau lưng (đặt theo khung hình ngồi thiền) */
+.rs-fig { position: relative; margin: 4px 0 0; --r: 230px; }
+.rs-fig > i { position: absolute; left: 50%; border-radius: 50%; pointer-events: none; translate: -50% -50%; }
+.rs-glow { top: 50%; width: calc(var(--r) * 1.2); height: calc(var(--r) * 1.2); z-index: -1;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c1) 48%, transparent), transparent 65%); animation: rs-pulse 3.2s ease-in-out infinite; }
+.rs-ring { top: 82%; width: var(--r); height: var(--r); scale: 1 0.3; }
+/* vòng tròn nét đứt xoay trong khung bị ép dẹt → các nét chạy vòng quanh như quỹ đạo */
+.rs-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px dashed var(--c1);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c1) 70%, transparent), inset 0 0 10px color-mix(in srgb, var(--c1) 45%, transparent);
+  animation: rs-spin 14s linear infinite; }
+/* vòng trước: chỉ nửa dưới (đè lên đài sen); vòng sau to hơn, sau lưng nhân vật */
+.rs-ring.r1 { clip-path: inset(50% -20px -20px -20px); }
+.rs-ring.r2 { z-index: -1; width: calc(var(--r) * 1.4); height: calc(var(--r) * 1.4); opacity: 0.7; }
+.rs-ring.r2::before { border-style: dotted; border-width: 4px; animation-duration: 22s; animation-direction: reverse; }
+@keyframes rs-spin { to { rotate: 360deg; } }
+@keyframes rs-pulse { 50% { opacity: 0.55; scale: 0.92; } }
+.rs-mote { position: absolute; left: var(--x); bottom: -10px; width: calc(2px * var(--z)); height: calc(2px * var(--z)); border-radius: 50%;
+  background: var(--c1); box-shadow: 0 0 6px var(--c1); opacity: 0; animation: rs-rise var(--d) linear var(--t) infinite; }
+@keyframes rs-rise { 10% { opacity: 0.9; } 80% { opacity: 0.6; } 100% { opacity: 0; transform: translate(12px, -420px); } }
+.rs-head .big-realm { margin: 0; text-shadow: 0 2px 0 #0a1030, 0 0 14px color-mix(in srgb, var(--c1) 60%, transparent); }
+.rs-fig { margin: 4px 0 0; }
+.rs-panel { width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 8px;
+  background: rgba(8, 12, 40, 0.62); border: 1px solid #b98a3266; backdrop-filter: blur(2px); }
+.rs-panel p { margin: 0; font-size: 14px; line-height: 1.45; }
+.rs-panel .row { justify-content: center; }
+.rs-panel .pack { width: 100%; align-items: center; margin-top: 2px; }
+.rs-bar { position: relative; width: 100%; height: 18px; border-radius: 9px; background: #0a1030; border: 1px solid #b98a32; overflow: hidden; }
+.rs-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #fff0b0, #f2b23e); box-shadow: 0 0 8px #ffd96a99; }
+.rs-bar span { position: relative; font-size: 12px; font-weight: 700; line-height: 16px; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+@media (max-width: 760px) {
+  .realm-stage { padding: 10px 8px; gap: 4px; }
+  .rs-fig { --r: 170px; }
+  .rs-panel { padding: 8px; }
+  .rs-panel p { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .rs-stars, .rs-ring::before, .rs-glow, .rs-mote { animation: none; } .rs-mote { display: none; } }
 .realm-wrap { display: flex; gap: 20px; align-items: center; justify-content: center; padding: 8px 0; }
 .realm-wrap .meditate { margin: 0; flex-shrink: 0; }
 .realm-info { flex: 1; min-width: 0; max-width: 560px; display: flex; flex-direction: column; gap: 6px; }
