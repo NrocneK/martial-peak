@@ -56,7 +56,11 @@ CORD = {(2, 'wp_spear'), (3, 'wp_spear')}                             # nối l�
 MIRROR_PAIR = {}                            # (độ chồng của 2 chiếc, góc xoay để nắm tay hướng lên)
 LINES = {(3, 'wp_bow'): [((48, 179), (248, 31), (215, 240, 246), 3)],   # dây cung Tiên bị đứt chỗ mũi tên cũ
          (2, 'wp_bow'): [((158, 58), (46, 177), (105, 160, 105), 2)]}
-ROTATE = {(2, 'wp_fist'): 180}                                        # xoay cho nắm tay hướng lên như các bậc khác
+ROTATE = {}
+# Đồng bộ góc: kiếm/đao/thương/cung xoay để đường nối 2 đầu xa nhất (mũi–chuôi, đầu cánh cung–đầu cánh cung) nghiêng đúng 45°
+AXIS45 = {'wp_sword', 'wp_blade', 'wp_spear', 'wp_bow'}
+# Găng: tách 2 chiếc, xoay mỗi chiếc thẳng đứng (nắm tay hướng lên), xếp cạnh nhau. Đạo: 2 chiếc chạm nhau → cắt theo đường này
+GLOVE_CUT = {6: [(167, 0), (167, 60), (150, 95), (120, 125), (102, 145), (100, 230)]}
 FLOOD = {(5, 'wp_sword'): 70, (5, 'wp_blade'): 60}                    # lưỡi trắng gần như nền
 
 
@@ -236,6 +240,57 @@ def build(t, k, src, msk, box):
     return rgba
 
 
+def tip_angle(a):
+    """góc (độ, trục y hướng lên) của đường nối 2 điểm xa nhau nhất trên hình, đo từ đầu dưới lên đầu trên"""
+    ys, xs = np.nonzero(a)
+    h = cv2.convexHull(np.stack([xs, ys], 1).astype(np.int32))[:, 0, :].astype(float)
+    d = ((h[:, None] - h[None]) ** 2).sum(2); i, j = np.unravel_index(d.argmax(), d.shape)
+    p, q = h[i], h[j]
+    if p[1] < q[1]: p, q = q, p
+    return np.degrees(np.arctan2(p[1] - q[1], q[0] - p[0]))
+
+
+def upright(g, flip=False):
+    """xoay 1 chiếc găng cho trục dài thẳng đứng (góc xoay nhỏ nhất, giữ nắm tay hướng lên); flip: xoay thêm 180°"""
+    n, lab, st, _ = cv2.connectedComponentsWithStats((g[..., 3] > 60).astype(np.uint8))
+    if n > 2:                                                           # chỉ giữ khối lớn nhất (bỏ vụn của chiếc kia)
+        big = 1 + np.argmax(st[1:, 4]); g = g * cv2.dilate((lab == big).astype(np.uint8), np.ones((3, 3), np.uint8))[..., None]
+    im = Image.fromarray(g, 'RGBA'); im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+    a = np.array(im)[..., 3] > 100
+    ys, xs = np.nonzero(a); ev, vec = np.linalg.eigh(np.cov(np.vstack([xs, -ys])))
+    ang = np.degrees(np.arctan2(vec[1, 1], vec[0, 1]))                  # hướng trục dài, y hướng lên
+    rot = (90 - ang + 90) % 180 - 90                                    # về [-90, 90)
+    im = im.rotate(rot + (180 if flip else 0), resample=Image.BICUBIC, expand=True)
+    return im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+
+
+def glove_pair(t, rgba):
+    if t == 2:                                                          # Linh: chiếc ghép (nắm tay + cổ găng) và bản lật gương
+        j = np.array(Image.open(os.path.join(REF, 'linh_glove_joined.png')).convert('RGBA'))
+        L, R = upright(j, flip=True), upright(j[:, ::-1].copy(), flip=True)
+    else:
+        al = rgba[..., 3]
+        if t in GLOVE_CUT:
+            h, w = al.shape; cut = GLOVE_CUT[t]
+            lm = np.zeros((h, w), np.uint8)
+            cv2.fillPoly(lm, [np.array([(0, 0)] + cut + [(0, h)], np.int32)], 1)
+            parts = [rgba * lm[..., None], rgba * (1 - lm)[..., None]]
+        else:
+            n, lab, st, _ = cv2.connectedComponentsWithStats((al > 60).astype(np.uint8))
+            ids = sorted(range(1, n), key=lambda i: -st[i][4])[:2]
+            ids.sort(key=lambda i: st[i][0])                            # trái → phải
+            parts = []
+            for i in ids:
+                mk = cv2.dilate((lab == i).astype(np.uint8), np.ones((3, 3), np.uint8))
+                parts.append(rgba * mk[..., None])
+        L, R = upright(parts[0].astype(np.uint8)), upright(parts[1].astype(np.uint8))
+    gap = int(max(L.width, R.width) * 0.08)
+    hh = max(L.height, R.height)
+    out = Image.new('RGBA', (L.width + gap + R.width, hh))
+    out.alpha_composite(L, (0, hh - L.height)); out.alpha_composite(R, (L.width + gap, hh - R.height))   # chân găng thẳng hàng
+    return np.array(out)
+
+
 def main():
     pv = Image.new('RGBA', (66 * 9, 66 * 6), (26, 24, 40, 255))
     for t, boxes in BOXES.items():
@@ -243,8 +298,17 @@ def main():
         msk = np.array(Image.open(os.path.join(REF, f'gear_t{t}_mask.png')).convert('L')).astype(float) / 255
         for k, (x0, y0, x1, y1) in zip(KEYS, boxes):
             rgba = build(t, k, src, msk, (x0, y0, x1, y1))
+            if k == 'wp_fist':
+                rgba = glove_pair(t, rgba)
             im = Image.fromarray(rgba, 'RGBA')
             im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+            if k in AXIS45:
+                im = im.rotate(45 - tip_angle(np.array(im)[..., 3] > 100), resample=Image.BICUBIC, expand=True)
+                im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 60 else 0).getbbox())
+            if k == 'wp_bow':                                            # cánh cung cùng một phía (dưới-phải), dây phía trên-trái
+                ys, xs = np.nonzero(np.array(im)[..., 3] > 100)
+                if ((xs - im.width / 2) + (ys - im.height / 2)).mean() < 0:
+                    im = im.transpose(Image.TRANSVERSE)                 # lật qua đường chéo 45° (giữ nguyên góc nghiêng)
             if (t, k) in ROTATE:
                 im = im.rotate(ROTATE[(t, k)], expand=True)
             if (t, k) in MIRROR_PAIR:                                    # ghép đôi: chiếc găng đúng + bản lật gương của nó

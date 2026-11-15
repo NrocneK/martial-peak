@@ -190,7 +190,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'he
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 18;
+export const GEAR_ART_V = 19;
 
 export interface BibaoDef {
   id: string;
