@@ -456,13 +456,21 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .rs-ring.r2 { z-index: -1; width: calc(var(--r) * 1.4); height: calc(var(--r) * 1.4); opacity: 0.7; }
 .rs-ring.r2::before { border-style: dotted; border-width: 4px; animation-duration: 22s; animation-direction: reverse; }
 @keyframes rs-spin { to { rotate: 360deg; } }
+/* chấm linh khí tụ vào người: xuất phát cách tâm (--dx, --dy) × bán kính, bay về đan điền (giữa thân, hơi thấp) */
+.rs-in { top: 58%; z-index: 2; width: 6px; height: 6px; background: #fff; box-shadow: 0 0 6px 2px var(--c1), 0 0 14px var(--c1);
+  opacity: 0; animation: rs-in var(--d) ease-in var(--t) infinite; }
+@keyframes rs-in {
+  0% { transform: translate(calc(var(--dx) * var(--r)), calc(var(--dy) * var(--r))) scale(1.2); opacity: 0; }
+  20% { opacity: 1; }
+  85% { opacity: 0.9; }
+  100% { transform: translate(0, 0) scale(0.2); opacity: 0; } }
 @keyframes rs-pulse { 50% { opacity: 0.55; scale: 0.92; } }
 .rs-mote { position: absolute; left: var(--x); bottom: -10px; width: calc(2px * var(--z)); height: calc(2px * var(--z)); border-radius: 50%;
   background: var(--c1); box-shadow: 0 0 6px var(--c1); opacity: 0; animation: rs-rise var(--d) linear var(--t) infinite; }
 @keyframes rs-rise { 10% { opacity: 0.9; } 80% { opacity: 0.6; } 100% { opacity: 0; transform: translate(12px, -420px); } }
 .rs-head .big-realm { margin: 0; text-shadow: 0 2px 0 #0a1030, 0 0 14px color-mix(in srgb, var(--c1) 60%, transparent); }
 .rs-fig { margin: 4px 0 0; }
-.rs-panel { width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 8px;
+.rs-panel { position: relative; z-index: 3; width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 8px;
   background: rgba(8, 12, 40, 0.62); border: 1px solid #b98a3266; backdrop-filter: blur(2px); }
 .rs-panel p { margin: 0; font-size: 14px; line-height: 1.45; }
 .rs-panel .row { justify-content: center; }
@@ -476,7 +484,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
   .rs-panel { padding: 8px; }
   .rs-panel p { font-size: 13px; }
 }
-@media (prefers-reduced-motion: reduce) { .rs-stars, .rs-ring::before, .rs-glow, .rs-mote { animation: none; } .rs-mote { display: none; } }
+@media (prefers-reduced-motion: reduce) { .rs-stars, .rs-ring::before, .rs-glow, .rs-mote, .rs-in { animation: none; } .rs-mote, .rs-in { display: none; } }
 .realm-wrap { display: flex; gap: 20px; align-items: center; justify-content: center; padding: 8px 0; }
 .realm-wrap .meditate { margin: 0; flex-shrink: 0; }
 .realm-info { flex: 1; min-width: 0; max-width: 560px; display: flex; flex-direction: column; gap: 6px; }
