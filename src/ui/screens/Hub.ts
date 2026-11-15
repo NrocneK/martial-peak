@@ -423,10 +423,7 @@ export class Hub {
     return h('div', { class: `realm-stage rl-${realmLook(s.tier)}` },
       h('div', { class: 'rs-sky' }), h('div', { class: 'rs-stars' }),
       h('div', { class: 'rs-motes' }, ...motes),
-      h('div', { class: 'rs-head' },
-        h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) }),
-        h('div', { class: 'dim', text: `Bậc ${s.tier} / ${MAX_TIER}` }),
-      ),
+      h('div', { class: 'rs-head' }, h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) })),
       // vòng linh khí bám theo hình ngồi thiền: quầng sáng sau lưng + 2 vòng xoay quanh đài sen
       h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow ? 1.5 : 2), h('i', { class: 'rs-ring r1' })),
       h('div', { class: 'rs-panel' },
