@@ -352,6 +352,7 @@ def glove_pair(t, rgba):
 
 def main():
     pv = Image.new('RGBA', (66 * 9, 66 * 6), (26, 24, 40, 255))
+    os.makedirs(os.path.join(GEAR, 'hd'), exist_ok=True)
     robe_src = cv2.imread(os.path.join(REF, 'robes_ai.png'))
     robe_msk = np.array(Image.open(os.path.join(REF, 'robes_mask.png')).convert('L')).astype(float) / 255
     for t, boxes in BOXES.items():
@@ -383,6 +384,13 @@ def main():
                 pair.alpha_composite(im.transpose(Image.FLIP_LEFT_RIGHT), (pair.width - im.width, 0))
                 pair.alpha_composite(im, (0, 0))
                 im = pair
+            # bản nét (HD 264×264, cạnh dài 256) cho vũ khí phóng to cạnh nhân vật (Hành Trang); cùng bố cục với bản 66×66
+            sh = 256 / max(im.size)
+            hd_im = im.resize((max(1, round(im.width * sh)), max(1, round(im.height * sh))), Image.LANCZOS)
+            hd = Image.new('RGBA', (264, 264))
+            hd.alpha_composite(hd_im, ((264 - hd_im.width) // 2, (264 - hd_im.height) // 2))
+            if k.startswith('wp_'):
+                hd.save(os.path.join(GEAR, 'hd', f'{k}_{t - 1}.png'), optimize=True)
             s = 64 / max(im.size)
             im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
             out = Image.new('RGBA', (66, 66))

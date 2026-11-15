@@ -120,6 +120,10 @@ export function itemIcon(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 't
   if (it.slot === 'bibao') return `/gear/${it.bibaoId}.png?v=${GEAR_ART_V}`;
   return `/gear/${gearKey(it)}_${it.tier}.png?v=${GEAR_ART_V}`;
 }
+/** Bản nét 264×264 của icon vũ khí (public/gear/hd) — dùng khi phóng to cạnh nhân vật; cùng bố cục với bản 66×66 */
+export function weaponIconHd(it: Pick<ItemInst, 'slot' | 'weaponId' | 'bibaoId' | 'tier'>): string {
+  return `/gear/hd/${gearKey(it)}_${it.tier}.png?v=${GEAR_ART_V}`;
+}
 /**
  * CÁCH CẦM vũ khí trên nhân vật (Hành Trang). Sprite nhân vật là hero_full 58x106 (nhìn xéo sang trái).
  * Hình cầm tay ({weaponId}_held_{tier}.png, vẽ trong tools/art/gear.px.js) là bản đơn giản của hình ô đồ,
@@ -190,7 +194,7 @@ export function weaponHoldSrc(it: Pick<ItemInst, 'weaponId' | 'tier'>, img = 'he
 }
 
 /** Đổi số này khi vẽ lại hình trang bị để trình duyệt tải bản mới */
-export const GEAR_ART_V = 29;
+export const GEAR_ART_V = 30;
 
 export interface BibaoDef {
   id: string;

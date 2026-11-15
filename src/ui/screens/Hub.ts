@@ -1,4 +1,4 @@
-import { bar, h, heroAvatar, openModal, realmFigure } from '../dom';
+import { bar, h, heroAvatar, openModal, pic, realmFigure } from '../dom';
 import { skillIconStyle } from '../../config/assets';
 import { RUN } from '../../config/balance';
 import { fmt, fmtTime } from '../../utils/format';
@@ -6,7 +6,7 @@ import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../con
 import { MAX_TIER, TIERS, nextTierNeed, realmLook, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { PASSIVES, REALM_SKILLS, WEAPON_IDS, WEAPON_SKILLS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
-import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, itemColor, itemIcon, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, itemColor, itemIcon, weaponIconHd, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -33,7 +33,7 @@ const slotIcon = (slot: SlotId): string => SLOT_ICON[slot];
 /** Lớp viền theo phẩm: q-0..q-4 (Hạ..Thượng Cổ), q-dao (thất thải), q-bb (bí bảo) */
 const qClass = (it: ItemInst): string => (it.slot === 'bibao' ? 'q-bb' : it.tier >= DAO_TIER ? 'q-dao' : 'q-' + it.quality);
 /** Hình món đồ (public/gear) */
-const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => h('img', { src: itemIcon(it), alt: '', class: cls, draggable: 'false' });
+const gearImg = (it: ItemInst, cls = 'gi'): HTMLElement => pic(itemIcon(it), { class: cls });
 
 /**
  * Ảnh nền tông môn có 2 bản (dọc / ngang, chọn bằng CSS theo tỉ lệ màn hình), lấy nguyên từ ảnh mẫu
@@ -600,19 +600,18 @@ export class Hub {
       for (const [k, [hx], dx] of [[0, l, -off], [1, r, off]] as const) {
         kids.push(h('div', { class: 'wpn-float glove-float', title: itemName(wpn), style: `left:${(hx + dx - gw / 2) * scale}px;top:${(gy - gh / 2) * scale}px;` +
           `width:${gw * scale}px;height:${gh * scale}px` },
-          h('div', { class: 'glove-half', style: `width:${gw * scale}px;height:${gh * scale}px;background-image:url('${itemIcon(wpn)}');` +
-            `background-size:${gh * scale}px ${gh * scale}px;background-position:${-k * gw * scale}px 0` })));
+          pic(weaponIconHd(wpn), { class: 'glove-half', style: `width:${gw * scale}px;height:${gh * scale}px` }, [k * 0.5, 0, 0.5, 1], 264)));
       }
     } else if (wpn) {
       const id = wpn.weaponId ?? '';
       const diag = WEAPON_DIAG[id];
       const sz = diag ? Math.round(hd ? Math.hypot(hd.w, hd.h) * 0.7 : 60) : 34;
       const tf = diag ? (WEAPON_MIRROR[id] ? 'scaleX(-1) ' : '') + 'rotate(-45deg)' : '';
-      const inner = h('img', { class: 'wpn-icon', src: itemIcon(wpn), alt: '', draggable: 'false',
-        style: `width:${sz * scale}px;height:${sz * scale}px` + (tf ? `;transform:${tf}` : '') });
+      const inner = pic(weaponIconHd(wpn), { class: 'wpn-icon',
+        style: `width:${sz * scale}px;height:${sz * scale}px` + (tf ? `;transform:${tf}` : '') }, [0, 0, 1, 1], 264);
       kids.push(h('div', { class: 'wpn-float', title: itemName(wpn), style: `left:${(12 - sz / 2) * scale}px;top:${(60 - sz / 2) * scale}px;width:${sz * scale}px;height:${sz * scale}px` }, inner));
     }
-    if (bb) kids.push(h('img', { class: 'bb-float bb-right', src: itemIcon(bb), alt: '', draggable: 'false', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px` }));
+    if (bb) kids.push(pic(itemIcon(bb), { class: 'bb-float bb-right', title: itemName(bb), style: `width:${34 * Math.max(1, scale - 1)}px;height:${34 * Math.max(1, scale - 1)}px` }));
     return h('div', { class: 'figure look', style: `--s:${scale}`, role: 'img', 'aria-label': 'Cố Trường Ca' }, ...kids);
   }
 

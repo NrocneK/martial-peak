@@ -25,6 +25,31 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props | 
   return el;
 }
 
+/**
+ * Hình món đồ vẽ trong <svg><image> thay vì <img>: trình duyệt điện thoại bật "chế độ tối tự động"
+ * (Chrome Android / trình duyệt dựa trên Chromium) tự ĐẢO MÀU các <img> / ảnh nền nhỏ trông như icon
+ * (vd cung gỗ nâu sẫm thành cung trắng), nhưng không đụng tới ảnh trong SVG.
+ * `vb` = vùng cắt theo tỉ lệ ảnh [x, y, w, h] (0..1), mặc định cả ảnh. `px` = cỡ ảnh gốc (vuông): toạ độ SVG theo điểm ảnh thật
+ * (toạ độ quá nhỏ kiểu 1×1 khiến trình duyệt vẫn coi là icon nhỏ và đảo màu).
+ */
+export function pic(src: string, props: { class?: string; style?: string; title?: string } = {}, vb: [number, number, number, number] = [0, 0, 1, 1], px = 66): HTMLElement {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', vb.map((v) => v * px).join(' '));
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  if (props.class) svg.setAttribute('class', props.class);
+  if (props.style) svg.setAttribute('style', props.style);
+  if (props.title) { const t = document.createElementNS(NS, 'title'); t.textContent = props.title; svg.append(t); }
+  const im = document.createElementNS(NS, 'image');
+  im.setAttribute('href', src);
+  im.setAttribute('width', String(px));
+  im.setAttribute('height', String(px));
+  im.setAttribute('preserveAspectRatio', 'none');
+  svg.append(im);
+  return svg as unknown as HTMLElement;
+}
+
 export function clear(el: HTMLElement): void {
   while (el.firstChild) el.removeChild(el.firstChild);
 }
