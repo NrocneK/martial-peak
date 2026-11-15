@@ -27,6 +27,11 @@ BG = {
                (230, 635, 290, 910), (18, 615, 60, 700), (402, 440, 424, 575), (1520, 350, 1550, 470)],
         qi_skip=[(0, 0, 2000, 235), (860, 770, 1150, 970)],             # trời (viền mây, vầng trăng) + cổng truyền tống (đã có xoáy riêng)
     ),
+    'bg_lobby_tall': dict(
+        islands=[(408, 0, 522, 114), (478, 140, 582, 268), (576, 290, 610, 338)],
+        falls=[(212, 408, 252, 500), (198, 500, 242, 555), (252, 500, 282, 580), (448, 500, 502, 640), (528, 505, 562, 600), (44, 385, 78, 455)],
+        qi_skip=None,                                                   # bản dọc không có suối linh khí (chỉ cổng truyền tống)
+    ),
 }
 
 
@@ -102,17 +107,24 @@ def main():
         for x0, y0, x1, y1 in cfg['falls']:
             fall[y0:y1, x0:x1] = water[y0:y1, x0:x1] * 255
         fall = cv2.GaussianBlur(fall, (0, 0), 0.7)
-        qi = ((g > 190) & (b > 215) & (r < 150) & (g - r > 70)).astype(np.uint8) * 255
-        for x0, y0, x1, y1 in cfg['qi_skip'] + cfg['falls']:
-            qi[y0:y1, x0:x1] = 0
-        k, lab, st, _ = cv2.connectedComponentsWithStats(qi)                # bỏ đốm lẻ (< 12 điểm ảnh)
-        qi = np.where(np.isin(lab, [i for i in range(1, k) if st[i, cv2.CC_STAT_AREA] >= 12]), 255, 0).astype(np.uint8)
-        qi = cv2.GaussianBlur(cv2.dilate(qi, np.ones((3, 3), np.uint8)), (0, 0), 1.2)
-        for key, m in (('fall', fall), ('qi', qi)):
+        masks = [('fall', fall)]
+        if cfg['qi_skip'] is not None:
+            masks.append(('qi', qi_mask(b, g, r, cfg)))
+        for key, m in masks:
             x, y, w, h = save_mask(m, os.path.join(OUT, f'{name}_{key}.png'))
             ts.append(f"    {key}: {{ src: '{name}_{key}', x: {x}, y: {y}, w: {w}, h: {h} }},")
         ts.append('  },')
         print('\n'.join(ts))
+
+
+def qi_mask(b, g, r, cfg):
+    """Dòng suối linh khí: xanh ngọc đậm, sáng (bỏ trời, cổng truyền tống, thác)"""
+    qi = ((g > 190) & (b > 215) & (r < 150) & (g - r > 70)).astype(np.uint8) * 255
+    for x0, y0, x1, y1 in cfg['qi_skip'] + cfg['falls']:
+        qi[y0:y1, x0:x1] = 0
+    k, lab, st, _ = cv2.connectedComponentsWithStats(qi)                # bỏ đốm lẻ (< 12 điểm ảnh)
+    qi = np.where(np.isin(lab, [i for i in range(1, k) if st[i, cv2.CC_STAT_AREA] >= 12]), 255, 0).astype(np.uint8)
+    return cv2.GaussianBlur(cv2.dilate(qi, np.ones((3, 3), np.uint8)), (0, 0), 1.2)
 
 
 if __name__ == '__main__':

@@ -32,4 +32,13 @@ export const SECT_FX: Record<string, SectFxDef> = {
     qi: { src: 'bg_lobby_wide_qi', x: 153, y: 503, w: 1807, h: 621 },
     clouds: [[1075, -60, 760, 70], [1080, 1240, 2060, 70], [560, -40, 380, 45], [330, 1500, 2040, 50], [70, -60, 900, 55]],
   },
+  lobby_tall: { w: 632, h: 1124, posX: 0.5, posY: 1,
+    islands: [
+      { src: 'bg_lobby_tall_i0', x: 408, y: 0, w: 114, h: 114 },
+      { src: 'bg_lobby_tall_i1', x: 478, y: 140, w: 104, h: 128 },
+      { src: 'bg_lobby_tall_i2', x: 576, y: 290, w: 34, h: 48 },
+    ],
+    fall: { src: 'bg_lobby_tall_fall', x: 42, y: 383, w: 522, h: 259 },
+    clouds: [[150, -40, 260, 40], [470, -40, 220, 35], [700, 440, 680, 40], [1085, -40, 200, 40]],
+  },
 };
