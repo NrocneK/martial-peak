@@ -18,6 +18,45 @@ FLAME = {}  # đan lô mới (nền giấy, 3 chân đủ) không cần vá
 SHADOW = {'alchemy': (489, 32, 423, 501)}                             # y, x0, x1, y_end (toạ độ sau khi thu về 512)
 LEG = (166, 202, 380, 486)                                              # x0, x1, y0, y1 chân giữa
 
+# làm sạch mép dưới đế (toạ độ ảnh cuối): y0 = hàng bắt đầu xét, ax0..ax1 = khoảng vòm giữa 2 chân đế
+TRIM = {'alchemy': (470, 88, 368)}
+
+
+def trim_edge(px, y0, ax0, ax1, reach=8):
+    """Mép đế là nét viền tối: bỏ vụn bóng xám (sáng hơn viền) nằm ngoài nét viền.
+    · dưới vòm: mỗi cột, từ điểm ảnh thấp nhất đi ngược lên tới nét viền tối (tối đa `reach`) → xoá phần đã đi qua
+    · 2 mép ngoài: mỗi hàng, từ mép ngoài đi vào tới nét viền tối → xoá phần đã đi qua"""
+    lum = px[..., :3].astype(int).mean(-1)
+    on = px[..., 3] > 0
+    dark = (lum < 80) & (px[..., 3] > 150)
+    H, W = on.shape
+
+    def peel(line_on, line_dark, idx):
+        """idx: các chỉ số theo thứ tự đi từ ngoài vào; trả về chỉ số cần xoá"""
+        out, n = [], 0
+        for i in idx:
+            if not line_on[i]:
+                continue
+            if line_dark[i] or n >= reach:
+                return out if line_dark[i] else []
+            out.append(i)
+            n += 1
+        return []
+
+    for x in range(ax0, ax1):
+        for y in peel(on[:, x], dark[:, x], range(H - 1, y0 - 1, -1)):
+            px[y, x, 3] = 0
+    # vòm còn vụn bóng nâu sẫm (tối như viền): làm phẳng đáy vòm bằng trung vị cột, chỉ cắt bớt, rồi kẻ lại nét viền 1 điểm ảnh
+    bot = np.array([max([y for y in range(y0, H) if px[y, x, 3] > 0] or [y0]) for x in range(W)])
+    for x in range(ax0 + 12, ax1 - 14):
+        b = min(bot[x], int(np.median(bot[x - 5:x + 6])))
+        px[b + 1:, x, 3] = 0
+        px[b, x] = (36, 26, 18, 255)
+    for y in range(y0, H):
+        for x in peel(on[y], dark[y], range(0, W // 3)) + peel(on[y], dark[y], range(W - 1, 2 * W // 3, -1)):
+            px[y, x, 3] = 0
+    return px
+
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -74,6 +113,7 @@ def main():
             sub[y_end - y:] = 0
             im = Image.fromarray(px, 'RGBA')
             im = im.crop(im.getchannel('A').getbbox())
+            im = Image.fromarray(trim_edge(np.array(im), *TRIM[name]), 'RGBA')
         im.save(os.path.join(OUT, f'furnace_{name}.png'), optimize=True)
         print(name, im.size)
 
