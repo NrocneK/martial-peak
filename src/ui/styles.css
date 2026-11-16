@@ -200,7 +200,7 @@
 /* thanh điều hướng dưới */
 .lb-nav { position: relative; z-index: 2; display: flex; gap: 6px; height: var(--nav-h); padding: 6px 8px; padding-bottom: max(6px, env(safe-area-inset-bottom)); box-sizing: content-box !important;
   justify-content: center; background: linear-gradient(180deg, #1a2760, #0a1030); border-top: 2px solid #e8b24a; box-shadow: 0 -2px 0 #0a1030, 0 -6px 14px rgba(10, 20, 80, 0.35); flex-shrink: 0; }
-.nv { position: relative; flex: 1; min-width: 0; max-width: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; font: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.1; white-space: nowrap; text-shadow: 0 1px 2px #0a1030, 0 0 4px #0a1030; color: #e6eeff; cursor: pointer; text-shadow: 0 1px 0 #0a1030;
+.nv { position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 370 / 391; min-width: 0; /* vuông theo đúng tỉ lệ khung nút k_nav.png */ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; font: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.1; white-space: nowrap; text-shadow: 0 1px 2px #0a1030, 0 0 4px #0a1030; color: #e6eeff; cursor: pointer; text-shadow: 0 1px 0 #0a1030;
   background: url('/ui/k_nav.png?v=1') center / 100% 100% no-repeat; border: 0; padding: 6px 4px 7px; }
 .nv .ic { width: 34px; height: 34px; filter: grayscale(0.5) brightness(0.85); }
 .nv:hover { color: #fff; }
