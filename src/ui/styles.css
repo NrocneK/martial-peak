@@ -774,3 +774,99 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
   /* công thức: dòng nguyên liệu được xuống 2 dòng thay vì bị cắt */
   .bk-row.fx .bk-txt small { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; }
 }
+
+/* ---------- Chế Tạo: sân lò (lò rèn / đan lô) + hiệu ứng luyện + thẻ kết quả ---------- */
+.craft-stage { --fc: #ff9a3c; --fc2: #ffd36a; position: relative; flex: 1; min-height: 0; overflow: hidden; isolation: isolate; border-radius: 8px;
+  display: grid; grid-template-columns: minmax(200px, 270px) 1fr minmax(200px, 250px); grid-template-areas: 'side center act'; gap: 10px; padding: 12px;
+  background: radial-gradient(ellipse 45% 55% at 50% 55%, color-mix(in srgb, var(--fc) 26%, transparent), transparent 70%), linear-gradient(180deg, #1c1630, #0b0a18);
+  border: 1px solid color-mix(in srgb, var(--fc) 35%, #34406f); }
+.craft-stage.alchemy { --fc: #3fe6c0; --fc2: #b8fff0;
+  background: radial-gradient(ellipse 45% 55% at 50% 55%, color-mix(in srgb, var(--fc) 22%, transparent), transparent 70%), linear-gradient(180deg, #102428, #07110f); }
+.cf-side { grid-area: side; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.cf-center { grid-area: center; min-height: 0; display: grid; place-items: center; }
+.cf-act { grid-area: act; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.cf-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cf-opt, .cf-rec, .cf-w { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font: inherit; color: #e6eeff;
+  background: rgba(10, 16, 48, 0.6); border: 1px solid #4a557f; text-align: left; }
+.cf-opt .ic, .cf-rec .ic { width: 28px; height: 28px; flex-shrink: 0; }
+.cf-opt span { font-size: 13px; font-weight: 700; }
+.cf-opt.on, .cf-rec.on, .cf-w.on { border-color: var(--fc2); background: color-mix(in srgb, var(--fc) 22%, rgba(10, 16, 48, 0.8)); box-shadow: 0 0 10px color-mix(in srgb, var(--fc) 45%, transparent); }
+.cf-wpns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.cf-w { justify-content: center; padding: 3px; aspect-ratio: 1; }
+.cf-w .gi { width: 100%; height: 100%; max-height: none; }
+.cf-w b { font-size: 20px; color: var(--fc2); }
+.cf-recipes { display: flex; flex-direction: column; gap: 6px; }
+.cf-rec .bk-txt b { font-family: var(--serif); font-size: 14px; color: #ffe9a8; }
+.cf-rec .bk-txt small { color: #b9c3e6; white-space: normal; font-size: 11.5px; line-height: 1.25; }
+.cf-note { margin: 0; font-size: 12px; }
+.cf-costs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.cf-cost { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 14px; background: rgba(10, 16, 48, 0.7); border: 1px solid #4a557f; font-size: 14px; }
+.cf-cost .ic { width: 22px; height: 22px; }
+.cf-cost small { color: #9aa6cc; }
+.cf-cost.lack b { color: #ff6a6a; }
+.cf-go { font-size: 18px; padding: 10px 0; }
+/* lò + lửa + tia lửa */
+.cf-furnace { position: relative; height: 100%; max-height: 420px; aspect-ratio: 390 / 512; }
+.cf-furnace.alchemy { aspect-ratio: 366 / 512; }
+.cf-furnace > * { position: absolute; pointer-events: none; }
+.cf-img { inset: 0; width: 100%; height: 100%; z-index: 1; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)); }
+.cf-glow { left: 50%; top: 58%; width: 150%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; z-index: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--fc) 45%, transparent), transparent 62%); animation: cf-breathe 2.2s ease-in-out infinite; }
+/* lửa: vùng sáng nhấp nháy đặt đúng miệng lò (lò rèn) / dưới đáy (đan lô) */
+.cf-fire { z-index: 2; mix-blend-mode: screen; border-radius: 50% 50% 40% 40%;
+  background: radial-gradient(ellipse at 50% 75%, var(--fc2), color-mix(in srgb, var(--fc) 70%, transparent) 45%, transparent 72%); animation: cf-flicker 0.32s steps(2) infinite alternate; }
+.cf-furnace.forge .cf-fire { left: 36%; width: 28%; top: 47%; height: 34%; }
+.cf-furnace.alchemy .cf-fire { left: 38%; width: 24%; top: 76%; height: 18%; }
+.cf-sparks { z-index: 3; left: 30%; width: 40%; top: 10%; height: 62%; }
+.cf-furnace.alchemy .cf-sparks { top: -4%; height: 44%; }
+.cf-spark { position: absolute; left: var(--x); bottom: 0; width: 4px; height: 4px; border-radius: 50%; background: var(--fc2); box-shadow: 0 0 6px 2px var(--fc);
+  opacity: 0; animation: cf-rise var(--d) linear var(--t) infinite; }
+.cf-flash { inset: -10%; z-index: 4; border-radius: 50%; opacity: 0; background: radial-gradient(circle at 50% 60%, #fff, var(--fc2) 25%, color-mix(in srgb, var(--fc) 60%, transparent) 45%, transparent 68%); }
+@keyframes cf-breathe { 50% { opacity: 0.6; scale: 0.93; } }
+@keyframes cf-flicker { from { opacity: 0.75; transform: scaleY(1); } to { opacity: 1; transform: scaleY(1.08) translateY(-3%); } }
+@keyframes cf-rise { 10% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -140px); } }
+/* đang luyện: lò rung, lửa bùng, tia lửa dày, chớp sáng cuối */
+.craft-stage.working .cf-furnace { animation: cf-shake 0.12s linear infinite; }
+.craft-stage.working .cf-fire { animation-duration: 0.12s; scale: 1.25; }
+.craft-stage.working .cf-spark { animation-duration: 0.7s; }
+.craft-stage.working .cf-flash { animation: cf-flash 0.9s ease-in forwards; }
+.craft-stage.working .cf-go { opacity: 0.6; pointer-events: none; }
+@keyframes cf-shake { 25% { translate: -2px 1px; } 50% { translate: 2px -1px; } 75% { translate: -1px -1px; } }
+@keyframes cf-flash { 0%, 55% { opacity: 0; } 85% { opacity: 1; } 100% { opacity: 0.9; } }
+/* thẻ kết quả: vật phẩm bay lên từ lò, hào quang màu theo phẩm */
+.cf-result { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 6, 20, 0.55); animation: cf-fade 0.25s ease-out; }
+.cf-card { position: relative; width: min(300px, 92%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 14px 12px; text-align: center;
+  border-radius: 10px; background: linear-gradient(180deg, #1d2452, #0d1230); border: 2px solid var(--rc); box-shadow: 0 0 24px color-mix(in srgb, var(--rc) 60%, transparent);
+  animation: cf-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.cf-rays { position: absolute; left: 50%; top: 52px; width: 240px; height: 240px; translate: -50% -50%; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 55%, transparent) 0 10deg, transparent 10deg 30deg);
+  mask: radial-gradient(circle, #000 20%, transparent 68%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); animation: rs-spin 9s linear infinite; }
+.cf-it { position: relative; width: 76px; height: 76px; display: grid; place-items: center; animation: cf-fly 0.55s ease-out; }
+.cf-it .gi { width: 72px; height: 72px; max-height: none; }
+.cf-name { font-family: var(--serif); font-size: 18px; }
+.cf-stats { font-size: 13px; line-height: 1.45; color: #dfe6ff; }
+.cf-card .row { justify-content: center; margin-top: 4px; }
+.cf-pill { width: 76px; height: 76px; display: grid; place-items: center; animation: cf-fly 0.55s ease-out; }
+.cf-pill-ic { width: 64px; height: 64px; filter: drop-shadow(0 0 10px #7cf0d0); }
+@keyframes cf-fade { from { opacity: 0; } }
+@keyframes cf-pop { from { scale: 0.6; opacity: 0; } }
+@keyframes cf-fly { from { translate: 0 60px; scale: 0.4; opacity: 0; } }
+@media (max-width: 760px) {
+  .craft-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'side' 'center' 'act'; gap: 6px; padding: 8px; }
+  .cf-tabs { grid-template-columns: repeat(4, 1fr); }
+  .cf-opt { flex-direction: column; gap: 2px; padding: 4px 2px; text-align: center; }
+  .cf-opt span { font-size: 11px; }
+  .cf-wpns { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .cf-note { display: none; }
+  .cf-recipes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .cf-rec { min-width: 0; }
+  .cf-rec .bk-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cf-rec { padding: 4px 6px; }
+  .cf-rec .ic { width: 24px; height: 24px; }
+  .cf-rec .bk-txt b { font-size: 12.5px; }
+  .cf-rec .bk-txt small { font-size: 10.5px; }
+  .cf-act { gap: 6px; }
+  .cf-go { font-size: 16px; padding: 8px 0; }
+}
+@media (max-width: 360px) { .cf-rec .bk-txt small { display: none; } .cf-opt span { font-size: 10px; } }
+@media (prefers-reduced-motion: reduce) { .cf-glow, .cf-fire, .cf-spark, .cf-rays { animation: none; } .cf-spark { display: none; } }

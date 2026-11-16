@@ -70,6 +70,11 @@ export class Hub {
   private tab: Tab = 'home';
   private world = 1;
   private craftMode: 'forge' | 'alchemy' = 'forge';
+  /** Chế Tạo: loại đồ / loại vũ khí / đan đang chọn + kết quả lần luyện vừa xong (thẻ kết quả) */
+  private forgeSlot: SlotId = 'weapon';
+  private forgeWeapon = '';
+  private pillSel: string = PILLS[0].id;
+  private craftResult: { kind: 'item'; uid: number } | { kind: 'pill'; name: string; msg: string } | null = null;
   private cultMode: 'realm' | 'book' = 'realm';
   /** Sách Công Pháp (giữ trang đang mở qua các lần vẽ lại) */
   private readonly book = new SkillBook();
@@ -759,48 +764,125 @@ export class Hub {
 
   // ------------------------------------------------------------------ Chế Tạo (Luyện Khí + Luyện Đan)
   private vCraft(): HTMLElement {
-    return h('div', null,
-      this.segs(this.craftMode, [['forge', 'Luyện Khí', 'forge'], ['alchemy', 'Luyện Đan', 'alchemy']], (v) => { this.craftMode = v; }),
+    return h('div', { class: 'cult-fill' },
+      this.segs(this.craftMode, [['forge', 'Luyện Khí', 'forge'], ['alchemy', 'Luyện Đan', 'alchemy']], (v) => { this.craftMode = v; this.craftResult = null; }),
       this.craftMode === 'alchemy' ? this.vAlchemy() : this.vForge(),
     );
   }
 
-  private vAlchemy(): HTMLElement {
-    const grid = h('div', { class: 'craft-grid' });
-    for (const p of PILLS) {
-      const cnt = P.pillCount(p.id);
-      grid.append(
-        h('div', { class: 'card craft' },
-          h('div', { class: 'gold hd' }, ic('pill'), p.name + (p.cap ? ` (${cnt}/${p.cap})` : '')),
-          h('div', { class: 'dim', text: p.desc }),
-          h('div', { class: 'cost', text: `Cần: ${p.herb} thảo dược${p.core ? `, ${p.core} yêu đan` : ''}, ${fmt(P.pillLinhCost(p.id))} linh thạch` }),
-          h('button', { class: 'btn small primary', text: 'Luyện đan', onclick: () => this.act(P.craftPill(p.id)) }),
-        ),
-      );
+  /** Icon giao diện vẽ qua SVG (không bị "chế độ tối tự động" đảo màu) */
+  private icp(name: string, cls = 'ic'): HTMLElement {
+    return pic(`/ui/ic_${name}.png`, { class: cls }, [0, 0, 1, 1], 128);
+  }
+
+  /** Dòng nguyên liệu: đang có / cần (đỏ khi thiếu) */
+  private costChip(icon: string, have: number, need: number, title: string): HTMLElement {
+    return h('span', { class: 'cf-cost' + (have < need ? ' lack' : ''), title }, this.icp(icon), h('b', { text: fmt(have) }), h('small', { text: `/ ${fmt(need)}` }));
+  }
+
+  /**
+   * Sân lò (Luyện Khí / Luyện Đan): lò ở giữa có lửa + tia lửa động; bấm luyện → lò rung, bùng sáng (0,9 s)
+   * rồi hiện thẻ kết quả đè lên sân lò. `run` trả kết quả thật; thất bại thì chỉ báo lỗi, không chạy hiệu ứng.
+   */
+  private furnaceStage(kind: 'forge' | 'alchemy', side: HTMLElement, cost: HTMLElement, btnText: string, run: () => void): HTMLElement {
+    const sparks = Array.from({ length: 10 }, (_, i) => h('i', { class: 'cf-spark', style: `--x:${(i * 41) % 100}%;--d:${1.6 + (i % 4) * 0.35}s;--t:${-(i * 0.37).toFixed(2)}s` }));
+    const furnace = h('div', { class: `cf-furnace ${kind}` },
+      h('i', { class: 'cf-glow' }),
+      pic(`/ui/craft/furnace_${kind}.png?v=1`, { class: 'cf-img' }, [0, 0, 1, 1], kind === 'forge' ? [390, 512] : [366, 512]),
+      h('i', { class: 'cf-fire' }), h('div', { class: 'cf-sparks' }, ...sparks), h('i', { class: 'cf-flash' }));
+    const stage = h('div', { class: `craft-stage ${kind}` }, side, h('div', { class: 'cf-center' }, furnace), h('div', { class: 'cf-act' }, cost,
+      h('button', { class: 'btn primary cf-go', text: btnText, onclick: () => {
+        if (stage.classList.contains('working')) return;
+        run();
+      } })));
+    if (this.craftResult) stage.append(this.resultCard());
+    return stage;
+  }
+
+  /** Chạy hiệu ứng luyện trên sân lò đang hiện, xong thì lưu kết quả + vẽ lại (thẻ kết quả bật lên) */
+  private playCraft(result: NonNullable<Hub['craftResult']>): void {
+    const stage = this.body.querySelector<HTMLElement>('.craft-stage');
+    audio.play('cast');
+    if (!stage || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.craftResult = result; this.render(); return; }
+    stage.classList.add('working');
+    window.setTimeout(() => { audio.play(result.kind === 'item' ? 'levelup' : 'pickup'); this.craftResult = result; this.render(); }, 900);
+  }
+
+  private resultCard(): HTMLElement {
+    const r = this.craftResult!;
+    const again = (): void => { this.craftResult = null; this.render(); };
+    if (r.kind === 'item') {
+      const it = P.getSave().items.find((i) => i.uid === r.uid);
+      if (!it) { this.craftResult = null; return h('span'); }
+      const color = itemColor(it);
+      const equipped = P.getSave().equipped[it.slot] === it.uid;
+      return h('div', { class: 'cf-result', style: `--rc:${color}` },
+        h('div', { class: 'cf-card' },
+          h('i', { class: 'cf-rays' }),
+          h('div', { class: 'cf-it ' + qClass(it), style: `--rc:${color}` }, gearImg(it)),
+          h('b', { class: 'cf-name' + (it.tier >= DAO_TIER ? ' dao-text' : ''), style: { color }, text: itemName(it) }),
+          h('div', { class: 'dim', text: itemRankLabel(it) }),
+          h('div', { class: 'cf-stats' }, ...itemStatLines(it).slice(0, 4).map((l) => h('div', { text: l }))),
+          h('div', { class: 'row' },
+            equipped ? h('button', { class: 'btn small', text: 'Đã trang bị', disabled: 'disabled' })
+              : h('button', { class: 'btn small primary', text: 'Trang bị ngay', onclick: () => this.act(P.equip(it.uid)) }),
+            h('button', { class: 'btn small', text: 'Luyện tiếp', onclick: again }),
+          ),
+        ));
     }
-    return grid;
+    return h('div', { class: 'cf-result', style: '--rc:#7cf0d0' },
+      h('div', { class: 'cf-card' },
+        h('i', { class: 'cf-rays' }),
+        h('div', { class: 'cf-pill' }, this.icp('pill', 'cf-pill-ic')),
+        h('b', { class: 'cf-name', style: { color: '#9ff5dc' }, text: r.name }),
+        h('div', { class: 'cf-stats' }, h('div', { text: r.msg })),
+        h('div', { class: 'row' }, h('button', { class: 'btn small primary', text: 'Luyện tiếp', onclick: again })),
+      ));
   }
 
   private vForge(): HTMLElement {
+    const s = P.getSave();
     const fc = P.forgeCost();
-    const grid = h('div', { class: 'craft-grid' });
-    for (const slot of SLOT_IDS.filter((x) => x !== 'bibao')) {
-      const card = h('div', { class: 'card craft' },
-        h('div', { class: 'gold hd' }, ic(slotIcon(slot)), 'Chế tạo ' + SLOT_NAMES[slot]),
-        h('div', { class: 'cost', text: `Cần: ${fc.ore} khoáng thạch, ${fmt(fc.linh)} linh thạch` }),
-      );
-      const forge = (wid?: string): void => {
-        const r = P.forge(slot, wid);
-        this.act(r.ok && r.item ? { ok: true, msg: `Chế tạo được: ${itemName(r.item)} (${itemRankLabel(r.item)})` } : r);
-      };
-      if (slot === 'weapon') {
-        // Chọn loại vũ khí muốn chế tạo (hoặc ngẫu nhiên)
-        const sel = h('select', { class: 'btn small sel' }, h('option', { value: '', text: 'Loại: ngẫu nhiên' }), ...WEAPON_IDS.map((w) => h('option', { value: w, text: WEAPON_ITEM_NAMES[w] })));
-        card.append(h('div', { class: 'row' }, sel, h('button', { class: 'btn small primary', text: 'Luyện khí', onclick: () => forge((sel as HTMLSelectElement).value || undefined) })));
-      } else card.append(h('button', { class: 'btn small primary', text: 'Luyện khí', onclick: () => forge() }));
-      grid.append(card);
-    }
-    return h('div', null, grid, h('p', { class: 'dim note', text: 'Phẩm chất và thuộc tính phụ ngẫu nhiên; thế giới càng cao càng dễ ra đồ tốt. Bí bảo không chế tạo được: nhận khi vượt màn 5 và màn 10 mỗi thế giới lần đầu.' }));
+    const slots = SLOT_IDS.filter((x) => x !== 'bibao');
+    const pick = (slot: SlotId): void => { audio.play('click'); this.forgeSlot = slot; this.craftResult = null; this.render(); };
+    const side = h('div', { class: 'cf-side' },
+      h('div', { class: 'cf-tabs' }, ...slots.map((slot) => h('button', { class: 'cf-opt' + (slot === this.forgeSlot ? ' on' : ''), onclick: () => pick(slot) },
+        this.icp(slotIcon(slot)), h('span', { text: SLOT_NAMES[slot] })))),
+      this.forgeSlot === 'weapon'
+        ? h('div', { class: 'cf-wpns' },
+            h('button', { class: 'cf-w' + (this.forgeWeapon ? '' : ' on'), title: 'Ngẫu nhiên', onclick: () => { audio.play('click'); this.forgeWeapon = ''; this.render(); } }, h('b', { text: '?' })),
+            ...WEAPON_IDS.map((w) => h('button', { class: 'cf-w' + (this.forgeWeapon === w ? ' on' : ''), title: WEAPON_ITEM_NAMES[w], onclick: () => { audio.play('click'); this.forgeWeapon = w; this.render(); } },
+              pic(itemIcon({ slot: 'weapon', weaponId: w, tier: 0 }), { class: 'gi' }))))
+        : null,
+      h('p', { class: 'dim cf-note', text: 'Phẩm chất và thuộc tính phụ ngẫu nhiên; thế giới càng cao càng dễ ra đồ tốt.' }),
+    );
+    const cost = h('div', { class: 'cf-costs' }, this.costChip('ore', s.mats.ore, fc.ore, 'Khoáng thạch'), this.costChip('linh', s.linh, fc.linh, 'Linh thạch'));
+    return this.furnaceStage('forge', side, cost, 'Luyện khí', () => {
+      const r = P.forge(this.forgeSlot, this.forgeSlot === 'weapon' ? this.forgeWeapon || undefined : undefined);
+      if (!r.ok || !r.item) { this.act(r); return; }
+      this.playCraft({ kind: 'item', uid: r.item.uid });
+    });
+  }
+
+  private vAlchemy(): HTMLElement {
+    const s = P.getSave();
+    const def = PILLS.find((p) => p.id === this.pillSel) ?? PILLS[0];
+    const side = h('div', { class: 'cf-side' },
+      h('div', { class: 'cf-recipes' }, ...PILLS.map((p) => {
+        const cnt = P.pillCount(p.id);
+        return h('button', { class: 'cf-rec' + (p.id === def.id ? ' on' : ''), onclick: () => { audio.play('click'); this.pillSel = p.id; this.craftResult = null; this.render(); } },
+          this.icp('pill'), h('span', { class: 'bk-txt' }, h('b', { text: p.name + (p.cap ? ` (${cnt}/${p.cap})` : '') }), h('small', { text: p.desc })));
+      })),
+    );
+    const cost = h('div', { class: 'cf-costs' },
+      this.costChip('herb', s.mats.herb, def.herb, 'Thảo dược'),
+      ...(def.core ? [this.costChip('core', s.mats.core, def.core, 'Yêu đan')] : []),
+      this.costChip('linh', s.linh, P.pillLinhCost(def.id), 'Linh thạch'));
+    return this.furnaceStage('alchemy', side, cost, 'Luyện đan', () => {
+      const r = P.craftPill(def.id);
+      if (!r.ok) { this.act(r); return; }
+      this.playCraft({ kind: 'pill', name: def.name, msg: r.msg });
+    });
   }
 
   // ------------------------------------------------------------------ Nhiệm Vụ: Hằng Ngày / Chính Tuyến / Thành Tựu
