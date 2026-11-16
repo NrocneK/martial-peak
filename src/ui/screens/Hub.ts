@@ -410,7 +410,10 @@ export class Hub {
       }, h('i', { class: 'node' }), h('span', { class: 'jn-name', text: w.name }), h('span', { class: 'jn-sub', text: ok ? `${cleared}/${w.stages.length}` : 'khóa' })));
     }
     const w = worldById(this.world);
-    root.append(ws, h('div', { class: 'world-desc' }, h('h3', { text: w.name }), h('p', { text: w.desc })));
+    // đã lên Đạo Tổ: xem lại đoạn kết ở thế giới cuối (nơi đánh bại boss cuối)
+    const replay = w.id === WORLDS[WORLDS.length - 1].id && P.getSave().tier >= MAX_TIER
+      ? h('button', { class: 'btn small', text: 'Xem lại đoạn kết', onclick: () => { audio.play('click'); this.onEnding(); } }) : null;
+    root.append(ws, h('div', { class: 'world-desc' }, h('h3', { text: w.name }), h('p', { text: w.desc }), replay));
     if (!P.isWorldUnlocked(w.id)) {
       root.append(h('div', { class: 'card gate', text: '🔒 ' + P.worldGateText(w.id) }));
       return root;
@@ -519,7 +522,6 @@ export class Hub {
       h('div', { class: 'rs-room' }, fig),
       bag,
       h('div', { class: 'rs-foot' }, barw,
-        s.tier >= MAX_TIER ? h('button', { class: 'btn small', text: 'Xem lại đoạn kết', onclick: () => this.onEnding() }) : null,
         h('button', { class: 'btn small rs-help', text: '?', title: 'Cách tu luyện', 'aria-label': 'Cách tu luyện', onclick: help })),
     );
     new ResizeObserver(() => fitCultBg(stage, fig, bag)).observe(stage);

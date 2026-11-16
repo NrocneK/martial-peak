@@ -299,6 +299,7 @@
 .jn.on .node { background: var(--gold); border-color: #fff1c8; box-shadow: 0 0 14px #ffbf5eaa; }
 .jn.lock { opacity: 0.5; }
 .world-desc h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 24px; color: var(--text); }
+.world-desc .btn { margin: -8px 0 12px; }
 .world-desc p { margin: 0 0 16px; color: var(--dim); max-width: 62ch; line-height: 1.55; }
 .gate { color: var(--dim); }
 
