@@ -65,6 +65,19 @@ const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', c
  * Nội dung các mục KHÔNG cuộn dọc: danh sách dài chia trang (◀ 1/3 ▶), số ô mỗi trang tự tính theo
  * chiều cao màn hình; chi tiết vật phẩm / kỹ năng / màn mở trong bảng nổi.
  */
+/** Nền sân lò (ảnh 1376×768): phủ kín sân lò như `cover`, nhưng kéo dọc sao cho mặt sàn (`floor` = tỉ lệ chiều cao ảnh)
+ * nằm đúng dưới đáy lò → lò đứng trên sàn ở mọi cỡ màn hình. Lớp 1 = dải tối 2 bên (100%), lớp 2 = ảnh. */
+const CRAFT_BG = { w: 1376, h: 768, floor: { forge: 0.8, alchemy: 0.86 } };
+function fitCraftBg(stage: HTMLElement, furnace: HTMLElement, kind: 'forge' | 'alchemy'): void {
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  if (!sw || !sh) return;
+  const F = CRAFT_BG.floor[kind], fy = furnace.offsetTop + furnace.offsetHeight;
+  const k = Math.max(sw / CRAFT_BG.w, sh / CRAFT_BG.h, fy / (F * CRAFT_BG.h), (sh - fy) / ((1 - F) * CRAFT_BG.h));
+  const w = CRAFT_BG.w * k, hh = CRAFT_BG.h * k;
+  stage.style.backgroundSize = `100% 100%, ${w.toFixed(1)}px ${hh.toFixed(1)}px`;
+  stage.style.backgroundPosition = `0 0, ${((sw - w) / 2).toFixed(1)}px ${(fy - F * hh).toFixed(1)}px`;
+}
+
 export class Hub {
   readonly root = h('div', { class: 'screen hub' });
   private tab: Tab = 'home';
@@ -799,6 +812,7 @@ export class Hub {
         run();
       } })));
     if (this.craftResult) stage.append(this.resultCard());
+    new ResizeObserver(() => fitCraftBg(stage, furnace, kind)).observe(stage);
     return stage;
   }
 

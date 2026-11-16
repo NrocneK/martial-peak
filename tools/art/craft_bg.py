@@ -15,7 +15,7 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craf
 STAR = {'forge': (1222, 618, 1282, 680), 'alchemy': (1222, 618, 1288, 680)}
 
 # đan phòng: ảnh AI tự làm tối 2 dải bên (mép cắt thẳng ở x0 / x1) → làm sáng dần từ mép ảnh tới đường cắt cho liền mạch
-SEAM = {'alchemy': (258, 1118)}
+SEAM = {'alchemy': (301, 1075)}
 
 
 def unseam(img, x0, x1):
