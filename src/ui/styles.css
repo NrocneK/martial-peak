@@ -778,10 +778,11 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* ---------- Chế Tạo: sân lò (lò rèn / đan lô) + hiệu ứng luyện + thẻ kết quả ---------- */
 .craft-stage { --fc: #ff9a3c; --fc2: #ffd36a; position: relative; flex: 1; min-height: 0; overflow: hidden; isolation: isolate; border-radius: 8px;
   display: grid; grid-template-columns: minmax(200px, 270px) 1fr minmax(200px, 250px); grid-template-areas: 'side center act'; gap: 10px; padding: 12px;
-  background: radial-gradient(ellipse 45% 55% at 50% 55%, color-mix(in srgb, var(--fc) 26%, transparent), transparent 70%), linear-gradient(180deg, #1c1630, #0b0a18);
+  /* nền ảnh (tools/art/craft_bg.py) + 2 bên tối dần cho bảng chọn / nút dễ đọc */
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 32%, transparent 68%, rgba(0, 0, 0, 0.55)), url('/ui/craft/bg_forge.jpg?v=1') center 70% / cover, #0b0a18;
   border: 1px solid color-mix(in srgb, var(--fc) 35%, #34406f); }
 .craft-stage.alchemy { --fc: #3fe6c0; --fc2: #b8fff0;
-  background: radial-gradient(ellipse 45% 55% at 50% 55%, color-mix(in srgb, var(--fc) 22%, transparent), transparent 70%), linear-gradient(180deg, #102428, #07110f); }
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 32%, transparent 68%, rgba(0, 0, 0, 0.55)), url('/ui/craft/bg_alchemy.jpg?v=2') center 70% / cover, #07110f; }
 .cf-side { grid-area: side; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .cf-center { grid-area: center; min-height: 0; display: grid; place-items: center; }
 .cf-act { grid-area: act; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
