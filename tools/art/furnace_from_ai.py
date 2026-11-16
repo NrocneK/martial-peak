@@ -13,6 +13,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REF = os.path.join(HERE, 'ref')
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craft')
 
+# đan lô: bỏ đốm lửa xanh + ống nhỏ dưới đáy (nằm giữa 2 chân, tách rời thân lò)
+ERASE = {'alchemy': [(140, 382, 226, 500)]}
+
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -39,6 +42,11 @@ def main():
         im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox())
         s = 512 / max(im.size)
         im = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
+        if name in ERASE:                                               # xoá chi tiết không dùng (toạ độ theo ảnh 512)
+            px = np.array(im)
+            for x0, y0, x1, y1 in ERASE[name]:
+                px[y0:y1, x0:x1, 3] = 0
+            im = Image.fromarray(px, 'RGBA')
         im.save(os.path.join(OUT, f'furnace_{name}.png'), optimize=True)
         print(name, im.size)
 

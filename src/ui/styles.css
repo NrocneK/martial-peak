@@ -816,7 +816,7 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .cf-fire { z-index: 2; mix-blend-mode: screen; border-radius: 50% 50% 40% 40%;
   background: radial-gradient(ellipse at 50% 75%, var(--fc2), color-mix(in srgb, var(--fc) 70%, transparent) 45%, transparent 72%); animation: cf-flicker 0.32s steps(2) infinite alternate; }
 .cf-furnace.forge .cf-fire { left: 36%; width: 28%; top: 47%; height: 34%; }
-.cf-furnace.alchemy .cf-fire { left: 38%; width: 24%; top: 76%; height: 18%; }
+.cf-furnace.alchemy .cf-fire { display: none; } /* đan lô không có lửa dưới đáy */
 .cf-sparks { z-index: 3; left: 30%; width: 40%; top: 10%; height: 62%; }
 .cf-furnace.alchemy .cf-sparks { top: -4%; height: 44%; }
 .cf-spark { position: absolute; left: var(--x); bottom: 0; width: 4px; height: 4px; border-radius: 50%; background: var(--fc2); box-shadow: 0 0 6px 2px var(--fc);
