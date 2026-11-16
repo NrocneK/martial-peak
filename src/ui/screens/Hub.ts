@@ -789,7 +789,7 @@ export class Hub {
     const burst = Array.from({ length: 16 }, (_, i) => h('i', { class: 'cf-bolt', style: `--a:${Math.round(i * 22.5 + (i % 2) * 9)}deg;--r:${110 + (i % 3) * 40}px;--dl:${0.15 + (i % 4) * 0.08}s` }));
     const furnace = h('div', { class: `cf-furnace ${kind}` },
       h('i', { class: 'cf-glow' }),
-      pic(`/ui/craft/furnace_${kind}.png?v=2`, { class: 'cf-img' }, [0, 0, 1, 1], kind === 'forge' ? [390, 512] : [366, 512]),
+      pic(`/ui/craft/furnace_${kind}.png?v=3`, { class: 'cf-img' }, [0, 0, 1, 1], kind === 'forge' ? [390, 512] : [366, 512]),
       h('i', { class: 'cf-fire' }), h('div', { class: 'cf-sparks' }, ...sparks),
       // lúc luyện: miệng lò (đan lô: lỗ thông hơi) rực sáng, tia lửa bắn tung ra 4 phía + 1 vòng sóng mỏng lan rộng rồi tan
       h('div', { class: 'cf-burst' }, h('i', { class: 'cf-core' }), h('i', { class: 'cf-wave' }), ...burst));

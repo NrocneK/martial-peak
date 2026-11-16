@@ -13,8 +13,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REF = os.path.join(HERE, 'ref')
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craft')
 
-# đan lô: bỏ đốm lửa xanh + ống nhỏ dưới đáy (nằm giữa 2 chân, tách rời thân lò)
-ERASE = {'alchemy': [(140, 382, 226, 500)]}
+# đan lô: bỏ đốm lửa xanh dưới đáy, GIỮ chân giữa (chân thứ 3 phía sau, lửa che mất đoạn giữa → nối lại)
+FLAME = {'alchemy': (140, 382, 226, 500)}
+LEG = (166, 202, 380, 486)                                              # x0, x1, y0, y1 chân giữa
 
 
 def main():
@@ -42,10 +43,24 @@ def main():
         im = im.crop(im.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox())
         s = 512 / max(im.size)
         im = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
-        if name in ERASE:                                               # xoá chi tiết không dùng (toạ độ theo ảnh 512)
+        if name in FLAME:
+            # xoá đốm lửa (vùng FLAME), rồi vẽ lại chân giữa bằng đồng (chân sau, tối hơn 2 chân trước), đầu chân bo tròn
             px = np.array(im)
-            for x0, y0, x1, y1 in ERASE[name]:
-                px[y0:y1, x0:x1, 3] = 0
+            x0, y0, x1, y1 = FLAME[name]
+            px[y0:y1, x0:x1, 3] = 0
+            lx0, lx1, ly0, ly1 = LEG
+            w = lx1 - lx0
+            ramp = [(38, 24, 14), (78, 50, 26), (104, 68, 36), (128, 86, 46), (150, 104, 58), (128, 86, 46), (104, 68, 36), (86, 56, 30), (66, 42, 22), (38, 24, 14)]
+            for x in range(lx0, lx1):
+                t = (x - lx0) / (w - 1)
+                edge = x - lx0 < 2 or lx1 - 1 - x < 2
+                col = (38, 24, 14) if edge else ramp[min(len(ramp) - 2, max(1, int(t * (len(ramp) - 1) + 0.5)))]
+                cx = abs(x - (lx0 + lx1 - 1) / 2) / (w / 2)                 # 0 giữa → 1 mép
+                bottom = ly1 - int(round(6 * (1 - (1 - cx * cx) ** 0.5)))   # đầu chân bo tròn
+                for y in range(ly0, bottom):
+                    shade = 0.82 + 0.18 * (y - ly0) / (ly1 - ly0)            # sát thân tối hơn (bóng của thân lò)
+                    c = (38, 24, 14) if y >= bottom - 2 else tuple(int(v * shade) for v in col)
+                    px[y, x] = (*c, 255)
             im = Image.fromarray(px, 'RGBA')
         im.save(os.path.join(OUT, f'furnace_{name}.png'), optimize=True)
         print(name, im.size)
