@@ -786,10 +786,13 @@ export class Hub {
    */
   private furnaceStage(kind: 'forge' | 'alchemy', side: HTMLElement, cost: HTMLElement, btnText: string, run: () => void): HTMLElement {
     const sparks = Array.from({ length: 10 }, (_, i) => h('i', { class: 'cf-spark', style: `--x:${(i * 41) % 100}%;--d:${1.6 + (i % 4) * 0.35}s;--t:${-(i * 0.37).toFixed(2)}s` }));
+    const burst = Array.from({ length: 16 }, (_, i) => h('i', { class: 'cf-bolt', style: `--a:${Math.round(i * 22.5 + (i % 2) * 9)}deg;--r:${110 + (i % 3) * 40}px;--dl:${0.15 + (i % 4) * 0.08}s` }));
     const furnace = h('div', { class: `cf-furnace ${kind}` },
       h('i', { class: 'cf-glow' }),
       pic(`/ui/craft/furnace_${kind}.png?v=1`, { class: 'cf-img' }, [0, 0, 1, 1], kind === 'forge' ? [390, 512] : [366, 512]),
-      h('i', { class: 'cf-fire' }), h('div', { class: 'cf-sparks' }, ...sparks), h('i', { class: 'cf-flash' }));
+      h('i', { class: 'cf-fire' }), h('div', { class: 'cf-sparks' }, ...sparks),
+      // lúc luyện: miệng lò (đan lô: lỗ thông hơi) rực sáng, tia lửa bắn tung ra 4 phía + 1 vòng sóng mỏng lan rộng rồi tan
+      h('div', { class: 'cf-burst' }, h('i', { class: 'cf-core' }), h('i', { class: 'cf-wave' }), ...burst));
     const stage = h('div', { class: `craft-stage ${kind}` }, side, h('div', { class: 'cf-center' }, furnace), h('div', { class: 'cf-act' }, cost,
       h('button', { class: 'btn primary cf-go', text: btnText, onclick: () => {
         if (stage.classList.contains('working')) return;
@@ -805,7 +808,7 @@ export class Hub {
     audio.play('cast');
     if (!stage || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.craftResult = result; this.render(); return; }
     stage.classList.add('working');
-    window.setTimeout(() => { audio.play(result.kind === 'item' ? 'levelup' : 'pickup'); this.craftResult = result; this.render(); }, 900);
+    window.setTimeout(() => { audio.play(result.kind === 'item' ? 'levelup' : 'pickup'); this.craftResult = result; this.render(); }, 1000);
   }
 
   private resultCard(): HTMLElement {

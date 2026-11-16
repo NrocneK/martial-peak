@@ -821,7 +821,15 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .cf-furnace.alchemy .cf-sparks { top: -4%; height: 44%; }
 .cf-spark { position: absolute; left: var(--x); bottom: 0; width: 4px; height: 4px; border-radius: 50%; background: var(--fc2); box-shadow: 0 0 6px 2px var(--fc);
   opacity: 0; animation: cf-rise var(--d) linear var(--t) infinite; }
-.cf-flash { inset: -10%; z-index: 4; border-radius: 50%; opacity: 0; background: radial-gradient(circle at 50% 60%, #fff, var(--fc2) 25%, color-mix(in srgb, var(--fc) 60%, transparent) 45%, transparent 68%); }
+/* điểm bùng: miệng lò rèn / lỗ thông hơi đan lô */
+.cf-burst { z-index: 4; left: 50%; top: 64%; width: 0; height: 0; }
+.cf-furnace.alchemy .cf-burst { top: 31%; }
+.cf-burst > i { position: absolute; left: 0; top: 0; opacity: 0; }
+.cf-core { width: 70px; height: 80px; translate: -50% -50%; border-radius: 50%; mix-blend-mode: screen;
+  background: radial-gradient(ellipse, #fff 0, var(--fc2) 30%, color-mix(in srgb, var(--fc) 50%, transparent) 55%, transparent 72%); }
+.cf-furnace.alchemy .cf-core { width: 110px; height: 50px; }
+.cf-wave { width: 60px; height: 60px; translate: -50% -50%; border-radius: 50%; border: 5px solid var(--fc2); box-shadow: 0 0 14px var(--fc), inset 0 0 10px var(--fc); }
+.cf-bolt { width: 6px; height: 20px; translate: -50% -50%; border-radius: 2px; background: linear-gradient(var(--fc2), #fff); box-shadow: 0 0 6px var(--fc); }
 @keyframes cf-breathe { 50% { opacity: 0.6; scale: 0.93; } }
 @keyframes cf-flicker { from { opacity: 0.75; transform: scaleY(1); } to { opacity: 1; transform: scaleY(1.08) translateY(-3%); } }
 @keyframes cf-rise { 10% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -140px); } }
@@ -829,10 +837,14 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .craft-stage.working .cf-furnace { animation: cf-shake 0.12s linear infinite; }
 .craft-stage.working .cf-fire { animation-duration: 0.12s; scale: 1.25; }
 .craft-stage.working .cf-spark { animation-duration: 0.7s; }
-.craft-stage.working .cf-flash { animation: cf-flash 0.9s ease-in forwards; }
+.craft-stage.working .cf-core { animation: cf-core 0.9s ease-in forwards; }
+.craft-stage.working .cf-wave { animation: cf-wave 0.6s ease-out 0.3s forwards; }
+.craft-stage.working .cf-bolt { animation: cf-bolt 0.5s ease-out var(--dl) forwards; }
 .craft-stage.working .cf-go { opacity: 0.6; pointer-events: none; }
 @keyframes cf-shake { 25% { translate: -2px 1px; } 50% { translate: 2px -1px; } 75% { translate: -1px -1px; } }
-@keyframes cf-flash { 0%, 55% { opacity: 0; } 85% { opacity: 1; } 100% { opacity: 0.9; } }
+@keyframes cf-core { 0% { opacity: 0.3; scale: 0.6; } 60% { opacity: 1; scale: 1; } 80% { opacity: 1; scale: 1.25; } 100% { opacity: 0.8; scale: 1.1; } }
+@keyframes cf-wave { 0% { opacity: 1; scale: 0.3; } 100% { opacity: 0; scale: 5; border-width: 2px; } }
+@keyframes cf-bolt { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))); } }
 /* thẻ kết quả: vật phẩm bay lên từ lò, hào quang màu theo phẩm */
 .cf-result { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 6, 20, 0.55); animation: cf-fade 0.25s ease-out; }
 .cf-card { position: relative; width: min(300px, 92%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 14px 12px; text-align: center;
