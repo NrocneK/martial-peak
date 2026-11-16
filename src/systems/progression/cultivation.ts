@@ -1,7 +1,7 @@
 // Tu luyện (cảnh giới, tu vi, đột phá, "cắn đá"), luyện đan, và kỹ năng chủ động mang theo.
 
 import { REALM_SKILLS as ACTIVES } from '../../config/skills';
-import { PILLS, type PillId } from '../../config/items';
+import { PILLS, PILL_GRADES, pillGradeRates, rollPillGrade, type PillId } from '../../config/items';
 import { MAX_TIER, TIERS, isPerfect, nextStep, nextTierNeed } from '../../config/realms';
 import { ALL_STAGES } from '../../config/worlds';
 import { data, fail, ok, save, type Result } from './save';
@@ -72,46 +72,75 @@ export function pillLinhCost(id: PillId): number {
   return Math.max(1, Math.ceil(def.linhFactor * nextStep(data.tier)));
 }
 
-/** đan tăng vĩnh viễn: số lần đã dùng; Tụ Khí Đan: số viên đang cất trong túi trữ vật */
-export function pillCount(id: PillId): number {
-  return data.pills[id];
+type CapPill = Exclude<PillId, 'tuvi'>;
+
+/** Số viên đan tăng vĩnh viễn đã dùng (Tụ Khí Đan: 0, không giới hạn) */
+export function pillUsedCount(id: PillId): number {
+  return id === 'tuvi' ? 0 : data.pillUsed[id];
 }
 
-/** Tu vi nhận được khi dùng 1 Tụ Khí Đan (tính theo cảnh giới LÚC DÙNG) */
-export function tuviPillGain(): number {
-  return Math.ceil(0.25 * nextStep(data.tier));
+/** Số viên đang cất trong túi trữ vật (`grade` bỏ trống = mọi phẩm) */
+export function pillStock(id: PillId, grade?: number): number {
+  const b = data.pillBag[id];
+  return grade === undefined ? b.reduce((a, x) => a + x, 0) : b[grade];
 }
 
-/** Dùng Tụ Khí Đan trong túi trữ vật */
-export function useTuviPill(count: number): Result {
-  const n = Math.min(count, data.pills.tuvi);
-  if (n <= 0) return fail('Trong túi không còn Tụ Khí Đan.');
-  const gain = tuviPillGain() * n;
-  data.pills.tuvi -= n;
-  data.tuVi += gain;
-  track('cultivate');
-  save();
-  return ok(`Dùng ${n} Tụ Khí Đan, nhận ${gain} tu vi.`);
+/** Đại cảnh giới hiện tại (0..16) — quyết định tỉ lệ phẩm đan */
+export function majorRealm(): number {
+  const groups: string[] = [];
+  for (const t of TIERS) if (!groups.includes(t.group)) groups.push(t.group);
+  return groups.indexOf(TIERS[data.tier].group);
 }
 
-export function craftPill(id: PillId): Result {
+export function pillRates(): number[] {
+  return pillGradeRates(majorRealm());
+}
+
+/** Tu vi nhận được khi dùng 1 Tụ Khí Đan phẩm `grade` (tính theo cảnh giới LÚC DÙNG) */
+export function tuviPillGain(grade: number): number {
+  return Math.ceil(0.25 * PILL_GRADES[grade].mul * nextStep(data.tier));
+}
+
+/** Luyện đan: ra phẩm ngẫu nhiên, cất vào túi trữ vật */
+export function craftPill(id: PillId): Result & { grade?: number } {
   const def = PILLS.find((p) => p.id === id)!;
-  if (def.cap > 0 && pillCount(id) >= def.cap) return fail('Đã đạt giới hạn sử dụng loại đan này.');
+  if (def.cap > 0 && pillUsedCount(id) + pillStock(id) >= def.cap) return fail('Số đã dùng và đang cất trong túi đã đủ giới hạn của loại đan này.');
   const linh = pillLinhCost(id);
   if (data.mats.herb < def.herb || data.mats.core < def.core) return fail('Không đủ nguyên liệu.');
   if (data.linh < linh) return fail('Không đủ linh thạch.');
   data.mats.herb -= def.herb;
   data.mats.core -= def.core;
   data.linh -= linh;
+  const grade = rollPillGrade(majorRealm());
+  data.pillBag[id][grade]++;
   track('alchemy');
-  if (id === 'tuvi') {
-    data.pills.tuvi++;
-    save();
-    return ok(`Luyện thành ${def.name}, đã cất vào túi trữ vật.`);
-  }
-  data.pills[id]++;
   save();
-  return ok(`Luyện thành ${def.name}. Hiệu quả tăng vĩnh viễn.`);
+  return { ...ok(`Luyện thành ${def.name} ${PILL_GRADES[grade].name} phẩm, đã cất vào túi trữ vật.`), grade };
+}
+
+/** Dùng `count` viên đan `id` phẩm `grade` trong túi trữ vật */
+export function usePill(id: PillId, grade: number, count: number): Result {
+  const def = PILLS.find((p) => p.id === id)!;
+  let n = Math.min(count, data.pillBag[id][grade]);
+  if (n <= 0) return fail('Trong túi không còn loại đan này.');
+  const gname = `${def.name} ${PILL_GRADES[grade].name} phẩm`;
+  if (id === 'tuvi') {
+    if (data.tier >= MAX_TIER) return fail('Đạo Tổ không cần tu vi nữa.');
+    const gain = tuviPillGain(grade) * n;
+    data.pillBag.tuvi[grade] -= n;
+    data.tuVi += gain;
+    track('cultivate');
+    save();
+    return ok(`Dùng ${n} ${gname}, nhận ${gain} tu vi.`);
+  }
+  const k = id as CapPill;
+  n = Math.min(n, def.cap - data.pillUsed[k]);
+  if (n <= 0) return fail('Đã dùng đủ giới hạn loại đan này.');
+  data.pillBag[k][grade] -= n;
+  data.pillUsed[k] += n;
+  data.pills[k] += PILL_GRADES[grade].mul * n;
+  save();
+  return ok(`Dùng ${n} ${gname}. Hiệu quả tăng vĩnh viễn.`);
 }
 
 // ---------------------------------------------------------------------

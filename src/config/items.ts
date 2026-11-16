@@ -390,8 +390,38 @@ export interface PillDef {
 }
 
 export const PILLS: PillDef[] = [
-  { id: 'tuvi', name: 'Tụ Khí Đan', desc: 'Cất vào túi trữ vật; dùng nhận tu vi bằng 25% bước đột phá kế tiếp.', herb: 3, core: 0, linhFactor: 0.03, cap: 0 },
+  { id: 'tuvi', name: 'Tụ Khí Đan', desc: 'Dùng nhận tu vi bằng 25% bước đột phá kế tiếp.', herb: 3, core: 0, linhFactor: 0.03, cap: 0 },
   { id: 'hp', name: 'Cường Thể Đan', desc: 'Tăng vĩnh viễn 2% máu tối đa.', herb: 2, core: 2, linhFactor: 0.02, cap: 40 },
   { id: 'dmg', name: 'Cương Khí Đan', desc: 'Tăng vĩnh viễn 2% sát thương.', herb: 2, core: 2, linhFactor: 0.02, cap: 40 },
   { id: 'def', name: 'Hộ Thể Đan', desc: 'Tăng vĩnh viễn 3 giáp.', herb: 2, core: 1, linhFactor: 0.02, cap: 30 },
 ];
+
+/** Phẩm đan: hiệu quả nhân `mul` (Hạ ×1 … Cực ×3). Luyện xong cất vào túi trữ vật, dùng ở Tu Luyện → túi. */
+export const PILL_GRADES = [
+  { name: 'Hạ', color: '#a7afc2', mul: 1 },
+  { name: 'Trung', color: '#4fd06a', mul: 1.5 },
+  { name: 'Thượng', color: '#b45cff', mul: 2 },
+  { name: 'Cực', color: '#ffc94a', mul: 3 },
+];
+
+/** Tỉ lệ (%) ra từng phẩm khi luyện; mỗi đại cảnh giới (0..16) dời ~2% từ Hạ sang Trung / Thượng / Cực */
+export function pillGradeRates(majorRealm: number): number[] {
+  const g = Math.max(0, Math.min(16, majorRealm));
+  return [60 - 2 * g, 28 + 0.8 * g, 10 + 0.8 * g, 2 + 0.4 * g];
+}
+
+export function rollPillGrade(majorRealm: number): number {
+  return pick(pillGradeRates(majorRealm));
+}
+
+/** Mô tả hiệu quả 1 viên `id` phẩm `grade` (Tụ Khí Đan: % bước đột phá) */
+export function pillEffectText(id: PillId, grade: number): string {
+  const m = PILL_GRADES[grade].mul;
+  const n = (v: number): string => String(Math.round(v * 10) / 10).replace('.', ',');
+  switch (id) {
+    case 'tuvi': return `Tu vi +${n(25 * m)}% bước đột phá`;
+    case 'hp': return `Máu tối đa +${n(2 * m)}% (vĩnh viễn)`;
+    case 'dmg': return `Sát thương +${n(2 * m)}% (vĩnh viễn)`;
+    case 'def': return `Giáp +${n(3 * m)} (vĩnh viễn)`;
+  }
+}

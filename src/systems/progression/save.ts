@@ -39,8 +39,12 @@ export interface SaveData {
   loadout: string[];
   /** id màn → số lần đã vượt */
   cleared: Record<string, number>;
-  /** số lần đã dùng đan tăng vĩnh viễn (hp/dmg/def); `tuvi` = số Tụ Khí Đan đang cất trong túi trữ vật */
-  pills: { hp: number; dmg: number; def: number; tuvi: number };
+  /** hiệu quả đan tăng vĩnh viễn đã hấp thu, tính theo "viên Hạ phẩm" (Trung = 1,5 …); stats dùng trực tiếp */
+  pills: { hp: number; dmg: number; def: number };
+  /** số VIÊN đan tăng vĩnh viễn đã dùng (để tính giới hạn 40/40/30) */
+  pillUsed: { hp: number; dmg: number; def: number };
+  /** túi trữ vật: số đan theo loại × phẩm [Hạ, Trung, Thượng, Cực] */
+  pillBag: Record<'tuvi' | 'hp' | 'dmg' | 'def', number[]>;
   nextUid: number;
   /** Đồ chờ nhận (túi đầy lúc nhận thưởng) */
   inbox: ItemInst[];
@@ -68,7 +72,9 @@ function defaultSave(): SaveData {
     equipped: { weapon: 1, clothes: null, shoes: null, accessory: null, bibao: null },
     loadout: ['ho_khieu'],
     cleared: {},
-    pills: { hp: 0, dmg: 0, def: 0, tuvi: 0 },
+    pills: { hp: 0, dmg: 0, def: 0 },
+    pillUsed: { hp: 0, dmg: 0, def: 0 },
+    pillBag: { tuvi: [0, 0, 0, 0], hp: [0, 0, 0, 0], dmg: [0, 0, 0, 0], def: [0, 0, 0, 0] },
     nextUid: 2,
     inbox: [],
     sound: true,
@@ -174,7 +180,16 @@ function normalize(parsed: Partial<SaveData>): SaveData {
   const d = { ...def, ...parsed } as SaveData;
   d.mats = { ...def.mats, ...(parsed.mats ?? {}) };
   d.equipped = { ...def.equipped, ...(parsed.equipped ?? {}) };
-  d.pills = { ...def.pills, ...(parsed.pills ?? {}) };
+  // đan: bản cũ chỉ có `pills` (mỗi lần dùng = 1 viên Hạ phẩm) và `pills.tuvi` (Tụ Khí Đan trong túi, bản trước)
+  const oldPills = (parsed.pills ?? {}) as Partial<SaveData['pills']> & { tuvi?: number };
+  d.pills = { hp: oldPills.hp ?? 0, dmg: oldPills.dmg ?? 0, def: oldPills.def ?? 0 };
+  d.pillUsed = parsed.pillUsed ? { ...def.pillUsed, ...parsed.pillUsed } : { ...d.pills };
+  d.pillBag = { ...def.pillBag };
+  for (const k of Object.keys(def.pillBag) as (keyof SaveData['pillBag'])[]) {
+    const v = parsed.pillBag?.[k];
+    d.pillBag[k] = [0, 1, 2, 3].map((g) => Math.max(0, Math.floor(Number(v?.[g]) || 0)));
+  }
+  if (!parsed.pillBag && oldPills.tuvi) d.pillBag.tuvi[0] += Math.floor(oldPills.tuvi);
   d.stats = { ...def.stats, ...(parsed.stats ?? {}) };
   d.quests = { ...def.quests, ...(parsed.quests ?? {}) };
   if (!Array.isArray(d.quests.dailyClaimed)) d.quests.dailyClaimed = [];

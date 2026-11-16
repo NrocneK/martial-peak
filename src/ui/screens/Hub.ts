@@ -6,7 +6,7 @@ import { MAT_IDS, MAT_NAMES, SLOT_IDS, SLOT_NAMES, type SlotId } from '../../con
 import { MAX_TIER, TIERS, nextTierNeed, realmLook, tierCap, tierLabel, tierName } from '../../config/realms';
 import { WORLDS, worldById, type StageDef } from '../../config/worlds';
 import { PASSIVES, REALM_SKILLS, WEAPON_IDS, WEAPON_SKILLS, passiveById, skillById, weaponSkillOf } from '../../config/skills';
-import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, itemColor, itemIcon, weaponIconHd, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, type ItemInst } from '../../config/items';
+import { BIBAOS, DAO_TIER, MAX_ITEM_LEVEL, PILLS, PILL_GRADES, WEAPON_HOLD, WEAPON_ITEM_NAMES, affixText, itemColor, itemIcon, weaponIconHd, itemName, itemPower, itemRank, itemRankLabel, itemStatLines, pillEffectText, type ItemInst, type PillId } from '../../config/items';
 import * as P from '../../systems/progression';
 import { audio } from '../../systems/Audio';
 import { openSettings } from './Settings';
@@ -112,7 +112,9 @@ export class Hub {
   private forgeSlot: SlotId = 'weapon';
   private forgeWeapon = '';
   private pillSel: string = PILLS[0].id;
-  private craftResult: { kind: 'item'; uid: number } | { kind: 'pill'; name: string; msg: string } | null = null;
+  private craftResult: { kind: 'item'; uid: number } | { kind: 'pill'; name: string; msg: string; grade: number } | null = null;
+  /** ô đan đang chọn trong túi trữ vật */
+  private bagSel: { id: PillId; g: number } | null = null;
   private cultMode: 'realm' | 'book' = 'realm';
   /** Sách Công Pháp (giữ trang đang mở qua các lần vẽ lại) */
   private readonly book = new SkillBook();
@@ -528,15 +530,38 @@ export class Hub {
     return stage;
   }
 
-  /** Túi trữ vật (phòng tu luyện): hấp thu linh thạch + dùng Tụ Khí Đan */
+  /** Túi trữ vật (phòng tu luyện): hấp thu linh thạch + lưới đan dược (loại × phẩm), bấm ô → hiệu quả + Dùng 1 / Dùng hết */
   private openBag(): void {
     this.detail('Túi Trữ Vật', () => {
       const s = P.getSave();
-      if (s.tier >= MAX_TIER) return h('p', { class: 'dim', text: 'Đạo Tổ không cần tu vi nữa.' });
       const pk = P.packInfo();
-      const n = P.pillCount('tuvi');
+      const maxed = s.tier >= MAX_TIER;
+      const sel = this.bagSel;
+      const cell = (id: PillId, g: number): HTMLElement => {
+        const n = P.pillStock(id, g);
+        const on = sel?.id === id && sel.g === g;
+        return h('button', { class: 'bag-cell' + (n ? '' : ' empty') + (on ? ' on' : ''), style: `--gc:${PILL_GRADES[g].color}`,
+          title: `${PILLS.find((p) => p.id === id)!.name} ${PILL_GRADES[g].name} phẩm`,
+          onclick: () => { audio.play('click'); this.bagSel = on ? null : { id, g }; this.modal?.refresh?.(); } },
+          h('b', { text: PILL_GRADES[g].name }), h('span', { text: `×${n}` }));
+      };
+      let info: HTMLElement | null = null;
+      if (sel) {
+        const def = PILLS.find((p) => p.id === sel.id)!;
+        const n = P.pillStock(sel.id, sel.g);
+        const left = def.cap ? def.cap - P.pillUsedCount(sel.id) : Infinity;
+        const blocked = !n || left <= 0 || (sel.id === 'tuvi' && maxed);
+        info = h('div', { class: 'bag-info', style: `--gc:${PILL_GRADES[sel.g].color}` },
+          h('b', { text: `${def.name} ${PILL_GRADES[sel.g].name} phẩm ×${n}` }),
+          h('div', { class: 'dim', text: pillEffectText(sel.id, sel.g)
+            + (sel.id === 'tuvi' ? (maxed ? '' : ` = ${fmt(P.tuviPillGain(sel.g))} tu vi mỗi viên.`) : `. Đã dùng ${P.pillUsedCount(sel.id)}/${def.cap}.`) }),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn small', text: 'Dùng 1', disabled: blocked ? 'disabled' : null, onclick: () => this.act(P.usePill(sel.id, sel.g, 1)) }),
+            h('button', { class: 'btn small', text: 'Dùng hết', disabled: blocked ? 'disabled' : null, onclick: () => this.act(P.usePill(sel.id, sel.g, n)) }),
+          ));
+      }
       return h('div', { class: 'bag-box' },
-        h('div', { class: 'pack' },
+        maxed ? null : h('div', { class: 'pack' },
           h('div', { class: 'gold hd' }, ic('linh'), 'Hấp thu linh thạch'),
           h('div', { class: 'dim', text: `Mỗi gói: ${fmt(pk.cost)} linh thạch → ${fmt(pk.gain)} tu vi. Đang có ${fmt(s.linh)} linh thạch.` }),
           h('div', { class: 'row' },
@@ -544,13 +569,14 @@ export class Hub {
             h('button', { class: 'btn small', text: '×10', onclick: () => this.act(P.buyPack(10)) }),
             h('button', { class: 'btn small', text: 'Tối đa', onclick: () => this.act(P.buyPack(1e9)) }),
           )),
-        h('div', { class: 'pack' },
-          h('div', { class: 'gold hd' }, this.icp('pill'), `Tụ Khí Đan ×${n}`),
-          h('div', { class: 'dim', text: n ? `Mỗi viên: ${fmt(P.tuviPillGain())} tu vi (tính theo cảnh giới hiện tại).` : 'Chưa có. Luyện ở Chế Tạo → Luyện Đan.' }),
-          h('div', { class: 'row' },
-            h('button', { class: 'btn small', text: 'Dùng 1', disabled: n ? null : 'disabled', onclick: () => this.act(P.useTuviPill(1)) }),
-            h('button', { class: 'btn small', text: 'Dùng hết', disabled: n ? null : 'disabled', onclick: () => this.act(P.useTuviPill(n)) }),
-          )),
+        h('div', { class: 'pack bag-pills' },
+          h('div', { class: 'gold hd' }, this.icp('pill'), 'Đan dược'),
+          h('div', { class: 'bag-grid' }, ...PILLS.flatMap((p) => [
+            h('span', { class: 'bag-name', text: p.name }),
+            ...PILL_GRADES.map((_, g) => cell(p.id, g)),
+          ])),
+          info ?? h('div', { class: 'dim', text: 'Bấm một ô để xem hiệu quả và dùng. Đan luyện ở Chế Tạo → Luyện Đan.' }),
+        ),
       );
     });
   }
@@ -917,11 +943,12 @@ export class Hub {
           ),
         ));
     }
-    return h('div', { class: 'cf-result', style: '--rc:#7cf0d0' },
+    const gc = PILL_GRADES[r.grade].color;
+    return h('div', { class: 'cf-result', style: `--rc:${gc}` },
       h('div', { class: 'cf-card' },
         h('i', { class: 'cf-rays' }),
-        h('div', { class: 'cf-pill' }, this.icp('pill', 'cf-pill-ic')),
-        h('b', { class: 'cf-name', style: { color: '#9ff5dc' }, text: r.name }),
+        h('div', { class: 'cf-pill', style: `--gc:${gc}` }, this.icp('pill', 'cf-pill-ic')),
+        h('b', { class: 'cf-name', style: { color: gc }, text: `${r.name} · ${PILL_GRADES[r.grade].name} phẩm` }),
         h('div', { class: 'cf-stats' }, h('div', { text: r.msg })),
         h('div', { class: 'row' }, h('button', { class: 'btn small primary', text: 'Luyện tiếp', onclick: again })),
       ));
@@ -956,10 +983,13 @@ export class Hub {
     const def = PILLS.find((p) => p.id === this.pillSel) ?? PILLS[0];
     const side = h('div', { class: 'cf-side' },
       h('div', { class: 'cf-recipes' }, ...PILLS.map((p) => {
-        const cnt = P.pillCount(p.id);
+        const stock = P.pillStock(p.id);
+        const tag = p.cap ? ` · đã dùng ${P.pillUsedCount(p.id)}/${p.cap}` : '';
         return h('button', { class: 'cf-rec' + (p.id === def.id ? ' on' : ''), onclick: () => { audio.play('click'); this.pillSel = p.id; this.craftResult = null; this.render(); } },
-          this.icp('pill'), h('span', { class: 'bk-txt' }, h('b', { text: p.name + (p.cap ? ` (${cnt}/${p.cap})` : ` (trong túi: ${cnt})`) }), h('small', { text: p.desc })));
+          this.icp('pill'), h('span', { class: 'bk-txt' }, h('b', { text: p.name }), h('small', { class: 'cf-rec-tag', text: `Trong túi: ${stock}${tag}` }), h('small', { text: p.desc })));
       })),
+      h('p', { class: 'dim cf-note cf-rates' }, 'Tỉ lệ phẩm: ', ...P.pillRates().flatMap((r, g) => [g ? ' · ' : '', h('b', { style: { color: PILL_GRADES[g].color }, text: `${PILL_GRADES[g].name} ${String(Math.round(r * 10) / 10).replace('.', ',')}%` })]),
+        h('span', { class: 'cf-rates-x', text: '. Phẩm cao hiệu quả ×1,5 / ×2 / ×3; cảnh giới càng cao càng dễ ra phẩm tốt.' })),
     );
     const cost = h('div', { class: 'cf-costs' },
       this.costChip('herb', s.mats.herb, def.herb, 'Thảo dược'),
@@ -968,7 +998,7 @@ export class Hub {
     return this.furnaceStage('alchemy', side, cost, 'Luyện đan', () => {
       const r = P.craftPill(def.id);
       if (!r.ok) { this.act(r); return; }
-      this.playCraft({ kind: 'pill', name: def.name, msg: r.msg });
+      this.playCraft({ kind: 'pill', name: def.name, msg: r.msg, grade: r.grade ?? 0 });
     });
   }
 

@@ -503,6 +503,21 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 .bag-box .pack { align-items: center; text-align: center; }
 .bag-box .row { justify-content: center; }
 .bag-box .hd .ic { width: 22px; height: 22px; }
+/* lưới đan: tên loại + 4 ô phẩm (viền màu phẩm) */
+.bag-grid { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 5px 6px; align-items: center; width: 100%; }
+.bag-name { font-size: 13px; font-weight: 700; color: #e6eeff; text-align: left; white-space: nowrap; padding-right: 4px; }
+.bag-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; cursor: pointer; font: inherit;
+  color: #e6eeff; background: rgba(10, 16, 48, 0.7); border: 1.5px solid var(--gc); box-shadow: inset 0 0 8px color-mix(in srgb, var(--gc) 30%, transparent); }
+.bag-cell b { font-size: 11px; color: var(--gc); line-height: 1.1; }
+.bag-cell span { font-size: 14px; font-weight: 700; line-height: 1.1; }
+.bag-cell.empty { opacity: 0.4; box-shadow: none; }
+.bag-cell.on { background: color-mix(in srgb, var(--gc) 28%, rgba(10, 16, 48, 0.85)); box-shadow: 0 0 10px var(--gc); opacity: 1; }
+.bag-info { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border-radius: 6px; border: 1px solid var(--gc); background: rgba(5, 8, 28, 0.6); }
+.bag-info > b { color: var(--gc); }
+.cf-rec .cf-rec-tag { color: #ffe9a8; }
+.cf-rates { padding: 4px 8px; border-radius: 6px; background: rgba(5, 8, 28, 0.72); color: #c9d2ee; }
+.cf-rates b { font-weight: 700; }
+.cf-pill .cf-pill-ic { filter: drop-shadow(0 0 10px var(--gc, #7cf0d0)); }
 .rs-bar { position: relative; width: 100%; height: 18px; border-radius: 9px; background: #0a1030; border: 1px solid #b98a32; overflow: hidden; }
 .rs-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #fff0b0, #f2b23e); box-shadow: 0 0 8px #ffd96a99; }
 .rs-bar span { position: relative; font-size: 12px; font-weight: 700; line-height: 16px; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
@@ -895,6 +910,8 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
   .cf-opt span { font-size: 11px; }
   .cf-wpns { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .cf-note { display: none; }
+  .cf-note.cf-rates { display: block; font-size: 11px; text-align: center; }
+  .cf-rates-x, .cf-rec .bk-txt small:not(.cf-rec-tag) { display: none; }
   .cf-recipes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
   .cf-rec { min-width: 0; }
   .cf-rec .bk-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
