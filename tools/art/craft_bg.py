@@ -1,5 +1,5 @@
 """
-NỀN SÂN LÒ tab Chế Tạo (ảnh AI 16:9): tools/art/ref/craft_bg_{forge,alchemy}_ai.png
+NỀN SÂN LÒ tab Chế Tạo (ảnh AI 16:9): tools/art/ref/craft_bg_{forge,alchemy}_ai.png  + nền Cảnh Giới ref/cult_bg_ai.png → public/ui/cult_bg.jpg
   · xoá dấu ngôi sao (watermark) ở góc phải dưới bằng cv2.inpaint → public/ui/craft/bg_{forge,alchemy}.jpg
   python3 -I tools/art/craft_bg.py
 """
@@ -12,7 +12,9 @@ REF = os.path.join(HERE, 'ref')
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craft')
 
 # hộp chứa ngôi sao (x0, y0, x1, y1) theo ảnh gốc 1376×768
-STAR = {'forge': (1222, 618, 1282, 680), 'alchemy': (1222, 618, 1288, 680)}
+STAR = {'forge': (1222, 618, 1282, 680), 'alchemy': (1222, 618, 1288, 680), 'cult': (908, 458, 976, 508)}
+# nền tab Tu Luyện → Cảnh Giới (tĩnh thất, ảnh 1024×572) dùng chung cách xoá sao
+SRC = {'cult': ('cult_bg_ai.png', os.path.join(os.path.dirname(OUT), 'cult_bg.jpg'))}
 
 # đan phòng: ảnh AI tự làm tối 2 dải bên (mép cắt thẳng ở x0 / x1) → làm sáng dần từ mép ảnh tới đường cắt cho liền mạch
 SEAM = {'alchemy': (301, 1075)}
@@ -39,19 +41,20 @@ def unseam(img, x0, x1):
 
 def main():
     for name, (x0, y0, x1, y1) in STAR.items():
-        bgr = cv2.imread(os.path.join(REF, f'craft_bg_{name}_ai.png'))
+        src, dst = SRC.get(name, (f'craft_bg_{name}_ai.png', os.path.join(OUT, f'bg_{name}.jpg')))
+        bgr = cv2.imread(os.path.join(REF, src))
         crop = bgr[y0:y1, x0:x1].astype(int)
         # ngôi sao: xám nhạt, ít màu, sáng hơn hẳn nền xung quanh
         lum = crop.mean(-1)
         sat = crop.max(-1) - crop.min(-1)
-        m = ((lum > np.percentile(lum, 35) + 25) & (sat < 40)).astype(np.uint8) * 255
+        m = ((lum > np.percentile(lum, 35) + 25) & (sat < 45)).astype(np.uint8) * 255
         m = cv2.dilate(m, np.ones((5, 5), np.uint8))
         hole = np.zeros(bgr.shape[:2], np.uint8)
         hole[y0:y1, x0:x1] = m
         out = cv2.inpaint(bgr, hole, 6, cv2.INPAINT_TELEA)
         if name in SEAM:
             out = unseam(out, *SEAM[name])
-        cv2.imwrite(os.path.join(OUT, f'bg_{name}.jpg'), out, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        cv2.imwrite(dst, out, [cv2.IMWRITE_JPEG_QUALITY, 88])
         print(name, bgr.shape, int((m > 0).sum()))
 
 

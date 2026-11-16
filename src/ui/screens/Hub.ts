@@ -65,17 +65,27 @@ const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', c
  * Nội dung các mục KHÔNG cuộn dọc: danh sách dài chia trang (◀ 1/3 ▶), số ô mỗi trang tự tính theo
  * chiều cao màn hình; chi tiết vật phẩm / kỹ năng / màn mở trong bảng nổi.
  */
-/** Nền sân lò (ảnh 1376×768): phủ kín sân lò như `cover`, nhưng kéo dọc sao cho mặt sàn (`floor` = tỉ lệ chiều cao ảnh)
- * nằm đúng dưới đáy lò → lò đứng trên sàn ở mọi cỡ màn hình. Lớp 1 = dải tối 2 bên (100%), lớp 2 = ảnh. */
-const CRAFT_BG = { w: 1376, h: 768, floor: { forge: 0.8, alchemy: 0.86 } };
-function fitCraftBg(stage: HTMLElement, furnace: HTMLElement, kind: 'forge' | 'alchemy'): void {
-  const sw = stage.clientWidth, sh = stage.clientHeight;
+/**
+ * Nền ảnh có mặt sàn (sân lò Chế Tạo, tĩnh thất Cảnh Giới): phủ kín `el` như `cover`, nhưng kéo sao cho điểm
+ * (fx, fy) của ảnh (tỉ lệ 0..1, vd tâm mặt sàn / tâm trận pháp) nằm đúng điểm neo (ax, ay) trong `el` → vật / người
+ * luôn đứng đúng chỗ trên sàn ở mọi cỡ màn hình. Lớp nền 1 = dải tối 2 bên (100%), lớp 2 = ảnh.
+ */
+function fitFloorBg(el: HTMLElement, iw: number, ih: number, fx: number, fy: number, ax: number, ay: number): void {
+  const sw = el.clientWidth, sh = el.clientHeight;
   if (!sw || !sh) return;
-  const F = CRAFT_BG.floor[kind], fy = furnace.offsetTop + furnace.offsetHeight;
-  const k = Math.max(sw / CRAFT_BG.w, sh / CRAFT_BG.h, fy / (F * CRAFT_BG.h), (sh - fy) / ((1 - F) * CRAFT_BG.h));
-  const w = CRAFT_BG.w * k, hh = CRAFT_BG.h * k;
-  stage.style.backgroundSize = `100% 100%, ${w.toFixed(1)}px ${hh.toFixed(1)}px`;
-  stage.style.backgroundPosition = `0 0, ${((sw - w) / 2).toFixed(1)}px ${(fy - F * hh).toFixed(1)}px`;
+  const k = Math.max(sw / iw, sh / ih, ay / (fy * ih), (sh - ay) / ((1 - fy) * ih), ax / (fx * iw), (sw - ax) / ((1 - fx) * iw));
+  const w = iw * k, hh = ih * k;
+  el.style.backgroundSize = `100% 100%, ${w.toFixed(1)}px ${hh.toFixed(1)}px`;
+  el.style.backgroundPosition = `0 0, ${(ax - fx * w).toFixed(1)}px ${(ay - fy * hh).toFixed(1)}px`;
+}
+/** Sân lò: mặt sàn ảnh 1376×768 nằm dưới đáy lò */
+const CRAFT_FLOOR = { forge: 0.8, alchemy: 0.86 };
+function fitCraftBg(stage: HTMLElement, furnace: HTMLElement, kind: 'forge' | 'alchemy'): void {
+  fitFloorBg(stage, 1376, 768, 0.5, CRAFT_FLOOR[kind], stage.clientWidth / 2, furnace.offsetTop + furnace.offsetHeight);
+}
+/** Tĩnh thất (public/ui/cult_bg.jpg 1024×572): tâm trận pháp dưới sàn (0.5, 0.83) nằm dưới chỗ ngồi thiền */
+function fitCultBg(sky: HTMLElement, fig: HTMLElement): void {
+  fitFloorBg(sky, 1024, 572, 0.5, 0.83, fig.offsetLeft + fig.offsetWidth / 2, fig.offsetTop + fig.offsetHeight * 0.82);
 }
 
 export class Hub {
@@ -449,12 +459,15 @@ export class Hub {
       const a = (i / 12) * Math.PI * 2 + (i % 2) * 0.26, r = 0.75 + (i % 3) * 0.2;
       return h('i', { class: 'rs-in', style: `--dx:${(Math.cos(a) * r).toFixed(2)};--dy:${(Math.sin(a) * r * 0.75).toFixed(2)};--d:${2.6 + (i % 4) * 0.45}s;--t:${-(i * 0.41).toFixed(2)}s` });
     });
-    return h('div', { class: `realm-stage rl-${realmLook(s.tier)}` },
-      h('div', { class: 'rs-sky' }), h('div', { class: 'rs-stars' }),
+    // nền tĩnh thất: tâm trận pháp dưới sàn căn đúng chỗ ngồi thiền (fitCultBg)
+    const sky = h('div', { class: 'rs-sky' });
+    // vòng linh khí bám theo hình ngồi thiền: quầng sáng sau lưng + 2 vòng xoay quanh đài sen
+    const fig = h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow ? 1.5 : 2), h('i', { class: 'rs-ring r1' }), ...inflow);
+    const stage = h('div', { class: `realm-stage rl-${realmLook(s.tier)}` },
+      sky,
       h('div', { class: 'rs-motes' }, ...motes),
       h('div', { class: 'rs-head' }, h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) })),
-      // vòng linh khí bám theo hình ngồi thiền: quầng sáng sau lưng + 2 vòng xoay quanh đài sen
-      h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow ? 1.5 : 2), h('i', { class: 'rs-ring r1' }), ...inflow),
+      fig,
       h('div', { class: 'rs-panel' },
         h('div', { class: 'rs-bar', title: `${pct.toFixed(0)}%` }, h('i', { style: { width: `${pct}%` } }),
           h('span', { text: need === null ? 'Viên mãn' : `${fmt(s.tuVi)} / ${fmt(need)} tu vi` })),
@@ -483,6 +496,8 @@ export class Hub {
         )]),
       ),
     );
+    new ResizeObserver(() => fitCultBg(sky, fig)).observe(stage);
+    return stage;
   }
 
   /** Sách Công Pháp: chương Chủ Động (kỹ năng vũ khí + cảnh giới) / Bị Động / Thức Tỉnh (công thức kết hợp) */
