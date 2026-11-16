@@ -14,7 +14,7 @@ REF = os.path.join(HERE, 'ref')
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craft')
 
 # đan lô: bỏ đốm lửa xanh dưới đáy, GIỮ chân giữa (chân thứ 3 phía sau, lửa che mất đoạn giữa → nối lại)
-FLAME = {'alchemy': (140, 382, 226, 500)}
+FLAME = {}  # đan lô mới (nền giấy, 3 chân đủ) không cần vá
 LEG = (166, 202, 380, 486)                                              # x0, x1, y0, y1 chân giữa
 
 
