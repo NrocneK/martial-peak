@@ -15,6 +15,7 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craf
 
 # đan lô: bỏ đốm lửa xanh dưới đáy, GIỮ chân giữa (chân thứ 3 phía sau, lửa che mất đoạn giữa → nối lại)
 FLAME = {}  # đan lô mới (nền giấy, 3 chân đủ) không cần vá
+SHADOW = {'alchemy': (489, 32, 423, 501)}                             # y, x0, x1, y_end (toạ độ sau khi thu về 512)
 LEG = (166, 202, 380, 486)                                              # x0, x1, y0, y1 chân giữa
 
 
@@ -62,6 +63,17 @@ def main():
                     c = (38, 24, 14) if y >= bottom - 2 else tuple(int(v * shade) for v in col)
                     px[y, x] = (*c, 255)
             im = Image.fromarray(px, 'RGBA')
+        if name in SHADOW:
+            # bỏ vệt bóng mờ dưới đế: từ hàng y trở xuống chỉ giữ điểm ảnh đặc (chân đế), trong bề ngang đế, tới hàng y_end
+            px = np.array(im)
+            y, x0, x1, y_end = SHADOW[name]
+            sub = px[y:, :, 3]
+            sub[sub < 215] = 0
+            sub[:, :x0] = 0
+            sub[:, x1:] = 0
+            sub[y_end - y:] = 0
+            im = Image.fromarray(px, 'RGBA')
+            im = im.crop(im.getchannel('A').getbbox())
         im.save(os.path.join(OUT, f'furnace_{name}.png'), optimize=True)
         print(name, im.size)
 
