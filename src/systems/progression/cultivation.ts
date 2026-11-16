@@ -72,8 +72,26 @@ export function pillLinhCost(id: PillId): number {
   return Math.max(1, Math.ceil(def.linhFactor * nextStep(data.tier)));
 }
 
+/** đan tăng vĩnh viễn: số lần đã dùng; Tụ Khí Đan: số viên đang cất trong túi trữ vật */
 export function pillCount(id: PillId): number {
-  return id === 'tuvi' ? 0 : data.pills[id];
+  return data.pills[id];
+}
+
+/** Tu vi nhận được khi dùng 1 Tụ Khí Đan (tính theo cảnh giới LÚC DÙNG) */
+export function tuviPillGain(): number {
+  return Math.ceil(0.25 * nextStep(data.tier));
+}
+
+/** Dùng Tụ Khí Đan trong túi trữ vật */
+export function useTuviPill(count: number): Result {
+  const n = Math.min(count, data.pills.tuvi);
+  if (n <= 0) return fail('Trong túi không còn Tụ Khí Đan.');
+  const gain = tuviPillGain() * n;
+  data.pills.tuvi -= n;
+  data.tuVi += gain;
+  track('cultivate');
+  save();
+  return ok(`Dùng ${n} Tụ Khí Đan, nhận ${gain} tu vi.`);
 }
 
 export function craftPill(id: PillId): Result {
@@ -87,10 +105,9 @@ export function craftPill(id: PillId): Result {
   data.linh -= linh;
   track('alchemy');
   if (id === 'tuvi') {
-    const gain = Math.ceil(0.25 * nextStep(data.tier));
-    data.tuVi += gain;
+    data.pills.tuvi++;
     save();
-    return ok(`Luyện thành ${def.name}, nhận ${gain} tu vi.`);
+    return ok(`Luyện thành ${def.name}, đã cất vào túi trữ vật.`);
   }
   data.pills[id]++;
   save();

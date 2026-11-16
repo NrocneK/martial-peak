@@ -14,6 +14,7 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'public', 'ui', 'craf
 # hộp chứa ngôi sao (x0, y0, x1, y1) theo ảnh gốc 1376×768
 STAR = {'forge': (1222, 618, 1282, 680), 'alchemy': (1222, 618, 1288, 680), 'cult': (908, 458, 976, 508)}
 # nền tab Tu Luyện → Cảnh Giới (tĩnh thất, ảnh 1024×572) dùng chung cách xoá sao
+ERASE = {'cult': [(900, 376, 935, 427, 'box'), (884, 288, 932, 380, 'smoke')]}
 SRC = {'cult': ('cult_bg_ai.png', os.path.join(os.path.dirname(OUT), 'cult_bg.jpg'))}
 
 # đan phòng: ảnh AI tự làm tối 2 dải bên (mép cắt thẳng ở x0 / x1) → làm sáng dần từ mép ảnh tới đường cắt cho liền mạch
@@ -52,6 +53,17 @@ def main():
         hole = np.zeros(bgr.shape[:2], np.uint8)
         hole[y0:y1, x0:x1] = m
         out = cv2.inpaint(bgr, hole, 6, cv2.INPAINT_TELEA)
+        if name in ERASE:
+            # xoá vật thừa (tĩnh thất: lư hương + khói trên bàn bên phải → chỗ đặt túi trữ vật)
+            hole = np.zeros(bgr.shape[:2], np.uint8)
+            for x0, y0, x1, y1, mode in ERASE[name]:
+                if mode == 'box':
+                    hole[y0:y1, x0:x1] = 255
+                else:                                                   # khói: chỉ điểm ảnh sáng hơn nền quanh
+                    c = out[y0:y1, x0:x1].astype(int).mean(-1)
+                    hole[y0:y1, x0:x1] = np.where(c > np.median(c) + 12, 255, 0)
+            hole = cv2.dilate(hole, np.ones((3, 3), np.uint8))
+            out = cv2.inpaint(out, hole, 5, cv2.INPAINT_TELEA)
         if name in SEAM:
             out = unseam(out, *SEAM[name])
         cv2.imwrite(dst, out, [cv2.IMWRITE_JPEG_QUALITY, 88])

@@ -424,16 +424,17 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 /* ---------- Tu Luyện ---------- */
 /* Tu Luyện · Cảnh Giới: sân khấu trời sao + vòng linh khí xoay + hạt sáng bay lên, màu theo bộ hình cảnh giới */
 .realm-stage { --c1: #8fd8ff; --c2: #16275e; --c3: #070c26; position: relative; overflow: hidden; isolation: isolate; border-radius: 8px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 16px 14px; min-height: 100%; text-align: center;
-  border: 1px solid color-mix(in srgb, var(--c1) 35%, #34406f); }
+  flex: 1; min-height: 340px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 14px 12px; text-align: center;
+  border: 1px solid color-mix(in srgb, var(--c1) 35%, #34406f);
+  /* nền tĩnh thất (tools/art/craft_bg.py → public/ui/cult_bg.jpg); cỡ / vị trí lớp ảnh do fitCultBg tính (tâm trận pháp dưới
+     chỗ ngồi), dưới đáy ảnh là màu nền tối liền với đáy ảnh; 2 bên tối dần */
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.45)), url('/ui/cult_bg.jpg?v=2') center 30% / cover no-repeat, #09080f; }
 .realm-stage.rl-2 { --c1: #ffd77a; --c2: #2b2a5e; --c3: #0c0b26; }
 .realm-stage.rl-3 { --c1: #b896ff; --c2: #261a5c; --c3: #0a0722; }
 .realm-stage.rl-4 { --c1: #f0c8ff; --c2: #3a2160; --c3: #120a26; }
 .realm-stage.rl-5 { --c1: #ffc46b; --c2: #4a1f3a; --c3: #170818; }
 .realm-stage.rl-6 { --c1: #e8f2ff; --c2: #1f2a4a; --c3: #05070f; }
-.rs-sky, .rs-motes { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-/* nền tĩnh thất (tools/art/craft_bg.py → public/ui/cult_bg.jpg); cỡ / vị trí lớp ảnh do fitCultBg tính, 2 bên tối dần cho chữ dễ đọc */
-.rs-sky { background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.45)), url('/ui/cult_bg.jpg?v=1') center 30% / cover, var(--c3); }
+.rs-motes { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 /* vòng linh khí quanh đài sen + quầng sáng sau lưng (đặt theo khung hình ngồi thiền) */
 .rs-fig { position: relative; margin: 4px 0 0; --r: 230px; }
 .rs-fig > i { position: absolute; left: 50%; border-radius: 50%; pointer-events: none; translate: -50% -50%; }
@@ -463,21 +464,52 @@ button.skill-head { width: 100%; font: inherit; color: inherit; text-align: left
 @keyframes rs-rise { 10% { opacity: 0.9; } 80% { opacity: 0.6; } 100% { opacity: 0; transform: translate(12px, -420px); } }
 .rs-head .big-realm { margin: 0; text-shadow: 0 2px 0 #0a1030, 0 0 14px color-mix(in srgb, var(--c1) 60%, transparent); }
 .rs-fig { margin: 4px 0 0; }
-.rs-panel { position: relative; z-index: 3; width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 8px;
-  background: rgba(8, 12, 40, 0.62); border: 1px solid #b98a3266; backdrop-filter: blur(2px); }
-.rs-panel p { margin: 0; font-size: 14px; line-height: 1.45; }
-.rs-panel .row { justify-content: center; }
-.rs-panel .pack { width: 100%; align-items: center; margin-top: 2px; }
+/* phòng: nhân vật ngồi phía dưới khoảng giữa (trên thanh tu vi) */
+.rs-room { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 4%; }
+.rs-foot { position: relative; z-index: 3; width: min(560px, 100%); display: flex; align-items: center; gap: 8px; }
+.rs-barw { position: relative; flex: 1; min-width: 0; cursor: help; outline: none; }
+.rs-tip { position: absolute; left: 50%; bottom: calc(100% + 8px); translate: -50% 0; width: max-content; max-width: min(420px, 86vw); padding: 6px 10px;
+  border-radius: 6px; background: rgba(8, 12, 40, 0.92); border: 1px solid #b98a32aa; font-size: 13px; line-height: 1.4; color: #e6eeff;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.rs-barw:hover .rs-tip, .rs-barw:focus-visible .rs-tip, .rs-barw.show .rs-tip { opacity: 1; }
+.rs-help { width: 30px; height: 30px; padding: 0; border-radius: 50%; font-weight: 800; flex-shrink: 0; }
+/* túi trữ vật trên bàn bên phải (vị trí / cỡ do fitCultBg tính) */
+.rs-bag { position: absolute; z-index: 3; left: 80%; top: 60%; width: 40px; aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.6)); animation: rs-bag 3s ease-in-out infinite; }
+.rs-bag-img { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.rs-bag:hover, .rs-bag:focus-visible { filter: drop-shadow(0 0 6px #e7b8ff) drop-shadow(0 0 12px #b896ff); outline: none; }
+@keyframes rs-bag { 50% { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 5px #c49cff99); } }
+/* nút đột phá: 2 mảnh thái cực hai bên nhân vật, nhấp nháy nhẹ; bấm → 2 mảnh trượt vào giữa ghép thành vòng thái cực, xoay, loé sáng */
+.rs-fig > .rs-taiji { position: absolute; left: 50%; top: 42%; translate: -50% -50%; z-index: 4; width: 100%; height: calc(var(--r) * 0.3);
+  padding: 0; border: 0; background: none; cursor: pointer; border-radius: 0; pointer-events: auto; }
+.tj-half { --sz: calc(var(--r) * 0.24); position: absolute; top: 50%; width: var(--sz); height: var(--sz); translate: 0 -50%;
+  transition: left 0.55s cubic-bezier(.5, 0, .3, 1), rotate 0.55s, scale 0.55s; animation: tj-blink 1.8s ease-in-out infinite; }
+.tj-half svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.tj-half.yang { left: -2%; } .tj-half.yin { left: calc(102% - var(--sz)); animation-delay: -0.9s; }
+.tj-half.yang path { fill: #fff6dc; stroke: #f2c46b; stroke-width: 3; } .tj-half.yang .dot { fill: #1a1430; }
+.tj-half.yin path { fill: #1a1430; stroke: #f2c46b; stroke-width: 3; } .tj-half.yin .dot { fill: #fff6dc; }
+.tj-half.yang { filter: drop-shadow(0 0 6px #ffe7a0); } .tj-half.yin { filter: drop-shadow(0 0 6px #b896ff); }
+@keyframes tj-blink { 50% { opacity: 0.55; scale: 0.92; } }
+.rs-taiji:hover .tj-half, .rs-taiji:focus-visible .tj-half { animation-duration: 0.9s; }
+.rs-taiji:focus-visible { outline: none; }
+.rs-taiji.locked { cursor: not-allowed; } .rs-taiji.locked .tj-half { filter: grayscale(1) brightness(0.7); animation: none; opacity: 0.6; }
+.rs-taiji.merge .tj-half { animation: none; opacity: 1; left: calc(50% - var(--sz) / 2); rotate: 360deg; scale: 1.35; }
+.tj-flash { position: absolute; left: 50%; top: 50%; width: calc(var(--r) * 0.5); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, #fff, color-mix(in srgb, var(--c1) 70%, transparent) 40%, transparent 70%); }
+.rs-taiji.merge .tj-flash { animation: tj-flash 0.45s ease-out 0.55s forwards; }
+@keyframes tj-flash { 0% { opacity: 0; scale: 0.3; } 40% { opacity: 1; } 100% { opacity: 0; scale: 4; } }
+.bag-box { display: flex; flex-direction: column; gap: 10px; min-width: min(360px, 80vw); }
+.bag-box .pack { align-items: center; text-align: center; }
+.bag-box .row { justify-content: center; }
+.bag-box .hd .ic { width: 22px; height: 22px; }
 .rs-bar { position: relative; width: 100%; height: 18px; border-radius: 9px; background: #0a1030; border: 1px solid #b98a32; overflow: hidden; }
 .rs-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #fff0b0, #f2b23e); box-shadow: 0 0 8px #ffd96a99; }
 .rs-bar span { position: relative; font-size: 12px; font-weight: 700; line-height: 16px; color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
 @media (max-width: 760px) {
-  .realm-stage { padding: 10px 8px; gap: 4px; }
+  .realm-stage { padding: 10px 8px; gap: 4px; min-height: 300px; }
   .rs-fig { --r: 170px; }
-  .rs-panel { padding: 8px; }
-  .rs-panel p { font-size: 13px; }
 }
-@media (prefers-reduced-motion: reduce) { .rs-ring::before, .rs-glow, .rs-mote, .rs-in { animation: none; } .rs-mote, .rs-in { display: none; } }
+@media (prefers-reduced-motion: reduce) { .tj-half, .rs-bag, .rs-ring::before, .rs-glow, .rs-mote, .rs-in { animation: none; } .rs-mote, .rs-in { display: none; } }
 .realm-wrap { display: flex; gap: 20px; align-items: center; justify-content: center; padding: 8px 0; }
 .realm-wrap .meditate { margin: 0; flex-shrink: 0; }
 .realm-info { flex: 1; min-width: 0; max-width: 560px; display: flex; flex-direction: column; gap: 6px; }

@@ -390,7 +390,7 @@ export interface PillDef {
 }
 
 export const PILLS: PillDef[] = [
-  { id: 'tuvi', name: 'Tụ Khí Đan', desc: 'Tăng tu vi bằng 25% bước đột phá kế tiếp.', herb: 3, core: 0, linhFactor: 0.03, cap: 0 },
+  { id: 'tuvi', name: 'Tụ Khí Đan', desc: 'Cất vào túi trữ vật; dùng nhận tu vi bằng 25% bước đột phá kế tiếp.', herb: 3, core: 0, linhFactor: 0.03, cap: 0 },
   { id: 'hp', name: 'Cường Thể Đan', desc: 'Tăng vĩnh viễn 2% máu tối đa.', herb: 2, core: 2, linhFactor: 0.02, cap: 40 },
   { id: 'dmg', name: 'Cương Khí Đan', desc: 'Tăng vĩnh viễn 2% sát thương.', herb: 2, core: 2, linhFactor: 0.02, cap: 40 },
   { id: 'def', name: 'Hộ Thể Đan', desc: 'Tăng vĩnh viễn 3 giáp.', herb: 2, core: 1, linhFactor: 0.02, cap: 30 },

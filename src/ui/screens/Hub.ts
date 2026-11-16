@@ -58,6 +58,44 @@ const NAV: [Tab, string, string][] = [
 const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', cultivate: 'Tu Luyện', bag: 'Hành Trang', craft: 'Chế Tạo', quest: 'Nhiệm Vụ' };
 
 /**
+ * Nền ảnh có mặt sàn (sân lò Chế Tạo, tĩnh thất Cảnh Giới): phủ kín `el` như `cover`, nhưng kéo sao cho điểm
+ * (fx, fy) của ảnh (tỉ lệ 0..1, vd tâm mặt sàn / tâm trận pháp) nằm đúng điểm neo (ax, ay) trong `el` → vật / người
+ * luôn đứng đúng chỗ trên sàn ở mọi cỡ màn hình. Lớp nền 1 = dải tối 2 bên (100%), lớp 2 = ảnh.
+ * `openBottom`: ảnh không cần phủ tới đáy (đáy ảnh tối, màu nền `el` lấp phần dưới) → không phải phóng to ảnh.
+ * Trả về phép quy đổi toạ độ ảnh → điểm ảnh trong `el` (x = ox + k·x_ảnh) để đặt vật khác khớp nền.
+ */
+function fitFloorBg(el: HTMLElement, iw: number, ih: number, fx: number, fy: number, ax: number, ay: number, openBottom = false): { k: number; ox: number; oy: number } | null {
+  const sw = el.clientWidth, sh = el.clientHeight;
+  if (!sw || !sh) return null;
+  const k = Math.max(sw / iw, openBottom ? 0 : sh / ih, ay / (fy * ih), openBottom ? 0 : (sh - ay) / ((1 - fy) * ih), ax / (fx * iw), (sw - ax) / ((1 - fx) * iw));
+  const w = iw * k, hh = ih * k, ox = ax - fx * w, oy = ay - fy * hh;
+  el.style.backgroundSize = `100% 100%, ${w.toFixed(1)}px ${hh.toFixed(1)}px`;
+  el.style.backgroundPosition = `0 0, ${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
+  return { k, ox, oy };
+}
+/** Sân lò: mặt sàn ảnh 1376×768 nằm dưới đáy lò */
+const CRAFT_FLOOR = { forge: 0.8, alchemy: 0.86 };
+function fitCraftBg(stage: HTMLElement, furnace: HTMLElement, kind: 'forge' | 'alchemy'): void {
+  fitFloorBg(stage, 1376, 768, 0.5, CRAFT_FLOOR[kind], stage.clientWidth / 2, furnace.offsetTop + furnace.offsetHeight);
+}
+/**
+ * Tĩnh thất (public/ui/cult_bg.jpg 1024×572): tâm trận pháp dưới sàn (0.5, 0.83) nằm dưới chỗ ngồi thiền;
+ * túi trữ vật đặt lên bàn bên phải (đáy túi ở toạ độ ảnh BAG_X, BAG_Y); màn hẹp không thấy bàn thì đặt trên sàn, sát mép phải.
+ */
+const BAG_X = 918, BAG_Y = 428, BAG_W = 34, BAG_FLOOR_Y = 505;
+function fitCultBg(stage: HTMLElement, fig: HTMLElement, bag: HTMLElement): void {
+  const t = fitFloorBg(stage, 1024, 572, 0.5, 0.83, fig.offsetLeft + fig.offsetWidth / 2, fig.offsetTop + fig.offsetHeight * 0.82, true);
+  if (!t) return;
+  const w = Math.max(40, BAG_W * t.k);
+  const want = t.ox + BAG_X * t.k - w / 2, maxX = stage.clientWidth - w - 8;
+  // bàn nằm ngoài khung (màn hẹp) → đặt túi xuống sàn trước, sát mép phải
+  const onTable = want <= maxX;
+  bag.style.width = `${w.toFixed(1)}px`;
+  bag.style.left = `${Math.min(want, maxX).toFixed(1)}px`;
+  bag.style.top = `${(t.oy + (onTable ? BAG_Y : BAG_FLOOR_Y) * t.k - w * (22 / 24)).toFixed(1)}px`;
+}
+
+/**
  * Lobby (Sảnh Vân Hạc Tông): nơi người chơi ở giữa các màn.
  *   - Thanh trên: avatar, cảnh giới, tu vi, tài nguyên, nút Cài Đặt.
  *   - Sảnh: ảnh nền tông môn; bấm Truyền Tống Trận (cổng xoáy giữa màn hình) để vào chọn màn. Cột trái: Hòm Thư.
@@ -65,29 +103,6 @@ const TITLES: Record<Tab, string> = { home: 'Sảnh', stage: 'Lịch Luyện', c
  * Nội dung các mục KHÔNG cuộn dọc: danh sách dài chia trang (◀ 1/3 ▶), số ô mỗi trang tự tính theo
  * chiều cao màn hình; chi tiết vật phẩm / kỹ năng / màn mở trong bảng nổi.
  */
-/**
- * Nền ảnh có mặt sàn (sân lò Chế Tạo, tĩnh thất Cảnh Giới): phủ kín `el` như `cover`, nhưng kéo sao cho điểm
- * (fx, fy) của ảnh (tỉ lệ 0..1, vd tâm mặt sàn / tâm trận pháp) nằm đúng điểm neo (ax, ay) trong `el` → vật / người
- * luôn đứng đúng chỗ trên sàn ở mọi cỡ màn hình. Lớp nền 1 = dải tối 2 bên (100%), lớp 2 = ảnh.
- */
-function fitFloorBg(el: HTMLElement, iw: number, ih: number, fx: number, fy: number, ax: number, ay: number): void {
-  const sw = el.clientWidth, sh = el.clientHeight;
-  if (!sw || !sh) return;
-  const k = Math.max(sw / iw, sh / ih, ay / (fy * ih), (sh - ay) / ((1 - fy) * ih), ax / (fx * iw), (sw - ax) / ((1 - fx) * iw));
-  const w = iw * k, hh = ih * k;
-  el.style.backgroundSize = `100% 100%, ${w.toFixed(1)}px ${hh.toFixed(1)}px`;
-  el.style.backgroundPosition = `0 0, ${(ax - fx * w).toFixed(1)}px ${(ay - fy * hh).toFixed(1)}px`;
-}
-/** Sân lò: mặt sàn ảnh 1376×768 nằm dưới đáy lò */
-const CRAFT_FLOOR = { forge: 0.8, alchemy: 0.86 };
-function fitCraftBg(stage: HTMLElement, furnace: HTMLElement, kind: 'forge' | 'alchemy'): void {
-  fitFloorBg(stage, 1376, 768, 0.5, CRAFT_FLOOR[kind], stage.clientWidth / 2, furnace.offsetTop + furnace.offsetHeight);
-}
-/** Tĩnh thất (public/ui/cult_bg.jpg 1024×572): tâm trận pháp dưới sàn (0.5, 0.83) nằm dưới chỗ ngồi thiền */
-function fitCultBg(sky: HTMLElement, fig: HTMLElement): void {
-  fitFloorBg(sky, 1024, 572, 0.5, 0.83, fig.offsetLeft + fig.offsetWidth / 2, fig.offsetTop + fig.offsetHeight * 0.82);
-}
-
 export class Hub {
   readonly root = h('div', { class: 'screen hub' });
   private tab: Tab = 'home';
@@ -437,20 +452,26 @@ export class Hub {
 
   // ------------------------------------------------------------------ Tu Luyện: Cảnh Giới / Kỹ Năng / Bị Động
   private vCultivateTab(): HTMLElement {
-    return h('div', { class: this.cultMode === 'book' ? 'cult-fill' : undefined },
+    return h('div', { class: 'cult-fill' },
       this.segs(this.cultMode, [['realm', 'Cảnh Giới', 'cultivate'], ['book', 'Công Pháp', 'skill']], (v) => { this.cultMode = v; }),
       this.cultMode === 'realm' ? this.vCultivate() : this.vBook(),
     );
   }
 
+  /**
+   * Cảnh Giới = phòng tu luyện (tĩnh thất): tên cảnh giới ở trên, nhân vật ngồi thiền trên trận pháp, thanh tu vi sát đáy.
+   * Thanh đầy → 2 mảnh thái cực nhấp nháy hai bên nhân vật, bấm để đột phá (2 mảnh ghép thành vòng thái cực rồi loé sáng).
+   * Túi trữ vật trên bàn bên phải: hấp thu linh thạch / dùng Tụ Khí Đan.
+   */
   private vCultivate(): HTMLElement {
     const s = P.getSave();
     const need = nextTierNeed(s.tier);
-    const pk = P.packInfo();
     const nextIsNewRealm = s.tier < MAX_TIER && TIERS[s.tier + 1].group !== TIERS[s.tier].group;
     const narrow = window.matchMedia('(max-width: 760px)').matches;
     const base = TIERS[s.tier].cumTuVi;
     const pct = need === null ? 100 : Math.max(0, Math.min(100, ((s.tuVi - base) / (need - base)) * 100));
+    const locked = P.daoToLocked();
+    const full = need !== null && s.tuVi >= need;
     // hạt linh khí bay lên quanh nhân vật (vị trí / nhịp cố định theo chỉ số để không nhảy khi vẽ lại)
     const motes = Array.from({ length: 14 }, (_, i) => h('i', { class: 'rs-mote',
       style: `--x:${(i * 37) % 100}%;--d:${4 + (i % 5) * 0.9}s;--t:${-(i * 0.73) % 6}s;--z:${1 + (i % 3)}` }));
@@ -459,45 +480,77 @@ export class Hub {
       const a = (i / 12) * Math.PI * 2 + (i % 2) * 0.26, r = 0.75 + (i % 3) * 0.2;
       return h('i', { class: 'rs-in', style: `--dx:${(Math.cos(a) * r).toFixed(2)};--dy:${(Math.sin(a) * r * 0.75).toFixed(2)};--d:${2.6 + (i % 4) * 0.45}s;--t:${-(i * 0.41).toFixed(2)}s` });
     });
-    // nền tĩnh thất: tâm trận pháp dưới sàn căn đúng chỗ ngồi thiền (fitCultBg)
-    const sky = h('div', { class: 'rs-sky' });
+    const tip = need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.'
+      : locked && full ? `Ngưỡng Đạo Tổ còn bị phong ấn: phải đánh bại ${P.FINAL_BOSS_NAME} (màn 10 Hỗn Độn Thần Vực).`
+        : `Đột phá lên ${tierName(s.tier + 1)}.` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '');
+    // nút đột phá: 2 mảnh thái cực (dương sáng có chấm tối, âm tối có chấm sáng) — chỉ hiện khi thanh tu vi đầy
+    const half = (yang: boolean): HTMLElement => {
+      const el = h('i', { class: `tj-half ${yang ? 'yang' : 'yin'}` });
+      el.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${yang ? 0 : 180} 50 50)">`
+        + '<path d="M50 0A50 50 0 0 1 50 100A25 25 0 0 1 50 50A25 25 0 0 0 50 0Z"/><circle cx="50" cy="75" r="8" class="dot"/></g></svg>';
+      return el;
+    };
+    let taiji: HTMLElement | null = null;
+    if (full) {
+      taiji = h('button', { class: 'rs-taiji' + (locked ? ' locked' : ''), title: tip, 'aria-label': locked ? 'Đột phá (bị phong ấn)' : 'Đột phá', onclick: () => {
+        if (locked) { this.act({ ok: false, msg: tip }); return; }
+        if (taiji!.classList.contains('merge')) return;
+        audio.play('cast');
+        taiji!.classList.add('merge');
+        const go = (): void => {
+          const r = P.breakthrough();
+          if (r.ending) { audio.play('click'); this.onEnding(); } else this.act(r);
+        };
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) go(); else window.setTimeout(go, 950);
+      } }, half(true), half(false), h('i', { class: 'tj-flash' }));
+    }
     // vòng linh khí bám theo hình ngồi thiền: quầng sáng sau lưng + 2 vòng xoay quanh đài sen
-    const fig = h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow ? 1.5 : 2), h('i', { class: 'rs-ring r1' }), ...inflow);
+    const fig = h('div', { class: 'rs-fig' }, h('i', { class: 'rs-glow' }), h('i', { class: 'rs-ring r2' }), realmFigure(s.tier, narrow || window.innerHeight < 740 ? 1.5 : 2), h('i', { class: 'rs-ring r1' }), ...inflow, taiji);
+    const bag = h('button', { class: 'rs-bag', title: 'Túi trữ vật', 'aria-label': 'Túi trữ vật', onclick: () => { audio.play('click'); this.openBag(); } },
+      pic('/ui/cult_bag.png?v=1', { class: 'rs-bag-img' }, [0, 0, 1, 1], 24));
+    const help = (): void => { audio.play('click'); this.detail('Cách tu luyện', () => h('p', { text: `Tu vi nhận từ việc vượt màn (đánh lại màn vẫn nhận một nửa), hấp thu linh thạch và dùng Tụ Khí Đan trong túi trữ vật. Thanh tu vi đầy thì hai mảnh thái cực hiện ra bên người, bấm vào để đột phá. 17 đại cảnh giới, mỗi cảnh giới 3 kỳ (Sơ, Trung, Hậu). Hậu kỳ đầy tu vi là Viên mãn; Tiên Đế Viên mãn và đã đánh bại ${P.FINAL_BOSS_NAME} thì đột phá lên Đạo Tổ (không chia kỳ). Cảnh giới càng cao, máu và sát thương càng lớn, và mở khóa kỹ năng chủ động mới.` })); };
+    const barw = h('div', { class: 'rs-barw', tabindex: '0', onclick: () => barw.classList.toggle('show') },
+      h('div', { class: 'rs-bar', title: tip }, h('i', { style: { width: `${pct}%` } }),
+        h('span', { text: need === null ? 'Viên mãn' : `${fmt(s.tuVi)} / ${fmt(need)} tu vi` })),
+      h('div', { class: 'rs-tip', text: tip }));
     const stage = h('div', { class: `realm-stage rl-${realmLook(s.tier)}` },
-      sky,
       h('div', { class: 'rs-motes' }, ...motes),
       h('div', { class: 'rs-head' }, h('div', { class: 'big-realm', text: tierLabel(s.tier, s.tuVi) })),
-      fig,
-      h('div', { class: 'rs-panel' },
-        h('div', { class: 'rs-bar', title: `${pct.toFixed(0)}%` }, h('i', { style: { width: `${pct}%` } }),
-          h('span', { text: need === null ? 'Viên mãn' : `${fmt(s.tuVi)} / ${fmt(need)} tu vi` })),
-        h('p', { text: need === null ? 'Đạo Tổ: cảnh giới cao nhất, không còn phân bậc và không cần tu vi nữa.' : `Đột phá lên ${tierName(s.tier + 1)}.` + (nextIsNewRealm ? ' Bước lên đại cảnh giới mới gặp bình cảnh, cần nhiều tu vi hơn hẳn.' : '') }),
-        ...(P.daoToLocked() ? [h('p', { class: 'gold', text: `Ngưỡng Đạo Tổ còn bị phong ấn: phải đánh bại ${P.FINAL_BOSS_NAME} (màn 10 Hỗn Độn Thần Vực).` })] : []),
-        h('div', { class: 'row' },
-          s.tier >= MAX_TIER
-            ? h('button', { class: 'btn', text: 'Xem lại đoạn kết', onclick: () => this.onEnding() })
-            : h('button', { class: 'btn primary', text: nextIsNewRealm ? 'Đột phá đại cảnh giới' : 'Đột phá', disabled: P.canBreakthrough() ? null : 'disabled', onclick: () => {
-                const r = P.breakthrough();
-                if (r.ending) {
-                  audio.play('click');
-                  this.onEnding();
-                } else this.act(r);
-              } }),
-          h('button', { class: 'btn small', text: 'Cách tu luyện', onclick: () => { audio.play('click'); this.detail('Cách tu luyện', () => h('p', { text: `Tu vi nhận từ việc vượt màn (đánh lại màn vẫn nhận một nửa), cắn linh thạch và đan dược. 17 đại cảnh giới, mỗi cảnh giới 3 kỳ (Sơ, Trung, Hậu). Hậu kỳ đầy tu vi là Viên mãn; Tiên Đế Viên mãn và đã đánh bại ${P.FINAL_BOSS_NAME} thì đột phá lên Đạo Tổ (không chia kỳ). Cảnh giới càng cao, máu và sát thương càng lớn, và mở khóa kỹ năng chủ động mới.` })); } }),
-        ),
-        ...(s.tier >= MAX_TIER ? [] : [h('div', { class: 'pack' },
-          h('div', { class: 'gold hd' }, ic('linh'), 'Cắn linh thạch'),
-          h('div', { class: 'dim', text: `Mỗi gói: ${fmt(pk.cost)} linh thạch → ${fmt(pk.gain)} tu vi.` }),
+      h('div', { class: 'rs-room' }, fig),
+      bag,
+      h('div', { class: 'rs-foot' }, barw,
+        s.tier >= MAX_TIER ? h('button', { class: 'btn small', text: 'Xem lại đoạn kết', onclick: () => this.onEnding() }) : null,
+        h('button', { class: 'btn small rs-help', text: '?', title: 'Cách tu luyện', 'aria-label': 'Cách tu luyện', onclick: help })),
+    );
+    new ResizeObserver(() => fitCultBg(stage, fig, bag)).observe(stage);
+    return stage;
+  }
+
+  /** Túi trữ vật (phòng tu luyện): hấp thu linh thạch + dùng Tụ Khí Đan */
+  private openBag(): void {
+    this.detail('Túi Trữ Vật', () => {
+      const s = P.getSave();
+      if (s.tier >= MAX_TIER) return h('p', { class: 'dim', text: 'Đạo Tổ không cần tu vi nữa.' });
+      const pk = P.packInfo();
+      const n = P.pillCount('tuvi');
+      return h('div', { class: 'bag-box' },
+        h('div', { class: 'pack' },
+          h('div', { class: 'gold hd' }, ic('linh'), 'Hấp thu linh thạch'),
+          h('div', { class: 'dim', text: `Mỗi gói: ${fmt(pk.cost)} linh thạch → ${fmt(pk.gain)} tu vi. Đang có ${fmt(s.linh)} linh thạch.` }),
           h('div', { class: 'row' },
             h('button', { class: 'btn small', text: '×1', onclick: () => this.act(P.buyPack(1)) }),
             h('button', { class: 'btn small', text: '×10', onclick: () => this.act(P.buyPack(10)) }),
             h('button', { class: 'btn small', text: 'Tối đa', onclick: () => this.act(P.buyPack(1e9)) }),
-          ),
-        )]),
-      ),
-    );
-    new ResizeObserver(() => fitCultBg(sky, fig)).observe(stage);
-    return stage;
+          )),
+        h('div', { class: 'pack' },
+          h('div', { class: 'gold hd' }, this.icp('pill'), `Tụ Khí Đan ×${n}`),
+          h('div', { class: 'dim', text: n ? `Mỗi viên: ${fmt(P.tuviPillGain())} tu vi (tính theo cảnh giới hiện tại).` : 'Chưa có. Luyện ở Chế Tạo → Luyện Đan.' }),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn small', text: 'Dùng 1', disabled: n ? null : 'disabled', onclick: () => this.act(P.useTuviPill(1)) }),
+            h('button', { class: 'btn small', text: 'Dùng hết', disabled: n ? null : 'disabled', onclick: () => this.act(P.useTuviPill(n)) }),
+          )),
+      );
+    });
   }
 
   /** Sách Công Pháp: chương Chủ Động (kỹ năng vũ khí + cảnh giới) / Bị Động / Thức Tỉnh (công thức kết hợp) */
@@ -903,7 +956,7 @@ export class Hub {
       h('div', { class: 'cf-recipes' }, ...PILLS.map((p) => {
         const cnt = P.pillCount(p.id);
         return h('button', { class: 'cf-rec' + (p.id === def.id ? ' on' : ''), onclick: () => { audio.play('click'); this.pillSel = p.id; this.craftResult = null; this.render(); } },
-          this.icp('pill'), h('span', { class: 'bk-txt' }, h('b', { text: p.name + (p.cap ? ` (${cnt}/${p.cap})` : '') }), h('small', { text: p.desc })));
+          this.icp('pill'), h('span', { class: 'bk-txt' }, h('b', { text: p.name + (p.cap ? ` (${cnt}/${p.cap})` : ` (trong túi: ${cnt})`) }), h('small', { text: p.desc })));
       })),
     );
     const cost = h('div', { class: 'cf-costs' },

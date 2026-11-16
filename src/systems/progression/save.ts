@@ -39,8 +39,8 @@ export interface SaveData {
   loadout: string[];
   /** id màn → số lần đã vượt */
   cleared: Record<string, number>;
-  /** số lần đã dùng đan tăng vĩnh viễn */
-  pills: { hp: number; dmg: number; def: number };
+  /** số lần đã dùng đan tăng vĩnh viễn (hp/dmg/def); `tuvi` = số Tụ Khí Đan đang cất trong túi trữ vật */
+  pills: { hp: number; dmg: number; def: number; tuvi: number };
   nextUid: number;
   /** Đồ chờ nhận (túi đầy lúc nhận thưởng) */
   inbox: ItemInst[];
@@ -68,7 +68,7 @@ function defaultSave(): SaveData {
     equipped: { weapon: 1, clothes: null, shoes: null, accessory: null, bibao: null },
     loadout: ['ho_khieu'],
     cleared: {},
-    pills: { hp: 0, dmg: 0, def: 0 },
+    pills: { hp: 0, dmg: 0, def: 0, tuvi: 0 },
     nextUid: 2,
     inbox: [],
     sound: true,
