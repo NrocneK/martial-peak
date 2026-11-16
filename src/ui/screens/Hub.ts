@@ -199,8 +199,11 @@ export class Hub {
     const questBadge = P.claimableQuests();
     this.nav.replaceChildren(
       ...NAV.map(([id, name, icon]) =>
-        h('button', { class: 'nv' + (id === navTab ? ' on' : ''), 'aria-current': id === navTab ? 'page' : null, onclick: () => this.go(id) },
-          ic(icon), h('span', { text: name }), id === 'quest' && questBadge ? h('i', { class: 'badge', text: String(questBadge) }) : null),
+        // khung + icon vẽ qua SVG (pic) để "chế độ tối tự động" của trình duyệt điện thoại không đảo màu; chỉ icon, không chữ
+        h('button', { class: 'nv' + (id === navTab ? ' on' : ''), 'aria-current': id === navTab ? 'page' : null, 'aria-label': name, title: name, onclick: () => this.go(id) },
+          pic(id === navTab ? '/ui/k_nav_on.png?v=1' : '/ui/k_nav.png?v=1', { class: 'nv-fr' }, [0, 0, 1, 1], id === navTab ? [374, 397] : [370, 391]),
+          pic(`/ui/ic_${icon}.png`, { class: 'ic' }, [0, 0, 1, 1], 128),
+          id === 'quest' && questBadge ? h('i', { class: 'badge', text: String(questBadge) }) : null),
       ),
     );
 
